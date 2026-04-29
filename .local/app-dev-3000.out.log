@@ -1,0 +1,14 @@
+
+> satu-data-bulungan-app@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3000
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env.local
+✓ Ready in 1921ms
+Creating turbopack project { dir: 'C:\\Projects\\satudatabulungan\\app', testMode: true }
+
+○ Compiling / ...
+ GET / 200 in 20.2s (next.js: 16.0s, application-code: 4.3s)
+ GET / 200 in 941ms (next.js: 13ms, application-code: 927ms)

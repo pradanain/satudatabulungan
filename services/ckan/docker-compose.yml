@@ -1,0 +1,111 @@
+services:
+  db:
+    image: postgres:14
+    container_name: bulungan-ckan-db
+    environment:
+      POSTGRES_DB: ckan
+      POSTGRES_USER: ckan
+      POSTGRES_PASSWORD: ckan
+    ports:
+      - "5432:5432"
+    volumes:
+      - ckan_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ckan -d ckan"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  datastore-db:
+    image: postgres:14
+    container_name: bulungan-ckan-datastore
+    environment:
+      POSTGRES_DB: datastore
+      POSTGRES_USER: datastore
+      POSTGRES_PASSWORD: datastore
+    ports:
+      - "5433:5432"
+    volumes:
+      - ckan_datastore_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U datastore -d datastore"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  datastore-init:
+    image: postgres:14
+    container_name: bulungan-ckan-datastore-init
+    depends_on:
+      datastore-db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: datastore
+    command: >
+      sh -ec "
+        if ! psql -h datastore-db -U datastore -d datastore -tAc \"SELECT 1 FROM pg_roles WHERE rolname='datastore_ro'\" | grep -q 1; then
+          psql -h datastore-db -U datastore -d datastore -c \"CREATE ROLE datastore_ro LOGIN PASSWORD 'datastore'\";
+        fi;
+        psql -h datastore-db -U datastore -d datastore -c \"GRANT CONNECT ON DATABASE datastore TO datastore_ro\";
+        psql -h datastore-db -U datastore -d datastore -c \"GRANT USAGE ON SCHEMA public TO datastore_ro\";
+        psql -h datastore-db -U datastore -d datastore -c \"GRANT SELECT ON ALL TABLES IN SCHEMA public TO datastore_ro\";
+        psql -h datastore-db -U datastore -d datastore -c \"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO datastore_ro\";
+      "
+    restart: "no"
+
+  solr:
+    image: ckan/ckan-solr:2.10-solr9
+    container_name: bulungan-ckan-solr
+    ports:
+      - "8983:8983"
+
+  redis:
+    image: redis:7-alpine
+    container_name: bulungan-ckan-redis
+    ports:
+      - "6379:6379"
+
+  ckan:
+    image: ckan/ckan-dev:2.10
+    container_name: bulungan-ckan-app
+    depends_on:
+      db:
+        condition: service_healthy
+      datastore-db:
+        condition: service_healthy
+      datastore-init:
+        condition: service_completed_successfully
+      solr:
+        condition: service_started
+      redis:
+        condition: service_started
+    environment:
+      CKAN_SITE_URL: http://localhost:5000
+      CKAN_SQLALCHEMY_URL: postgresql://ckan:ckan@db/ckan
+      CKAN_DATASTORE_WRITE_URL: postgresql://datastore:datastore@datastore-db/datastore
+      CKAN_DATASTORE_READ_URL: postgresql://datastore_ro:datastore@datastore-db/datastore
+      CKAN_SOLR_URL: http://solr:8983/solr/ckan
+      CKAN_REDIS_URL: redis://redis:6379/1
+      CKAN_SYSADMIN_NAME: admin
+      CKAN_SYSADMIN_PASSWORD: bulunganbisa
+      CKAN_SYSADMIN_EMAIL: admin@example.com
+    command: >
+      /bin/sh -ec "
+        ln -sf /usr/bin/ckan /usr/local/bin/ckan;
+        /srv/app/start_ckan_development.sh
+      "
+    ports:
+      - "5000:5000"
+    volumes:
+      - ckan_storage:/var/lib/ckan
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5000/api/3/action/status_show >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+volumes:
+  ckan_pg_data:
+  ckan_datastore_pg_data:
+  ckan_storage:
