@@ -311,7 +311,7 @@ export function PublikasiContent({
           <div className="grid min-h-70 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <div className="relative z-2 flex flex-col justify-center overflow-hidden bg-[linear-gradient(96deg,#ffffff_0%,#fffefb_44%,#f9f5e9_78%,#f5efdd_100%)] px-6 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
               <div
-                className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.78)_1px,transparent_0)] [background-size:3px_3px]"
+                className="pointer-events-none absolute inset-0 opacity-[0.08] bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.78)_1px,transparent_0)] bg-size-[3px_3px]"
                 aria-hidden="true"
               />
               <div className="relative z-10">
@@ -334,7 +334,7 @@ export function PublikasiContent({
               <div className="absolute inset-0">
                 <div className="absolute inset-0 bg-[linear-gradient(128deg,#f6f3ea_0%,#f2eee4_26%,#ebedf2_58%,#e3ebf8_79%,#dce7f7_100%)]" />
                 <div
-                  className="absolute inset-0 opacity-[0.06] [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.8)_1px,transparent_0)] [background-size:3px_3px]"
+                  className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.8)_1px,transparent_0)] bg-size-[3px_3px]"
                   aria-hidden="true"
                 />
                 <div

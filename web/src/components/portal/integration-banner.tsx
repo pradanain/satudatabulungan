@@ -26,7 +26,7 @@ export function IntegrationBanner() {
                 Dataset
               </Link>
               <Link
-                href="/layanan-data#permintaan-data"
+                href="/layanan-data/permintaan-data"
                 className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/95 px-4 text-sm font-semibold text-[#1f3359] transition hover:bg-white"
               >
                 <FileText className="size-4" />

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpRight, CalendarDays, RefreshCcw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,10 @@ type InfografisApiErrorResponse = {
   error?: string;
 };
 
+type InfografisFetchError = Error & {
+  status?: number;
+};
+
 function buildVisiblePages(currentPage: number, totalPages: number): number[] {
   const start = Math.max(1, currentPage - 2);
   const end = Math.min(totalPages, currentPage + 2);
@@ -31,6 +36,7 @@ function buildVisiblePages(currentPage: number, totalPages: number): number[] {
 }
 
 export function InfografisBrowser({ initialLimit = 12 }: InfografisBrowserProps) {
+  const router = useRouter();
   const [items, setItems] = useState<InfografisItem[]>([]);
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -47,8 +53,10 @@ export function InfografisBrowser({ initialLimit = 12 }: InfografisBrowserProps)
       });
 
       const payload = (await response.json()) as InfografisApiResponse | InfografisApiErrorResponse;
-      if (!payload || payload.success !== true) {
-        throw new Error((payload as InfografisApiErrorResponse)?.error ?? "Gagal memuat infografis.");
+      if (!response.ok || !payload || payload.success !== true) {
+        const error = new Error((payload as InfografisApiErrorResponse)?.error ?? "Gagal memuat infografis.") as InfografisFetchError;
+        error.status = response.status;
+        throw error;
       }
 
       const safeTotalPages = Math.max(1, Math.ceil(payload.meta.total / payload.meta.limit));
@@ -69,6 +77,12 @@ export function InfografisBrowser({ initialLimit = 12 }: InfografisBrowserProps)
     try {
       await fetchPage(1);
     } catch (error) {
+      const status = typeof (error as InfografisFetchError).status === "number" ? (error as InfografisFetchError).status : null;
+      if (status && status >= 400 && status <= 599) {
+        router.replace(`/error/${status}`);
+        return;
+      }
+
       setErrorMessage(error instanceof Error ? error.message : "Gagal memuat data.");
       setItems([]);
       setTotalItems(0);
@@ -77,7 +91,7 @@ export function InfografisBrowser({ initialLimit = 12 }: InfografisBrowserProps)
     } finally {
       setIsLoadingInitial(false);
     }
-  }, [fetchPage]);
+  }, [fetchPage, router]);
 
   const goToPage = useCallback(
     async (targetPage: number) => {
@@ -91,12 +105,18 @@ export function InfografisBrowser({ initialLimit = 12 }: InfografisBrowserProps)
       try {
         await fetchPage(targetPage);
       } catch (error) {
+        const status = typeof (error as InfografisFetchError).status === "number" ? (error as InfografisFetchError).status : null;
+        if (status && status >= 400 && status <= 599) {
+          router.replace(`/error/${status}`);
+          return;
+        }
+
         setErrorMessage(error instanceof Error ? error.message : "Gagal memuat halaman yang dipilih.");
       } finally {
         setIsLoadingPage(false);
       }
     },
-    [fetchPage, isLoadingInitial, isLoadingPage, page, totalPages],
+    [fetchPage, isLoadingInitial, isLoadingPage, page, router, totalPages],
   );
 
   useEffect(() => {

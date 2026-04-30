@@ -70,7 +70,7 @@ export async function GET(request: Request) {
         },
         error: message,
       },
-      { status: 200 },
+      { status: 500 },
     );
   }
 }

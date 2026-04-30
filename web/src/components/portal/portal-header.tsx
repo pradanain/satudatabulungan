@@ -58,11 +58,11 @@ const menuItems: readonly MenuItem[] = [
   {
     key: "layanan-data",
     label: "Layanan Data",
-    href: "/layanan-data",
+    href: "/layanan-data/permintaan-data",
     children: [
-      { label: "Permintaan Data", href: "/layanan-data#permintaan-data" },
+      { label: "Permintaan Data", href: "/layanan-data/permintaan-data" },
       { label: "API", href: "/api" },
-      { label: "FAQ", href: "/layanan-data#faq" },
+      { label: "FAQ", href: "/layanan-data/faq" },
     ],
   },
   {
