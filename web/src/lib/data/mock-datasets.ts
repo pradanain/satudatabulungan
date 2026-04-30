@@ -108,9 +108,9 @@ export const mockDatasets: Dataset[] = [
     title: "Jumlah Penduduk per Kecamatan 2025",
     summary: "Distribusi jumlah penduduk Bulungan per kecamatan, jenis kelamin, dan kelompok umur.",
     description:
-      "Dataset kependudukan resmi yang menampilkan jumlah penduduk per kecamatan di Kabupaten Bulungan tahun 2025. Data disediakan untuk kebutuhan perencanaan pembangunan, pemetaan layanan publik, dan evaluasi kebijakan kependudukan.",
+      "Dataset kependudukan resmi yang menampilkan jumlah penduduk per kecamatan di Kabupaten Bulungan tahun 2025.",
     topic: "Kependudukan",
-    organization: "Disdukcapil",
+    organization: "Dinas Kependudukan dan Pencatatan Sipil",
     formats: ["CSV", "API"],
     frequency: "Tahunan",
     status: "Published",
@@ -150,7 +150,7 @@ export const mockDatasets: Dataset[] = [
     description:
       "Data realisasi program UMKM di Bulungan yang memuat jumlah pelaku, skema pembinaan, dan perkembangan sektor ekonomi kreatif. Dataset mendukung pemantauan program pemulihan ekonomi daerah.",
     topic: "Ekonomi",
-    organization: "Dinas Koperasi & UKM",
+    organization: "Dinas Perindustrian, Perdagangan, Koperasi dan UMKM",
     formats: ["CSV", "PDF"],
     frequency: "Triwulanan",
     status: "Published",
@@ -170,7 +170,7 @@ export const mockDatasets: Dataset[] = [
     description:
       "Dataset pendidikan memuat daftar sekolah tingkat dasar hingga menengah, jumlah peserta didik, serta rasio guru. Data dipakai untuk pemetaan layanan pendidikan dan intervensi sarana prasarana.",
     topic: "Pendidikan",
-    organization: "Dinas Pendidikan",
+    organization: "Dinas Pendidikan dan Kebudayaan",
     formats: ["CSV", "XLSX"],
     frequency: "Semesteran",
     status: "Published",
@@ -190,7 +190,7 @@ export const mockDatasets: Dataset[] = [
     description:
       "Dataset infrastruktur jalan dan jembatan berisi panjang ruas, status kemantapan, dan lokasi prioritas pemeliharaan. Data digunakan untuk perencanaan pembangunan infrastruktur transportasi.",
     topic: "Infrastruktur",
-    organization: "Dinas PUPR",
+    organization: "Dinas Perumahan Rakyat dan kawasan permukiman",
     formats: ["XLSX", "API"],
     frequency: "Tahunan",
     status: "Published",
@@ -210,7 +210,7 @@ export const mockDatasets: Dataset[] = [
     description:
       "Dataset lingkungan hidup memuat indikator kualitas udara, kualitas air, dan tutupan lahan. Data digunakan untuk monitoring lingkungan, pelaporan indikator SDGs, dan kebijakan pembangunan hijau.",
     topic: "Lingkungan",
-    organization: "DLH",
+    organization: "Dinas Lingkungan Hidup",
     formats: ["CSV", "API"],
     frequency: "Tahunan",
     status: "Published",

@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { buildPageMetadata } from "@/lib/utils/metadata";
 import { PublikasiContent, type PublicationCatalogItem } from "@/app/publikasi/publikasi-content";
-import { getInfografisApiPayload } from "@/lib/services/infografis-service";
-import { normalizeOrganizationName } from "@/lib/utils/organization";
+import { getDataGoIdNationalRegulations } from "@/lib/services/data-go-id-regulation-service";
 import {
   normalizePositiveInteger,
   normalizePublicationSort,
@@ -12,16 +11,15 @@ import {
 } from "@/lib/utils/publication-query";
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Publikasi Infografis",
-  description:
-    "Kumpulan infografis resmi DKIP Bulungan yang disinkronkan otomatis melalui endpoint internal Portal Satu Data.",
-  path: "/publikasi/infografis",
-  keywords: ["infografis", "DKIP Bulungan", "Satu Data Bulungan", "publikasi data"],
+  title: "Publikasi Regulasi",
+  description: "Daftar regulasi dan kebijakan resmi terkait tata kelola data pada Portal Satu Data Bulungan.",
+  path: "/publikasi-regulasi",
+  keywords: ["publikasi regulasi", "regulasi satu data", "kebijakan data Bulungan"],
 });
 
 export const revalidate = 21_600;
 
-type PublikasiInfografisPageProps = {
+type PublikasiRegulasiPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
@@ -36,47 +34,31 @@ function sortPublicationItems(items: PublicationCatalogItem[], sort: "terbaru" |
   });
 }
 
-export default async function PublikasiInfografisPage({ searchParams }: PublikasiInfografisPageProps) {
+export default async function PublikasiRegulasiPage({ searchParams }: PublikasiRegulasiPageProps) {
   const rawParams = await searchParams;
   const searchQuery = pickQueryValue(rawParams.q) ?? "";
   const sort = normalizePublicationSort(pickQueryValue(rawParams.sort));
   const pageSize = PUBLICATION_PAGE_SIZE;
   const requestedPage = normalizePositiveInteger(rawParams.page, 1);
 
-  const officialOrganizationName = normalizeOrganizationName("Dinas Komunikasi, Informatika dan Persandian");
+  const nationalRegulations = await getDataGoIdNationalRegulations().catch(() => []);
 
-  const payload = await getInfografisApiPayload({
-    page: 1,
-    limit: 500,
-    source: "auto",
-  }).catch(() => ({
-    success: true as const,
-    data: [],
-    meta: {
-      page: 1,
-      limit: 500,
-      total: 0,
-      hasNextPage: false,
-      sourceUsed: "html_scrape" as const,
-      externalSource: "https://diskominfo.bulungan.go.id/wp/infografis/",
-    },
-  }));
-
-  const allItems: PublicationCatalogItem[] = payload.data.map((item) => ({
+  const allItems: PublicationCatalogItem[] = nationalRegulations.map((item) => ({
     id: item.id,
     title: item.title,
-    summary: "",
-    organization: officialOrganizationName,
-    lastUpdated: item.publishedDate?.slice(0, 10) ?? "1970-01-01",
-    href: item.postUrl,
-    hrefLabel: "Buka Sumber Asli",
+    summary: item.summary,
+    organization: item.organization,
+    lastUpdated: item.publishedDate,
+    href: item.detailUrl,
+    hrefLabel: "Buka Regulasi",
     openInNewTab: true,
-    imageSrc: item.imageOriginalUrl ?? item.imageUrl,
   }));
 
   const normalizedKeyword = searchQuery.trim().toLowerCase();
   const filteredItems = normalizedKeyword
-    ? allItems.filter((item) => `${item.title} ${item.organization}`.toLowerCase().includes(normalizedKeyword))
+    ? allItems.filter((item) =>
+        `${item.title} ${item.summary} ${item.organization}`.toLowerCase().includes(normalizedKeyword),
+      )
     : allItems;
 
   const sortedItems = sortPublicationItems(filteredItems, sort);
@@ -89,8 +71,8 @@ export default async function PublikasiInfografisPage({ searchParams }: Publikas
   return (
     <PortalPageShell activeMenu="publikasi">
       <PublikasiContent
-        view="infografis"
-        basePath="/publikasi/infografis"
+        view="regulasi"
+        basePath="/publikasi-regulasi"
         sort={sort}
         searchQuery={searchQuery}
         itemsPerPage={pageSize}

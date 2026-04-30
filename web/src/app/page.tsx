@@ -127,7 +127,7 @@ export default async function Home() {
     },
   ];
 
-  const beritaIndexHref = "/publikasi#berita";
+  const beritaIndexHref = "/publikasi-berita";
 
   return (
     <PortalPageShell activeMenu="beranda">
@@ -176,7 +176,7 @@ export default async function Home() {
             </div>
 
             <Button asChild size="lg" className="hidden w-fit gap-2 rounded-2xl px-6 xl:inline-flex">
-              <Link href={beritaIndexHref}>
+              <Link href={beritaIndexHref} prefetch>
                 Lihat Semua Berita
                 <ArrowRight className="size-4" />
               </Link>
@@ -188,11 +188,12 @@ export default async function Home() {
               kabarDataItems.map((item) => {
                 return (
                   <Card
-                    key={item.title}
-                    className="flex h-full flex-col overflow-hidden rounded-3xl border border-[#e5eaf1] bg-white p-0 shadow-[0_12px_28px_rgba(29,40,57,0.08)]"
+                    key={`${item.href}-${item.date}`}
+                    className="flex h-full flex-col overflow-hidden border-[#d2d9e4] bg-white p-0 shadow-none transition hover:border-[#bcc7d8] hover:shadow-[0_8px_24px_rgba(25,35,52,0.08)]"
                   >
+                    <div className="h-1.5 w-full bg-[#8fc8bb]" />
                     <Link href={item.href} target="_blank" rel="noreferrer" className="block">
-                      <div className="relative h-48 sm:h-52">
+                      <div className="relative h-48">
                         <Image
                           src={item.imageSrc}
                           alt={item.title}
@@ -204,7 +205,6 @@ export default async function Home() {
                     </Link>
 
                     <div className="flex h-full flex-col p-5 sm:p-6">
-                      <div className="mb-4 h-1 w-10 rounded-full bg-[#d9272e]" />
                       <h3 className="m-0 line-clamp-3 font-(family-name:--font-heading) text-2xl font-semibold leading-tight tracking-tight text-(--color-text)">
                         <Link
                           href={item.href}
@@ -218,16 +218,27 @@ export default async function Home() {
                       <p className="mb-0 mt-3 line-clamp-2 text-base leading-relaxed text-(--color-muted)">
                         {item.description}
                       </p>
-                      <div className="mt-5 flex flex-wrap items-center gap-3 text-sm font-medium text-(--color-muted)">
-                        <span className="inline-flex items-center gap-1.5">
-                          <CalendarDays className="size-4" />
-                          {formatIndonesianDate(item.date)}
-                        </span>
-                        <span className="text-(--color-border)">|</span>
-                        <span className="inline-flex items-center gap-1.5">
-                          <Building2 className="size-4" />
-                          {item.organization}
-                        </span>
+                      <div className="mt-4 flex items-end justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 text-sm text-(--color-muted)">
+                            <CalendarDays className="size-4" />
+                            {formatIndonesianDate(item.date)}
+                          </div>
+                          <p className="mb-0 mt-2 inline-flex max-w-full items-center gap-1.5 line-clamp-1 text-sm text-(--color-muted)">
+                            <Building2 className="size-4 shrink-0" />
+                            {item.organization}
+                          </p>
+                        </div>
+
+                        <Link
+                          href={item.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-semibold text-(--color-primary) transition hover:text-[#8f1717]"
+                        >
+                          Baca berita
+                          <ArrowRight className="size-4" />
+                        </Link>
                       </div>
                     </div>
                   </Card>
@@ -247,7 +258,7 @@ export default async function Home() {
 
           <div className="flex justify-center xl:hidden">
             <Button asChild size="lg" className="w-fit gap-2 rounded-2xl px-5">
-              <Link href={beritaIndexHref}>
+              <Link href={beritaIndexHref} prefetch>
                 Lihat Semua Berita
                 <ArrowRight className="size-4" />
               </Link>
@@ -308,7 +319,7 @@ export default async function Home() {
 
         <div className="mt-6 flex justify-center">
           <Button asChild size="lg" className="w-fit gap-2 rounded-full px-6">
-            <Link href="/publikasi/infografis">
+            <Link href="/publikasi/infografis" prefetch>
               Lihat Semua Infografis
               <ArrowRight className="size-4" />
             </Link>

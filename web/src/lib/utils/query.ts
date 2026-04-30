@@ -5,6 +5,14 @@ export type DatasetQueryParams = DatasetFilters & {
   pageSize?: number;
 };
 
+export type PublicationSort = "terbaru" | "terlama" | "az";
+
+export interface PublicationQueryParams {
+  q?: string;
+  sort?: PublicationSort;
+  page?: number;
+}
+
 export function buildDatasetQuery(filters: DatasetQueryParams): string {
   const params = new URLSearchParams();
 
@@ -23,3 +31,18 @@ export function buildDatasetQuery(filters: DatasetQueryParams): string {
   const query = params.toString();
   return query.length ? `?${query}` : "";
 }
+
+export function buildPublicationQuery(filters: PublicationQueryParams): string {
+  const params = new URLSearchParams();
+
+  if (filters.q) params.set("q", filters.q);
+  if (filters.sort && filters.sort !== "terbaru") params.set("sort", filters.sort);
+  if (filters.page && filters.page > 1) params.set("page", `${filters.page}`);
+
+  const query = params.toString();
+  return query.length ? `?${query}` : "";
+}
+
+export type PublicationNewsSort = PublicationSort;
+export type PublicationNewsQueryParams = PublicationQueryParams;
+export const buildPublicationNewsQuery = buildPublicationQuery;

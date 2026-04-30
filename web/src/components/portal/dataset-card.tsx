@@ -1,6 +1,8 @@
 import Link from "next/link";
-import type { Dataset } from "@/lib/types/dataset";
-import { getTopicAccentColor } from "@/lib/utils/formatters";
+import { Building2, CalendarDays } from "lucide-react";
+import type { Dataset, DatasetFormat } from "@/lib/types/dataset";
+import { getPrimaryDatasetDescription } from "@/lib/utils/dataset-description";
+import { formatIndonesianDate, getTopicAccentColor } from "@/lib/utils/formatters";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils/cn";
@@ -10,10 +12,23 @@ interface DatasetCardProps {
   compact?: boolean;
 }
 
-const standardizedFormats = ["JSON", "CSV", "XLSX"] as const;
+function getFormatBadgeClass(format: DatasetFormat): string {
+  if (format === "CSV") return "border-[#b9dec5] bg-[#edf9f1] text-[#1f7a48]";
+  if (format === "XLSX") return "border-[#bde0cf] bg-[#ecfbf3] text-[#176b46]";
+  if (format === "PDF") return "border-[#f0c7c7] bg-[#fff1f1] text-[#ad2b2b]";
+  if (format === "API") return "border-[#c6d0f1] bg-[#eff3ff] text-[#3f57a8]";
+  if (format === "JSON") return "border-[#ead9ba] bg-[#fff8ea] text-[#9a6a1a]";
+  return "border-[#c8d2e7] bg-[#f2f6ff] text-[#3d5f96]";
+}
+
+const formatOrder: DatasetFormat[] = ["CSV", "XLSX", "JSON", "API", "PDF"];
 
 export function DatasetCard({ dataset, compact = false }: DatasetCardProps) {
   const accentColor = getTopicAccentColor(dataset.topic);
+  const orderedFormats = [...dataset.formats].sort(
+    (a, b) => formatOrder.indexOf(a) - formatOrder.indexOf(b),
+  );
+  const descriptionText = getPrimaryDatasetDescription(dataset.description);
 
   return (
     <Link
@@ -37,11 +52,14 @@ export function DatasetCard({ dataset, compact = false }: DatasetCardProps) {
             >
               {dataset.topic}
             </Badge>
-            {standardizedFormats.map((format) => (
+            {orderedFormats.map((format) => (
               <Badge
                 key={format}
-                variant="secondary"
-                className="rounded-full px-3 py-1 text-xs font-semibold sm:text-sm"
+                variant="outline"
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-semibold sm:text-sm",
+                  getFormatBadgeClass(format),
+                )}
               >
                 {format}
               </Badge>
@@ -58,16 +76,21 @@ export function DatasetCard({ dataset, compact = false }: DatasetCardProps) {
           </h3>
 
           <p className="m-0 max-w-[80ch] text-base leading-relaxed text-[#5f5957] sm:text-[1.1rem]">
-            {dataset.summary}
+            {descriptionText}
           </p>
 
           <div className="mt-auto">
-            <Badge
-              variant="outline"
-              className="rounded-full px-3 py-1 text-xs font-semibold sm:text-sm"
-            >
-              {dataset.organization}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-(--color-muted)">
+              <span className="inline-flex items-center gap-1.5">
+                <CalendarDays className="size-4 shrink-0" />
+                {formatIndonesianDate(dataset.lastUpdated)}
+              </span>
+              <span className="text-(--color-border)">|</span>
+              <span className="inline-flex items-center gap-1.5">
+                <Building2 className="size-4 shrink-0" />
+                {dataset.organization}
+              </span>
+            </div>
           </div>
         </article>
       </Card>

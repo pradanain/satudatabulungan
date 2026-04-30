@@ -9,6 +9,7 @@ interface SearchBarProps {
   hiddenValues?: Record<string, string | undefined>;
   className?: string;
   submitLabel?: string;
+  srLabel?: string;
 }
 
 export function SearchBar({
@@ -18,6 +19,7 @@ export function SearchBar({
   hiddenValues = {},
   className = "",
   submitLabel = "Cari",
+  srLabel = "Pencarian",
 }: SearchBarProps) {
   const searchFieldId = `search-${action.replace(/[^a-zA-Z0-9_-]/g, "-") || "dataset"}`;
 
@@ -31,11 +33,11 @@ export function SearchBar({
       )}
     >
       {Object.entries(hiddenValues).map(([key, value]) =>
-        value ? <input key={key} type="hidden" name={key} value={value} /> : null,
+        value ? <input key={key} type="hidden" name={key} value={value} suppressHydrationWarning /> : null,
       )}
 
       <label className="sr-only" htmlFor={searchFieldId}>
-        Pencarian dataset
+        {srLabel}
       </label>
       <Input
         id={searchFieldId}

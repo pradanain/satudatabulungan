@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { buildPageMetadata } from "@/lib/utils/metadata";
 import { PublikasiContent, type PublicationCatalogItem } from "@/app/publikasi/publikasi-content";
-import { getInfografisApiPayload } from "@/lib/services/infografis-service";
-import { normalizeOrganizationName } from "@/lib/utils/organization";
+import { getBappedaDigitalPublications } from "@/lib/services/bappeda-publication-service";
+import { getDatasets } from "@/lib/services/dataset-service";
 import {
   normalizePositiveInteger,
   normalizePublicationSort,
@@ -12,16 +12,15 @@ import {
 } from "@/lib/utils/publication-query";
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Publikasi Infografis",
-  description:
-    "Kumpulan infografis resmi DKIP Bulungan yang disinkronkan otomatis melalui endpoint internal Portal Satu Data.",
-  path: "/publikasi/infografis",
-  keywords: ["infografis", "DKIP Bulungan", "Satu Data Bulungan", "publikasi data"],
+  title: "Publikasi Buku Digital",
+  description: "Daftar buku digital dan dokumen terbitan resmi yang tersedia di Portal Satu Data Bulungan.",
+  path: "/publikasi-buku-digital",
+  keywords: ["buku digital", "publikasi dokumen", "dokumen data Bulungan"],
 });
 
 export const revalidate = 21_600;
 
-type PublikasiInfografisPageProps = {
+type PublikasiBukuDigitalPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
@@ -36,47 +35,51 @@ function sortPublicationItems(items: PublicationCatalogItem[], sort: "terbaru" |
   });
 }
 
-export default async function PublikasiInfografisPage({ searchParams }: PublikasiInfografisPageProps) {
+export default async function PublikasiBukuDigitalPage({ searchParams }: PublikasiBukuDigitalPageProps) {
   const rawParams = await searchParams;
   const searchQuery = pickQueryValue(rawParams.q) ?? "";
   const sort = normalizePublicationSort(pickQueryValue(rawParams.sort));
   const pageSize = PUBLICATION_PAGE_SIZE;
   const requestedPage = normalizePositiveInteger(rawParams.page, 1);
 
-  const officialOrganizationName = normalizeOrganizationName("Dinas Komunikasi, Informatika dan Persandian");
+  const bappedaItems = await getBappedaDigitalPublications().catch(() => []);
 
-  const payload = await getInfografisApiPayload({
-    page: 1,
-    limit: 500,
-    source: "auto",
-  }).catch(() => ({
-    success: true as const,
-    data: [],
-    meta: {
-      page: 1,
-      limit: 500,
-      total: 0,
-      hasNextPage: false,
-      sourceUsed: "html_scrape" as const,
-      externalSource: "https://diskominfo.bulungan.go.id/wp/infografis/",
-    },
-  }));
-
-  const allItems: PublicationCatalogItem[] = payload.data.map((item) => ({
+  let allItems: PublicationCatalogItem[] = bappedaItems.map((item) => ({
     id: item.id,
     title: item.title,
-    summary: "",
-    organization: officialOrganizationName,
-    lastUpdated: item.publishedDate?.slice(0, 10) ?? "1970-01-01",
-    href: item.postUrl,
-    hrefLabel: "Buka Sumber Asli",
+    summary:
+      item.downloadCount !== null
+        ? `${item.downloadCount.toLocaleString("id-ID")}x diunduh - Sumber Bappeda Bulungan`
+        : "Sumber Bappeda Bulungan",
+    organization: "Bappedalitbang Kabupaten Bulungan",
+    lastUpdated: item.publishedDate,
+    href: item.viewUrl,
+    hrefLabel: "Lihat Dokumen",
+    downloadHref: item.downloadUrl,
+    downloadLabel: "Unduh Dokumen",
     openInNewTab: true,
-    imageSrc: item.imageOriginalUrl ?? item.imageUrl,
   }));
+
+  if (allItems.length === 0) {
+    const datasets = await getDatasets({ sort: "terbaru" });
+    allItems = datasets
+      .filter((dataset) => dataset.formats.includes("PDF") || dataset.resources.some((resource) => resource.format === "PDF"))
+      .map((dataset) => ({
+        id: dataset.id,
+        title: dataset.title,
+        summary: `${dataset.summary} - fallback katalog internal`,
+        organization: dataset.organization,
+        lastUpdated: dataset.lastUpdated,
+        href: `/dataset/${dataset.slug}`,
+      }))
+      .slice(0, 24);
+  }
 
   const normalizedKeyword = searchQuery.trim().toLowerCase();
   const filteredItems = normalizedKeyword
-    ? allItems.filter((item) => `${item.title} ${item.organization}`.toLowerCase().includes(normalizedKeyword))
+    ? allItems.filter((item) =>
+        `${item.title} ${item.summary} ${item.organization}`.toLowerCase().includes(normalizedKeyword),
+      )
     : allItems;
 
   const sortedItems = sortPublicationItems(filteredItems, sort);
@@ -89,8 +92,8 @@ export default async function PublikasiInfografisPage({ searchParams }: Publikas
   return (
     <PortalPageShell activeMenu="publikasi">
       <PublikasiContent
-        view="infografis"
-        basePath="/publikasi/infografis"
+        view="buku-digital"
+        basePath="/publikasi-buku-digital"
         sort={sort}
         searchQuery={searchQuery}
         itemsPerPage={pageSize}

@@ -14,6 +14,7 @@ import type {
   DatasetSort,
   PortalStats,
 } from "@/lib/types/dataset";
+import { normalizeOrganizationName } from "@/lib/utils/organization";
 
 const config = getRuntimeConfig();
 const mockAdapter = new MockDatasetAdapter();
@@ -41,6 +42,26 @@ async function withFallback<T>(fn: (adapter: DatasetAdapter) => Promise<T>): Pro
   }
 }
 
+function normalizeDatasetOrganization(dataset: Dataset): Dataset {
+  const normalizedOrganization = normalizeOrganizationName(dataset.organization);
+
+  if (
+    normalizedOrganization === dataset.organization &&
+    normalizedOrganization === dataset.metadata.opd
+  ) {
+    return dataset;
+  }
+
+  return {
+    ...dataset,
+    organization: normalizedOrganization,
+    metadata: {
+      ...dataset.metadata,
+      opd: normalizedOrganization,
+    },
+  };
+}
+
 export function normalizeDatasetFilters(
   filters: Partial<Record<keyof DatasetFilters, string | string[] | undefined>>,
 ): DatasetFilters {
@@ -59,7 +80,9 @@ export function normalizeDatasetFilters(
   return {
     q: pick(filters.q),
     topic: pick(filters.topic),
-    organization: pick(filters.organization),
+    organization: pick(filters.organization)
+      ? normalizeOrganizationName(pick(filters.organization) ?? "")
+      : undefined,
     format: pick(filters.format),
     frequency: pick(filters.frequency),
     status: pick(filters.status),
@@ -89,11 +112,13 @@ export function normalizePositiveInteger(
 }
 
 export async function getDatasets(filters?: DatasetFilters): Promise<Dataset[]> {
-  return withFallback((adapter) => adapter.listDatasets(filters));
+  const datasets = await withFallback((adapter) => adapter.listDatasets(filters));
+  return datasets.map(normalizeDatasetOrganization);
 }
 
 export async function getDatasetBySlug(slug: string): Promise<Dataset | null> {
-  return withFallback((adapter) => adapter.getDatasetBySlug(slug));
+  const dataset = await withFallback((adapter) => adapter.getDatasetBySlug(slug));
+  return dataset ? normalizeDatasetOrganization(dataset) : null;
 }
 
 export async function getDatasetFilterOptions(): Promise<DatasetFilterOptions> {

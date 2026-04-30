@@ -40,7 +40,7 @@ export function IntegrationBanner() {
                 API
               </Link>
               <Link
-                href="/publikasi#regulasi"
+                href="/publikasi-regulasi"
                 className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/95 px-4 text-sm font-semibold text-[#1f3359] transition hover:bg-white"
               >
                 <Scale className="size-4" />

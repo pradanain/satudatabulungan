@@ -25,13 +25,13 @@ export function DatasetDisplayControls({
       method="get"
       className="grid w-full gap-2 sm:grid-cols-2 lg:w-auto lg:grid-cols-[170px_170px]"
     >
-      {filters.q ? <input type="hidden" name="q" value={filters.q} /> : null}
-      {filters.topic ? <input type="hidden" name="topic" value={filters.topic} /> : null}
+      {filters.q ? <input type="hidden" name="q" value={filters.q} suppressHydrationWarning /> : null}
+      {filters.topic ? <input type="hidden" name="topic" value={filters.topic} suppressHydrationWarning /> : null}
       {filters.organization ? (
-        <input type="hidden" name="organization" value={filters.organization} />
+        <input type="hidden" name="organization" value={filters.organization} suppressHydrationWarning />
       ) : null}
-      {filters.year ? <input type="hidden" name="year" value={filters.year} /> : null}
-      <input type="hidden" name="page" value="1" />
+      {filters.year ? <input type="hidden" name="year" value={filters.year} suppressHydrationWarning /> : null}
+      <input type="hidden" name="page" value="1" suppressHydrationWarning />
 
       <label
         className="grid min-w-0 gap-1 text-xs font-semibold text-[#47413f] sm:text-sm"

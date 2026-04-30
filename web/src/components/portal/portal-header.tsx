@@ -46,13 +46,13 @@ const menuItems: readonly MenuItem[] = [
   {
     key: "publikasi",
     label: "Publikasi",
-    href: "/publikasi",
+    href: "/publikasi-berita",
     children: [
-      { label: "Berita", href: "/publikasi#berita" },
-      { label: "Buku Digital", href: "/publikasi#buku-digital" },
+      { label: "Berita", href: "/publikasi-berita" },
+      { label: "Buku Digital", href: "/publikasi-buku-digital" },
       { label: "Infografis", href: "/publikasi/infografis" },
-      { label: "Regulasi", href: "/publikasi#regulasi" },
-      { label: "Petunjuk Teknis", href: "/publikasi#petunjuk-teknis" },
+      { label: "Regulasi", href: "/publikasi-regulasi" },
+      { label: "Petunjuk Teknis", href: "/publikasi-petunjuk-teknis" },
     ],
   },
   {
@@ -123,7 +123,7 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
                 <div className="mt-4 flex h-full min-h-0 flex-col">
                   <div className="flex-1 overflow-y-auto">
                     <SheetClose asChild>
-                      <Link href="/" aria-label="Kembali ke beranda" className="inline-flex w-fit max-w-[calc(100%-2.75rem)]">
+                      <Link href="/" prefetch aria-label="Kembali ke beranda" className="inline-flex w-fit max-w-[calc(100%-2.75rem)]">
                         <Image
                           src="/assets/brand/logos/bulungan-bisa-logo.png"
                           alt="Bulungan Bisa"
@@ -166,6 +166,7 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
                                   <SheetClose asChild key={`mobile-${item.key}-${child.label}`}>
                                     <Link
                                       href={child.href}
+                                      prefetch
                                       onClick={closeMobileMenu}
                                       className="rounded-lg px-2 py-2 text-sm font-semibold text-(--color-muted) transition-colors hover:bg-white hover:text-(--color-primary)"
                                     >
@@ -180,6 +181,7 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
                           <SheetClose asChild key={`mobile-${item.key}`}>
                             <Link
                               href={item.href}
+                              prefetch
                               onClick={closeMobileMenu}
                               className={cn(
                                 "rounded-lg px-3 py-2 text-[15px] font-semibold text-(--color-muted) transition-colors hover:bg-white hover:text-(--color-primary)",
@@ -203,7 +205,7 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
               </SheetContent>
             </Sheet>
 
-            <Link href="/" aria-label="Kembali ke beranda" className="shrink-0 lg:ml-2 xl:ml-3">
+            <Link href="/" prefetch aria-label="Kembali ke beranda" className="shrink-0 lg:ml-2 xl:ml-3">
               <Image
                 src="/assets/brand/logos/lambang-bulungan.png"
                 alt="Lambang Kabupaten Bulungan"
@@ -238,7 +240,7 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
 
               if (!item.children) {
                 return (
-                  <Link key={item.label} href={item.href} onClick={closeDesktopDropdown} className={baseClass}>
+                  <Link key={item.label} href={item.href} prefetch onClick={closeDesktopDropdown} className={baseClass}>
                     {item.label}
                   </Link>
                 );
@@ -279,6 +281,7 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
                         <Link
                           key={`${item.key}-${child.label}`}
                           href={child.href}
+                          prefetch
                           onClick={closeDesktopDropdown}
                           className="block rounded-lg px-3 py-2 text-sm font-semibold text-(--color-muted) transition-colors hover:bg-(--color-surface-soft) hover:text-(--color-primary)"
                         >

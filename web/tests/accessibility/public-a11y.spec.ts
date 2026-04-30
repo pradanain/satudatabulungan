@@ -5,6 +5,11 @@ const priorityPublicPages = [
   { id: "home", path: "/" },
   { id: "dataset-catalog", path: "/dataset" },
   { id: "dataset-detail", path: "/dataset/jumlah-penduduk-per-kecamatan-2025" },
+  { id: "publikasi-berita", path: "/publikasi-berita" },
+  { id: "publikasi-buku-digital", path: "/publikasi-buku-digital" },
+  { id: "publikasi-infografis", path: "/publikasi/infografis" },
+  { id: "publikasi-regulasi", path: "/publikasi-regulasi" },
+  { id: "publikasi-petunjuk-teknis", path: "/publikasi-petunjuk-teknis" },
 ];
 
 test.describe("Public Priority Pages Accessibility Audit", () => {
