@@ -12,9 +12,14 @@ services:
       PORT: 3000
     ports:
       - "${WEB_HOST_PORT:-3000}:3000"
+    volumes:
+      - portal_local_store:/app/.local
     networks:
       - portal
 
 networks:
   portal:
     driver: bridge
+
+volumes:
+  portal_local_store:
