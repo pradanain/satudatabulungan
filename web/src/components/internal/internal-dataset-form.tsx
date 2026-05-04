@@ -128,13 +128,13 @@ export function InternalDatasetForm({
 
   return (
     <form className="grid gap-4" onSubmit={handleSubmit}>
-      <Card className="p-5 sm:p-6">
+      <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f] md:col-span-2">
+          <label className="internal-field-label md:col-span-2">
             Judul Dataset
             <Input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} required />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Slug
             <Input
               value={form.slug}
@@ -144,16 +144,16 @@ export function InternalDatasetForm({
             />
           </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f] md:col-span-2">
+          <label className="internal-field-label md:col-span-2">
             Ringkasan
             <Input value={form.summary} onChange={(event) => setForm((current) => ({ ...current, summary: event.target.value }))} required />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Topik
             <select
               value={form.topic}
               onChange={(event) => setForm((current) => ({ ...current, topic: event.target.value }))}
-              className="flex h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-blue)]"
+              className="internal-select"
             >
               {topics.map((topic) => (
                 <option key={topic.id} value={topic.name}>
@@ -163,12 +163,12 @@ export function InternalDatasetForm({
             </select>
           </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Organisasi / OPD
             <select
               value={form.organizationId}
               onChange={(event) => setForm((current) => ({ ...current, organizationId: event.target.value }))}
-              className="flex h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-blue)]"
+              className="internal-select"
               disabled={session.role === "operator_opd"}
             >
               {organizations.map((organization) => (
@@ -179,12 +179,12 @@ export function InternalDatasetForm({
             </select>
           </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Frekuensi
             <select
               value={form.frequency}
               onChange={(event) => setForm((current) => ({ ...current, frequency: event.target.value as DatasetFrequency }))}
-              className="flex h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-blue)]"
+              className="internal-select"
             >
               {frequencyOptions.map((item) => (
                 <option key={item} value={item}>
@@ -194,29 +194,29 @@ export function InternalDatasetForm({
             </select>
           </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Periode
             <Input value={form.period} onChange={(event) => setForm((current) => ({ ...current, period: event.target.value }))} required />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Walidata
             <Input value={form.walidata} onChange={(event) => setForm((current) => ({ ...current, walidata: event.target.value }))} required />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Cakupan Wilayah
             <Input value={form.coverage} onChange={(event) => setForm((current) => ({ ...current, coverage: event.target.value }))} required />
           </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f] md:col-span-2">
+          <label className="internal-field-label md:col-span-2">
             Nama Resource
             <Input value={form.resourceName} onChange={(event) => setForm((current) => ({ ...current, resourceName: event.target.value }))} required />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Format Resource
             <select
               value={form.resourceFormat}
               onChange={(event) => setForm((current) => ({ ...current, resourceFormat: event.target.value as DatasetFormat }))}
-              className="flex h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-blue)]"
+              className="internal-select"
             >
               {resourceFormatOptions.map((item) => (
                 <option key={item} value={item}>
@@ -226,22 +226,22 @@ export function InternalDatasetForm({
             </select>
           </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f] md:col-span-3">
+          <label className="internal-field-label md:col-span-3">
             URL Resource
             <Input value={form.resourceUrl} onChange={(event) => setForm((current) => ({ ...current, resourceUrl: event.target.value }))} required />
           </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f] md:col-span-3">
+          <label className="internal-field-label md:col-span-3">
             Deskripsi
             <textarea
               rows={4}
               value={form.description}
               onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-              className="w-full rounded-2xl border border-[var(--color-border)] bg-white px-3 py-2.5 text-sm text-[var(--color-text)] shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-blue)]"
+              className="internal-textarea"
             />
           </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f] md:col-span-2">
+          <label className="internal-field-label md:col-span-2">
             Tags
             <Input
               value={form.tags}
@@ -249,7 +249,7 @@ export function InternalDatasetForm({
               placeholder="misal: kependudukan, kecamatan, dukcapil"
             />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Ringkasan Review
             <Input
               value={form.reviewSummary}
@@ -261,12 +261,12 @@ export function InternalDatasetForm({
       </Card>
 
       {errorMessage ? (
-        <p className="m-0 rounded-2xl border border-[#f2c4c4] bg-[#fff4f4] px-4 py-3 text-sm font-semibold text-[#9a1a1a]">
+        <p className="internal-alert-error">
           {errorMessage}
         </p>
       ) : null}
       {successMessage ? (
-        <p className="m-0 rounded-2xl border border-[#c7e6cf] bg-[#eef9f1] px-4 py-3 text-sm font-semibold text-[#1f6a2a]">
+        <p className="internal-alert-success">
           {successMessage}
         </p>
       ) : null}

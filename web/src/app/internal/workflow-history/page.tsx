@@ -29,7 +29,7 @@ export default async function InternalWorkflowHistoryPage() {
         badges={<Badge variant="outline">{events.length} event workflow</Badge>}
       />
 
-      <Card className="p-5">
+      <Card className="internal-surface border-transparent p-5 shadow-none">
         <div className="grid gap-3">
           {events.map((event) => (
             <div key={event.id} className="rounded-2xl border border-[var(--color-border)] p-4">
@@ -51,3 +51,5 @@ export default async function InternalWorkflowHistoryPage() {
     </InternalShell>
   );
 }
+
+

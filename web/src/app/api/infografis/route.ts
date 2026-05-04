@@ -3,10 +3,12 @@ import {
   getInfografisApiPayload,
   normalizeInfografisSourceQuery,
 } from "@/lib/services/infografis-service";
+import { AsyncTimeoutError, withTimeout } from "@/lib/utils/async-timeout";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 48;
+const INFOGRAFIS_FETCH_TIMEOUT_MS = 5_000;
 
 export const dynamic = "force-dynamic";
 export const revalidate = 21_600;
@@ -41,11 +43,15 @@ export async function GET(request: Request) {
   }
 
   try {
-    const payload = await getInfografisApiPayload({
-      page,
-      limit,
-      source,
-    });
+    const payload = await withTimeout(
+      getInfografisApiPayload({
+        page,
+        limit,
+        source,
+      }),
+      INFOGRAFIS_FETCH_TIMEOUT_MS,
+      "Timeout mengambil data infografis.",
+    );
 
     return NextResponse.json(payload, {
       status: 200,
@@ -54,7 +60,12 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Gagal mengambil data infografis.";
+    const message =
+      error instanceof AsyncTimeoutError
+        ? "Sumber infografis sedang lambat. Menampilkan fallback sementara."
+        : "Gagal mengambil data infografis.";
+    const errorCode = error instanceof AsyncTimeoutError ? "INFOGRAFIS_UPSTREAM_TIMEOUT" : "INFOGRAFIS_UPSTREAM_ERROR";
+    const status = error instanceof AsyncTimeoutError ? 503 : 500;
 
     return NextResponse.json(
       {
@@ -69,8 +80,9 @@ export async function GET(request: Request) {
           externalSource: "https://diskominfo.bulungan.go.id/wp/infografis/",
         },
         error: message,
+        errorCode,
       },
-      { status: 500 },
+      { status },
     );
   }
 }

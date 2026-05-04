@@ -20,7 +20,7 @@ export default async function InternalTopicsPage() {
       />
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card className="overflow-hidden">
+        <Card className="internal-surface overflow-hidden border-transparent shadow-none">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-[var(--color-surface-soft)] text-left text-[var(--color-muted)]">
@@ -48,7 +48,7 @@ export default async function InternalTopicsPage() {
           </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <h2 className="m-0 text-xl font-semibold">Panduan Master Data</h2>
           <div className="mt-4 grid gap-3 text-sm text-[var(--color-muted)]">
             <p className="m-0">Gunakan kode topik konsisten untuk menjaga pencarian publik tetap rapi.</p>
@@ -60,3 +60,5 @@ export default async function InternalTopicsPage() {
     </InternalShell>
   );
 }
+
+

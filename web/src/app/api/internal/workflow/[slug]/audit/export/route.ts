@@ -93,7 +93,7 @@ function buildCsv(rows: WorkflowAuditEntry[]): string {
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: RouteContext) {
-  const session = getInternalSessionFromCookieHeader(request.headers.get("cookie"));
+  const session = await getInternalSessionFromCookieHeader(request.headers.get("cookie"));
   if (!session) {
     return NextResponse.json(
       {

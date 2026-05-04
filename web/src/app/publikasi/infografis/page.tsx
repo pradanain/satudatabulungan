@@ -5,7 +5,9 @@ import { PublikasiContent, type PublicationCatalogItem } from "@/app/publikasi/p
 import { getInfografisApiPayload } from "@/lib/services/infografis-service";
 import { normalizeOrganizationName } from "@/lib/utils/organization";
 import {
+  DEFAULT_PUBLICATION_IMAGE_SRC,
   normalizePositiveInteger,
+  normalizePublicationImageSrc,
   normalizePublicationSort,
   pickQueryValue,
   PUBLICATION_PAGE_SIZE,
@@ -14,12 +16,12 @@ import {
 export const metadata: Metadata = buildPageMetadata({
   title: "Publikasi Infografis",
   description:
-    "Kumpulan infografis resmi DKIP Bulungan yang disinkronkan otomatis melalui endpoint internal Portal Satu Data.",
+    "Kumpulan infografis resmi DKIP Bulungan yang diambil dari backend CKAN Portal Satu Data.",
   path: "/publikasi/infografis",
   keywords: ["infografis", "DKIP Bulungan", "Satu Data Bulungan", "publikasi data"],
 });
 
-export const revalidate = 21_600;
+export const revalidate = 600;
 
 type PublikasiInfografisPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -42,13 +44,12 @@ export default async function PublikasiInfografisPage({ searchParams }: Publikas
   const sort = normalizePublicationSort(pickQueryValue(rawParams.sort));
   const pageSize = PUBLICATION_PAGE_SIZE;
   const requestedPage = normalizePositiveInteger(rawParams.page, 1);
-
   const officialOrganizationName = normalizeOrganizationName("Dinas Komunikasi, Informatika dan Persandian");
 
   const payload = await getInfografisApiPayload({
     page: 1,
     limit: 500,
-    source: "auto",
+    source: "live",
   }).catch(() => ({
     success: true as const,
     data: [],
@@ -69,9 +70,9 @@ export default async function PublikasiInfografisPage({ searchParams }: Publikas
     organization: officialOrganizationName,
     lastUpdated: item.publishedDate?.slice(0, 10) ?? "1970-01-01",
     href: item.postUrl,
-    hrefLabel: "Buka Sumber Asli",
+    hrefLabel: "Buka Sumber",
     openInNewTab: true,
-    imageSrc: item.imageOriginalUrl ?? item.imageUrl,
+    imageSrc: normalizePublicationImageSrc(item.imageOriginalUrl ?? item.imageUrl, DEFAULT_PUBLICATION_IMAGE_SRC),
   }));
 
   const normalizedKeyword = searchQuery.trim().toLowerCase();
@@ -101,3 +102,4 @@ export default async function PublikasiInfografisPage({ searchParams }: Publikas
     </PortalPageShell>
   );
 }
+

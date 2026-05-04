@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { buildPageMetadata } from "@/lib/utils/metadata";
 import { PublikasiContent, type PublicationCatalogItem } from "@/app/publikasi/publikasi-content";
-import { getBappedaDigitalPublications } from "@/lib/services/bappeda-publication-service";
-import { getDatasets } from "@/lib/services/dataset-service";
+import { getBooks } from "@/lib/services/ckan-portal-api";
 import {
   normalizePositiveInteger,
   normalizePublicationSort,
@@ -13,12 +12,12 @@ import {
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Publikasi Buku Digital",
-  description: "Daftar buku digital dan dokumen terbitan resmi yang tersedia di Portal Satu Data Bulungan.",
+  description: "Daftar buku digital dan dokumen terbitan resmi yang tersedia di backend CKAN Portal Satu Data Bulungan.",
   path: "/publikasi-buku-digital",
   keywords: ["buku digital", "publikasi dokumen", "dokumen data Bulungan"],
 });
 
-export const revalidate = 21_600;
+export const revalidate = 600;
 
 type PublikasiBukuDigitalPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -42,44 +41,23 @@ export default async function PublikasiBukuDigitalPage({ searchParams }: Publika
   const pageSize = PUBLICATION_PAGE_SIZE;
   const requestedPage = normalizePositiveInteger(rawParams.page, 1);
 
-  const bappedaItems = await getBappedaDigitalPublications().catch(() => []);
-
-  let allItems: PublicationCatalogItem[] = bappedaItems.map((item) => ({
+  const allItems: PublicationCatalogItem[] = (await getBooks().catch(() => [])).map((item) => ({
     id: item.id,
     title: item.title,
-    summary:
-      item.downloadCount !== null
-        ? `${item.downloadCount.toLocaleString("id-ID")}x diunduh - Sumber Bappeda Bulungan`
-        : "Sumber Bappeda Bulungan",
-    organization: "Bappedalitbang Kabupaten Bulungan",
-    lastUpdated: item.publishedDate,
-    href: item.viewUrl,
+    summary: item.summary || item.description || "Publikasi resmi Bappeda Kabupaten Bulungan",
+    organization: item.organizationName,
+    lastUpdated: item.metadataModified.slice(0, 10),
+    href: item.resources[0]?.url || `/dataset/${item.slug}`,
     hrefLabel: "Lihat Dokumen",
-    downloadHref: item.downloadUrl,
+    downloadHref: item.resources.find((resource) => resource.format.toUpperCase().includes("PDF"))?.url,
     downloadLabel: "Unduh Dokumen",
-    openInNewTab: true,
+    openInNewTab: Boolean(item.resources[0]?.url),
+    imageSrc: undefined,
   }));
-
-  if (allItems.length === 0) {
-    const datasets = await getDatasets({ sort: "terbaru" });
-    allItems = datasets
-      .filter((dataset) => dataset.formats.includes("PDF") || dataset.resources.some((resource) => resource.format === "PDF"))
-      .map((dataset) => ({
-        id: dataset.id,
-        title: dataset.title,
-        summary: `${dataset.summary} - fallback katalog internal`,
-        organization: dataset.organization,
-        lastUpdated: dataset.lastUpdated,
-        href: `/dataset/${dataset.slug}`,
-      }))
-      .slice(0, 24);
-  }
 
   const normalizedKeyword = searchQuery.trim().toLowerCase();
   const filteredItems = normalizedKeyword
-    ? allItems.filter((item) =>
-        `${item.title} ${item.summary} ${item.organization}`.toLowerCase().includes(normalizedKeyword),
-      )
+    ? allItems.filter((item) => `${item.title} ${item.summary} ${item.organization}`.toLowerCase().includes(normalizedKeyword))
     : allItems;
 
   const sortedItems = sortPublicationItems(filteredItems, sort);
@@ -104,3 +82,4 @@ export default async function PublikasiBukuDigitalPage({ searchParams }: Publika
     </PortalPageShell>
   );
 }
+

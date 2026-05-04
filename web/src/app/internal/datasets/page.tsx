@@ -40,21 +40,21 @@ export default async function InternalDatasetsPage() {
       />
 
       <section className="grid gap-4 md:grid-cols-3">
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Draft</p>
           <p className="mb-0 mt-3 text-4xl font-semibold">{draftCount}</p>
         </Card>
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Perlu Tindak Lanjut</p>
           <p className="mb-0 mt-3 text-4xl font-semibold">{reviewCount}</p>
         </Card>
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Sudah Publish</p>
           <p className="mb-0 mt-3 text-4xl font-semibold">{publishedCount}</p>
         </Card>
       </section>
 
-      <Card className="overflow-hidden">
+      <Card className="internal-surface overflow-hidden border-transparent shadow-none">
         <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
           <div>
             <h2 className="m-0 text-xl font-semibold">Daftar Dataset</h2>
@@ -111,3 +111,5 @@ export default async function InternalDatasetsPage() {
     </InternalShell>
   );
 }
+
+

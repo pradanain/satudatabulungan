@@ -366,6 +366,7 @@ export function PublikasiContent({
                   src="/assets/brand/landmarks/perahu-naga.png"
                   alt="Perahu Naga sebagai aksen budaya"
                   fill
+                  loading="eager"
                   sizes="(min-width: 1280px) 18rem, (min-width: 1024px) 16rem, (min-width: 640px) 14rem, 12rem"
                   className="object-contain object-bottom drop-shadow-[0_14px_28px_rgba(40,46,56,0.22)]"
                 />

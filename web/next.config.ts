@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: "diskominfo.bulungan.go.id",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "bappeda.bulungan.go.id",
+        pathname: "/**",
+      },
     ],
   },
 };

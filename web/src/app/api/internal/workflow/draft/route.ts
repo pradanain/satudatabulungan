@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { createWorkflowDraft } from "@/lib/services/workflow-persistence";
 import type { DatasetFormat, DatasetFrequency } from "@/lib/types/dataset";
+import { inferInternalApiErrorStatus } from "@/lib/utils/internal-api-response";
+import { sanitizeStoredText } from "@/lib/utils/input-sanitizer";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
+import { validateResourceUrl } from "@/lib/utils/resource-url";
 
 type DraftPayload = {
   title?: string;
@@ -35,14 +38,20 @@ function getRequired(payload: DraftPayload, key: keyof DraftPayload): string {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error(`Field '${key}' wajib diisi.`);
   }
-  return value.trim();
+
+  const cleaned = sanitizeStoredText(value);
+  if (!cleaned) {
+    throw new Error(`Field '${key}' tidak valid.`);
+  }
+
+  return cleaned;
 }
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
-    const session = getInternalSessionFromCookieHeader(request.headers.get("cookie"));
+    const session = await getInternalSessionFromCookieHeader(request.headers.get("cookie"));
     if (!session) {
       return NextResponse.json(
         {
@@ -64,6 +73,10 @@ export async function POST(request: Request) {
     const walidata = getRequired(payload, "walidata");
     const resourceName = getRequired(payload, "resourceName");
     const resourceUrl = getRequired(payload, "resourceUrl");
+    const resourceUrlValidation = validateResourceUrl(resourceUrl);
+    if (!resourceUrlValidation.valid) {
+      throw new Error(resourceUrlValidation.error);
+    }
 
     const frequencyRaw = getRequired(payload, "frequency");
     const resourceFormatRaw = getRequired(payload, "resourceFormat").toUpperCase();
@@ -79,16 +92,16 @@ export async function POST(request: Request) {
     const result = await createWorkflowDraft(
       {
         title,
-        slug: payload.slug?.trim() || title,
+        slug: sanitizeStoredText(payload.slug?.trim() || title),
         summary,
-        description: payload.description?.trim() || undefined,
+        description: sanitizeStoredText(payload.description?.trim() || "") || undefined,
         organization,
-        ownerOrgSlug: payload.ownerOrgSlug?.trim() || undefined,
+        ownerOrgSlug: sanitizeStoredText(payload.ownerOrgSlug?.trim() || "") || undefined,
         topic,
         frequency: frequencyRaw as DatasetFrequency,
         period,
         walidata,
-        coverage: payload.coverage?.trim() || undefined,
+        coverage: sanitizeStoredText(payload.coverage?.trim() || "") || undefined,
         resourceName,
         resourceFormat: resourceFormatRaw as DatasetFormat,
         resourceUrl,
@@ -103,7 +116,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal membuat draft.";
-    const status = message.includes("wajib") || message.includes("tidak valid") ? 400 : 500;
+    const status = inferInternalApiErrorStatus(message);
     return NextResponse.json(
       {
         success: false,

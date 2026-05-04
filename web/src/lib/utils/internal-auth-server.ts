@@ -8,6 +8,7 @@ import {
   INTERNAL_SESSION_COOKIE,
   canAccessNav,
   decodeInternalSession,
+  encodeInternalSession,
 } from "@/lib/utils/internal-auth";
 
 export async function getOptionalInternalSession(): Promise<InternalSession | null> {
@@ -29,7 +30,7 @@ export async function requireInternalSession(navKey?: InternalNavKey): Promise<I
   return session;
 }
 
-export function getInternalSessionFromCookieHeader(cookieHeader: string | null): InternalSession | null {
+export async function getInternalSessionFromCookieHeader(cookieHeader: string | null): Promise<InternalSession | null> {
   if (!cookieHeader) {
     return null;
   }
@@ -62,12 +63,14 @@ function shouldUseSecureInternalCookie(requestOrUrl?: Request | string | URL): b
   return process.env.NODE_ENV === "production";
 }
 
-export function applyInternalSessionCookie(
+export async function applyInternalSessionCookie(
   response: NextResponse,
   session: InternalSession,
   requestOrUrl?: Request | string | URL,
-): NextResponse {
-  response.cookies.set(INTERNAL_SESSION_COOKIE, Buffer.from(JSON.stringify(session), "utf8").toString("base64"), {
+): Promise<NextResponse> {
+  const encodedSession = await encodeInternalSession(session);
+
+  response.cookies.set(INTERNAL_SESSION_COOKIE, encodedSession, {
     httpOnly: true,
     sameSite: "lax",
     secure: shouldUseSecureInternalCookie(requestOrUrl),

@@ -40,23 +40,23 @@ export default async function InternalMonitoringPage() {
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Total Dataset</p>
           <p className="mb-0 mt-3 text-4xl font-semibold">{datasets.length}</p>
         </Card>
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Need Revision</p>
           <p className="mb-0 mt-3 text-4xl font-semibold">
             {datasets.filter((item) => item.status === "Need Revision").length}
           </p>
         </Card>
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Published</p>
           <p className="mb-0 mt-3 text-4xl font-semibold">
             {datasets.filter((item) => item.status === "Published").length}
           </p>
         </Card>
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Metadata Lengkap</p>
           <p className="mb-0 mt-3 text-4xl font-semibold">
             {datasets.length ? Math.round(datasets.reduce((sum, item) => sum + item.metadataScore, 0) / datasets.length) : 0}%
@@ -65,7 +65,7 @@ export default async function InternalMonitoringPage() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card className="overflow-hidden">
+        <Card className="internal-surface overflow-hidden border-transparent shadow-none">
           <div className="border-b border-[var(--color-border)] px-5 py-4">
             <h2 className="m-0 text-xl font-semibold">Dataset Perlu Perhatian</h2>
           </div>
@@ -100,14 +100,14 @@ export default async function InternalMonitoringPage() {
           </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <h2 className="m-0 text-xl font-semibold">Audit Log Terbaru</h2>
           <div className="mt-4 grid gap-3">
             {auditLogs.map((log) => (
               <div key={log.id} className="rounded-2xl border border-[var(--color-border)] p-4">
                 <p className="m-0 text-sm font-semibold">{log.summary}</p>
                 <p className="mb-0 mt-2 text-xs text-[var(--color-muted)]">
-                  {log.actorName} • {formatIndonesianDate(log.createdAt)}
+                  {log.actorName} - {formatIndonesianDate(log.createdAt)}
                 </p>
               </div>
             ))}
@@ -117,3 +117,5 @@ export default async function InternalMonitoringPage() {
     </InternalShell>
   );
 }
+
+

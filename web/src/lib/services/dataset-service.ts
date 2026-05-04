@@ -2,11 +2,7 @@ import { CkanDatasetAdapter } from "@/lib/adapters/ckan-dataset-adapter";
 import type { DatasetAdapter } from "@/lib/adapters/dataset-adapter";
 import { MockDatasetAdapter } from "@/lib/adapters/mock-dataset-adapter";
 import { getRuntimeConfig } from "@/lib/config";
-import {
-  getDatasetOrganizationOptions,
-  getDatasetTopicOptions,
-  getDatasetYearOptions,
-} from "@/lib/services/dataset-filter-config";
+import { getDatasetYearOptions } from "@/lib/services/dataset-filter-config";
 import type {
   Dataset,
   DatasetFilterOptions,
@@ -59,6 +55,40 @@ function normalizeDatasetOrganization(dataset: Dataset): Dataset {
       ...dataset.metadata,
       opd: normalizedOrganization,
     },
+  };
+}
+
+function toPublishedOnly(datasets: Dataset[]): Dataset[] {
+  return datasets.filter((dataset) => dataset.status === "Published");
+}
+
+function buildPublicFilterOptionsFromDatasets(datasets: Dataset[]): DatasetFilterOptions {
+  const years = [
+    ...new Set(
+      datasets.flatMap((item) => {
+        const fromUpdated = item.lastUpdated.slice(0, 4);
+        const fromPeriod = item.metadata.period.match(/\d{4}/g) ?? [];
+        return [fromUpdated, ...fromPeriod];
+      }),
+    ),
+  ]
+    .filter((value) => value && /^\d{4}$/.test(value))
+    .sort((a, b) => Number(b) - Number(a));
+
+  return {
+    topics: [...new Set(datasets.map((item) => item.topic))].sort((a, b) => a.localeCompare(b, "id-ID")),
+    organizations: [...new Set(datasets.map((item) => item.organization))].sort((a, b) =>
+      a.localeCompare(b, "id-ID"),
+    ),
+    formats: [...new Set(datasets.flatMap((item) => item.formats))].sort((a, b) =>
+      a.localeCompare(b, "id-ID"),
+    ),
+    frequencies: [...new Set(datasets.map((item) => item.frequency))],
+    statuses: ["Published"],
+    years: years.length > 0 ? years : getDatasetYearOptions(2020),
+    tags: [...new Set(datasets.flatMap((item) => item.metadata.tags))].sort((a, b) =>
+      a.localeCompare(b, "id-ID"),
+    ),
   };
 }
 
@@ -121,15 +151,33 @@ export async function getDatasetBySlug(slug: string): Promise<Dataset | null> {
   return dataset ? normalizeDatasetOrganization(dataset) : null;
 }
 
+export async function getPublicDatasets(filters?: DatasetFilters): Promise<Dataset[]> {
+  const datasets = await getDatasets(filters);
+  return toPublishedOnly(datasets);
+}
+
+export async function getPublicDatasetBySlug(slug: string): Promise<Dataset | null> {
+  const dataset = await getDatasetBySlug(slug);
+  if (!dataset || dataset.status !== "Published") {
+    return null;
+  }
+
+  return dataset;
+}
+
 export async function getDatasetFilterOptions(): Promise<DatasetFilterOptions> {
   const options = await withFallback((adapter) => adapter.getFilterOptions());
+  const years = options.years.length > 0 ? options.years : getDatasetYearOptions(2020);
 
   return {
     ...options,
-    topics: getDatasetTopicOptions(),
-    organizations: getDatasetOrganizationOptions(),
-    years: getDatasetYearOptions(2020),
+    years,
   };
+}
+
+export async function getPublicDatasetFilterOptions(): Promise<DatasetFilterOptions> {
+  const datasets = await getPublicDatasets();
+  return buildPublicFilterOptionsFromDatasets(datasets);
 }
 
 export async function getPortalStats(): Promise<PortalStats> {

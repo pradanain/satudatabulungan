@@ -64,6 +64,8 @@ interface CkanSearchResult {
   results: CkanPackage[];
 }
 
+type RawRecord = Record<string, string | number>;
+
 const defaultFrequency: DatasetFrequency = "Tahunan";
 const defaultStatus: DatasetStatus = "Published";
 
@@ -128,7 +130,313 @@ function getExtra(extras: CkanExtra[] | undefined, keys: string[]): string | und
   return undefined;
 }
 
-function mapPackageToDataset(pkg: CkanPackage): Dataset {
+function parseNumericValue(value: string | number | undefined): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  const normalized = (value ?? "").toString().trim();
+  if (!normalized) {
+    return null;
+  }
+
+  const indonesiaThousands = /^-?\d{1,3}(\.\d{3})+(,\d+)?$/;
+  if (indonesiaThousands.test(normalized)) {
+    const parsed = Number(normalized.replace(/\./g, "").replace(",", "."));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  const decimalComma = /^-?\d+(,\d+)?$/;
+  if (decimalComma.test(normalized)) {
+    const parsed = Number(normalized.replace(",", "."));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeColumnLabel(key: string): string {
+  const normalizedKey = key.trim().toLowerCase();
+  const labelMap: Record<string, string> = {
+    mantap: "Bagus",
+    mantap_km: "Bagus (km)",
+    rusak_ringan: "Rusak Ringan",
+    rusak_ringan_km: "Rusak Ringan (km)",
+    rusak_berat: "Rusak Berat",
+    rusak_berat_km: "Rusak Berat (km)",
+    total_km: "Total (km)",
+  };
+
+  if (labelMap[normalizedKey]) {
+    return labelMap[normalizedKey];
+  }
+
+  return key
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function parseCsvLine(line: string, delimiter: string): string[] {
+  const output: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        index += 1;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (!inQuotes && char === delimiter) {
+      output.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  output.push(current.trim());
+  return output;
+}
+
+function parseCsvRecords(text: string): RawRecord[] {
+  const lines = text
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    return [];
+  }
+
+  const headerLine = lines[0];
+  const delimiter =
+    (headerLine.match(/;/g)?.length ?? 0) > (headerLine.match(/,/g)?.length ?? 0) ? ";" : ",";
+  const headers = parseCsvLine(headerLine, delimiter);
+
+  const rows: RawRecord[] = [];
+  for (const line of lines.slice(1)) {
+    const values = parseCsvLine(line, delimiter);
+    const row: RawRecord = {};
+    headers.forEach((header, index) => {
+      row[header] = values[index] ?? "";
+    });
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function parseJsonRecords(text: string): RawRecord[] {
+  const parsed = JSON.parse(text) as unknown;
+  const list = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === "object"
+      ? (parsed as { data?: unknown; records?: unknown; items?: unknown }).data ??
+        (parsed as { records?: unknown }).records ??
+        (parsed as { items?: unknown }).items
+      : [];
+
+  if (!Array.isArray(list)) {
+    return [];
+  }
+
+  return list
+    .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
+    .map((item) => {
+      const row: RawRecord = {};
+      for (const [key, value] of Object.entries(item)) {
+        row[key] =
+          typeof value === "number" || typeof value === "string"
+            ? value
+            : value === null || value === undefined
+              ? ""
+              : JSON.stringify(value);
+      }
+      return row;
+    });
+}
+
+function buildPreviewFromRecords(records: RawRecord[], topic: string): Dataset["preview"] | null {
+  if (!records.length) {
+    return null;
+  }
+
+  const firstRow = records[0];
+  const keys = Object.keys(firstRow);
+  if (!keys.length) {
+    return null;
+  }
+
+  const areaKey =
+    keys.find((key) => /^(kecamatan|wilayah|area|district|nama_kecamatan)$/i.test(key)) ??
+    keys.find((key) => /(kecamatan|wilayah|area|district)/i.test(key)) ??
+    keys.find((key) =>
+      records.some((record) => {
+        const value = `${record[key] ?? ""}`.toLowerCase();
+        return value.includes("tanjung") || value.includes("sekatak") || value.includes("bunyu");
+      }),
+    ) ??
+    keys[0];
+
+  const numericKeys = keys.filter((key) => {
+    const validCount = records.reduce((count, record) => {
+      const parsed = parseNumericValue(record[key] as string | number | undefined);
+      return parsed !== null ? count + 1 : count;
+    }, 0);
+    return validCount >= Math.ceil(records.length * 0.6);
+  });
+
+  if (!numericKeys.length) {
+    return null;
+  }
+
+  const totalKey =
+    numericKeys.find((key) => /^total$/i.test(key)) ??
+    numericKeys.find((key) => /(total|jumlah|nilai)/i.test(key));
+
+  const rows: Dataset["preview"]["rows"] = [];
+  for (const record of records) {
+    const area = `${record[areaKey] ?? ""}`.trim();
+    if (!area) {
+      continue;
+    }
+
+    const numericValues: Record<string, number> = {};
+    for (const key of numericKeys) {
+      const parsed = parseNumericValue(record[key] as string | number | undefined);
+      if (parsed !== null) {
+        numericValues[key] = parsed;
+      }
+    }
+
+    const total =
+      totalKey && numericValues[totalKey] !== undefined
+        ? numericValues[totalKey]
+        : Object.values(numericValues).reduce((sum, value) => sum + value, 0);
+
+    rows.push({
+      area,
+      total,
+      values: numericValues,
+    });
+  }
+
+  if (!rows.length) {
+    return null;
+  }
+
+  const points = rows.slice(0, 24).map((row) => ({ label: row.area, value: row.total }));
+  const columns: Dataset["preview"]["columns"] = [
+    { key: "area", label: normalizeColumnLabel(areaKey), isNumeric: false },
+    ...numericKeys.map((key) => ({ key, label: normalizeColumnLabel(key), isNumeric: true })),
+  ];
+
+  if (!columns.some((column) => column.key === "total")) {
+    columns.push({ key: "total", label: "Total", isNumeric: true });
+  }
+
+  const districtCoverage = rows.filter((row) =>
+    [
+      "Tanjung Selor",
+      "Tanjung Palas",
+      "Tanjung Palas Barat",
+      "Tanjung Palas Utara",
+      "Tanjung Palas Timur",
+      "Tanjung Palas Tengah",
+      "Sekatak",
+      "Peso",
+      "Peso Hilir",
+      "Bunyu",
+    ].includes(row.area),
+  ).length;
+
+  const chartUnit = numericKeys.some((key) => /km/i.test(key))
+    ? "Skala km"
+    : numericKeys.some((key) => /(persen|pct|rasio|ratio)/i.test(key))
+      ? "Skala %"
+      : numericKeys.some((key) => /(penduduk|jiwa|populasi)/i.test(key))
+        ? "Skala jiwa"
+        : "Skala nilai";
+
+  return {
+    points,
+    rows,
+    columns,
+    chartTitle: `Grafik ${topic}`,
+    chartUnit,
+    insights: [
+      { label: "Sumber", value: "CKAN", description: "Visualisasi diambil dari resource data asli." },
+      {
+        label: "Baris Data",
+        value: `${rows.length}`,
+        description: "Jumlah baris data yang dipakai untuk visualisasi.",
+      },
+      {
+        label: "Cakupan Kecamatan",
+        value: `${districtCoverage}/10`,
+        description: "Jumlah kecamatan Bulungan yang terdeteksi dari data resource.",
+      },
+    ],
+  };
+}
+
+async function loadPreviewFromResources(
+  ckanBaseUrl: string,
+  resources: Array<{ format: DatasetFormat; url: string }>,
+  topic: string,
+): Promise<Dataset["preview"] | null> {
+  const candidates = resources.filter((resource) => resource.url && (resource.format === "CSV" || resource.format === "JSON"));
+
+  for (const resource of candidates) {
+    const absoluteUrl = resource.url.startsWith("http")
+      ? resource.url
+      : `${ckanBaseUrl.replace(/\/+$/, "")}/${resource.url.replace(/^\/+/, "")}`;
+
+    try {
+      const response = await fetch(absoluteUrl, {
+        headers: { Accept: "*/*" },
+        next: { revalidate: 120 },
+      });
+      if (!response.ok) {
+        continue;
+      }
+
+      const raw = await response.text();
+      const records =
+        resource.format === "JSON"
+          ? parseJsonRecords(raw)
+          : parseCsvRecords(raw);
+
+      const preview = buildPreviewFromRecords(records, topic);
+      if (preview) {
+        return preview;
+      }
+    } catch {
+      // try next candidate
+    }
+  }
+
+  return null;
+}
+
+async function mapPackageToDataset(
+  pkg: CkanPackage,
+  options?: { ckanBaseUrl?: string; buildPreviewFromResource?: boolean },
+): Promise<Dataset> {
   const extras = pkg.extras ?? [];
   const frequency = normalizeFrequency(
     getExtra(extras, ["frekuensi_pembaruan", "frequency", "update_frequency"]),
@@ -164,6 +472,30 @@ function mapPackageToDataset(pkg: CkanPackage): Dataset {
   const formats = [...new Set(resources.map((resource) => resource.format))] as DatasetFormat[];
   const lastUpdated = pkg.metadata_modified ?? new Date().toISOString();
 
+  const fallbackPreview: Dataset["preview"] = {
+    points: [],
+    rows: [],
+    columns: [
+      { key: "area", label: "Wilayah", isNumeric: false },
+      { key: "total", label: "Total", isNumeric: true },
+    ],
+    chartTitle: `Grafik ${topic}`,
+    chartUnit: "Skala nilai",
+    insights: [
+      { label: "Sumber", value: "CKAN", description: "Data diambil dari API CKAN." },
+      {
+        label: "Resource",
+        value: `${resources.length}`,
+        description: "Jumlah resource yang tersedia pada paket ini.",
+      },
+    ],
+  };
+
+  const preview =
+    options?.buildPreviewFromResource && options?.ckanBaseUrl
+      ? (await loadPreviewFromResources(options.ckanBaseUrl, resources, topic)) ?? fallbackPreview
+      : fallbackPreview;
+
   return {
     id: pkg.id,
     slug: pkg.name,
@@ -189,31 +521,24 @@ function mapPackageToDataset(pkg: CkanPackage): Dataset {
       lastUpdated,
       tags,
     },
-    preview: {
-      points: [
-        { label: "Jan", value: 10 },
-        { label: "Feb", value: 15 },
-        { label: "Mar", value: 21 },
-        { label: "Apr", value: 18 },
-      ],
-      rows: [
-        { area: "Sample", male: 1200, female: 1244, total: 2444 },
-        { area: "Sample 2", male: 1040, female: 998, total: 2038 },
-      ],
-      insights: [
-        { label: "Sumber", value: "CKAN", description: "Data diambil dari API CKAN." },
-        {
-          label: "Resource",
-          value: `${resources.length}`,
-          description: "Jumlah resource yang tersedia pada paket ini.",
-        },
-      ],
-    },
+    preview,
     relatedSlugs: [],
     popularityScore: 75,
     viewCount: 0,
     downloadCount: 0,
   };
+}
+
+function isMainDatasetPackage(pkg: CkanPackage): boolean {
+  const extras = pkg.extras ?? [];
+  const contentType = (getExtra(extras, ["content_type", "tipe_konten"]) ?? "dataset")
+    .trim()
+    .toLowerCase();
+
+  if (contentType.includes("infografis")) return false;
+  if (contentType.includes("publikasi")) return false;
+  if (contentType.includes("akun") || contentType.includes("account")) return false;
+  return true;
 }
 
 function filterCkanDatasets(datasets: Dataset[], filters: DatasetFilters = {}): Dataset[] {
@@ -287,7 +612,11 @@ export class CkanDatasetAdapter implements DatasetAdapter {
 
   async listDatasets(filters: DatasetFilters = {}): Promise<Dataset[]> {
     const result = await this.fetchAction<CkanSearchResult>("package_search", "rows=100&start=0");
-    const mapped = result.results.map(mapPackageToDataset);
+    const mapped = await Promise.all(
+      result.results
+        .filter((pkg) => isMainDatasetPackage(pkg))
+        .map((pkg) => mapPackageToDataset(pkg)),
+    );
     const filtered = filterCkanDatasets(mapped, filters);
     return sortDatasets(filtered, filters.sort ?? "terbaru");
   }
@@ -297,8 +626,14 @@ export class CkanDatasetAdapter implements DatasetAdapter {
     if (!result) {
       return null;
     }
+    if (!isMainDatasetPackage(result)) {
+      return null;
+    }
 
-    return mapPackageToDataset(result);
+    return mapPackageToDataset(result, {
+      ckanBaseUrl: this.ckanBaseUrl,
+      buildPreviewFromResource: true,
+    });
   }
 
   async getFilterOptions(): Promise<DatasetFilterOptions> {

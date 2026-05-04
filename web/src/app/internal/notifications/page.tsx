@@ -24,7 +24,7 @@ export default async function InternalNotificationsPage() {
       />
 
       <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <h2 className="m-0 text-xl font-semibold">Daftar Notifikasi</h2>
           <div className="mt-4 grid gap-3">
             {notifications.map((notification) => (
@@ -39,14 +39,14 @@ export default async function InternalNotificationsPage() {
           </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <h2 className="m-0 text-xl font-semibold">Aktivitas Saya</h2>
           <div className="mt-4 grid gap-3">
             {activity.map((log) => (
               <div key={log.id} className="rounded-2xl border border-[var(--color-border)] p-4">
                 <p className="m-0 text-sm font-semibold">{log.summary}</p>
                 <p className="mb-0 mt-2 text-xs text-[var(--color-muted)]">
-                  {log.actorName} • {formatIndonesianDate(log.createdAt)}
+                  {log.actorName} - {formatIndonesianDate(log.createdAt)}
                 </p>
               </div>
             ))}
@@ -56,3 +56,5 @@ export default async function InternalNotificationsPage() {
     </InternalShell>
   );
 }
+
+

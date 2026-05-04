@@ -33,19 +33,19 @@ export default async function InternalIntegrationsPage() {
       />
 
       <section>
-        <Card className="p-5 sm:p-6">
+        <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6">
           <h2 className="m-0 font-[family-name:var(--font-heading)] text-2xl font-semibold">Ringkasan Integrasi</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <article className="rounded-xl border border-[#d7ddeb] bg-[#f8fafd] p-3">
-              <h3 className="m-0 text-sm text-[#6b6463]">Sumber Data Aktif</h3>
+            <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-3">
+              <h3 className="m-0 text-sm text-[var(--color-muted)]">Sumber Data Aktif</h3>
               <p className="mt-1 font-semibold">{config.dataSourceMode.toUpperCase()}</p>
             </article>
-            <article className="rounded-xl border border-[#d7ddeb] bg-[#f8fafd] p-3">
-              <h3 className="m-0 text-sm text-[#6b6463]">Base URL CKAN</h3>
+            <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-3">
+              <h3 className="m-0 text-sm text-[var(--color-muted)]">Base URL CKAN</h3>
               <p className="mt-1 break-all font-semibold">{config.ckanBaseUrl}</p>
             </article>
-            <article className="rounded-xl border border-[#d7ddeb] bg-[#f8fafd] p-3">
-              <h3 className="m-0 text-sm text-[#6b6463]">Total Dataset Terbaca</h3>
+            <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-3">
+              <h3 className="m-0 text-sm text-[var(--color-muted)]">Total Dataset Terbaca</h3>
               <p className="mt-1 font-semibold">{datasets.length.toLocaleString("id-ID")}</p>
             </article>
           </div>
@@ -53,16 +53,16 @@ export default async function InternalIntegrationsPage() {
       </section>
 
       <section>
-        <Card className="p-5 sm:p-6">
+        <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6">
           <h2 className="m-0 font-[family-name:var(--font-heading)] text-2xl font-semibold">Endpoint Aktif</h2>
           <div className="mt-4 grid gap-3">
-            <article className="rounded-xl border border-[#d6ddea] bg-[#f8fafd] p-4">
+            <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
               <h3 className="m-0 text-base font-semibold">package_search</h3>
               <code className="mt-2 inline-block break-all rounded-lg bg-[#20242c] px-3 py-2 text-xs text-[#f3f6fb] sm:text-sm">
                 {`${config.ckanBaseUrl}${packageSearchPath}`}
               </code>
             </article>
-            <article className="rounded-xl border border-[#d6ddea] bg-[#f8fafd] p-4">
+            <article className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
               <h3 className="m-0 text-base font-semibold">package_show</h3>
               <code className="mt-2 inline-block break-all rounded-lg bg-[#20242c] px-3 py-2 text-xs text-[#f3f6fb] sm:text-sm">
                 {`${config.ckanBaseUrl}${packageShowPath}`}
@@ -89,3 +89,5 @@ export default async function InternalIntegrationsPage() {
     </InternalShell>
   );
 }
+
+

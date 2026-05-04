@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, ExternalLink, Globe, Mail, MapPin, Phone, MessageCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Globe, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { SearchBar } from "@/components/portal/search-bar";
 import { SectionHeading } from "@/components/portal/section-heading";
@@ -14,14 +14,38 @@ import { buildPageMetadata } from "@/lib/utils/metadata";
 import { buildDatasetQuery } from "@/lib/utils/query";
 import { normalizePositiveInteger, pickQueryValue } from "@/lib/utils/publication-query";
 
-type DirectoryEntry = {
-  no: number;
+type OrganisasiPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+const ORGANISASI_PAGE_SIZE = 9;
+const EMPTY_VALUE_PATTERN = /^(?:-|n\/a|na|tidak ada|tidak tersedia|null|belum ada)$/i;
+const PERANGKAT_DAERAH_SOURCE_URL = "https://bulungan.go.id/page/perangkat-daerah/";
+
+type DirectoryOrganizationEntry = {
+  no?: number;
+  name?: string;
+  notes?: string;
+  website?: string;
+  websiteListed?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  whatsapp?: string;
+  facebook?: string;
+  instagram?: string;
+  youtube?: string;
+  tiktok?: string;
+  twitter?: string;
+};
+
+type OrganizationCardEntry = {
+  id: string;
   name: string;
-  websiteListed: string;
+  description: string;
   website: string;
   address: string;
   phone: string;
-  fax: string;
   email: string;
   whatsapp: string;
   facebook: string;
@@ -29,19 +53,8 @@ type DirectoryEntry = {
   youtube: string;
   tiktok: string;
   twitter: string;
-  status: string;
-  inspection: string;
-  notes: string;
   sourceUrl: string;
 };
-
-type OrganisasiPageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
-
-const directoryEntries = opdDirectory as DirectoryEntry[];
-const ORGANISASI_PAGE_SIZE = 9;
-const EMPTY_VALUE_PATTERN = /^(?:-|n\/a|na|tidak ada|tidak tersedia|null|belum ada)$/i;
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Direktori Organisasi OPD",
@@ -80,16 +93,40 @@ function toDisplayWebsite(url: string) {
   }
 }
 
-function toSocialLinks(entry: DirectoryEntry) {
-  return [
-    { label: "Facebook", url: entry.facebook },
-    { label: "Instagram", url: entry.instagram },
-    { label: "YouTube", url: entry.youtube },
-    { label: "TikTok", url: entry.tiktok },
-    { label: "X/Twitter", url: entry.twitter },
-  ]
-    .map((item) => ({ ...item, url: normalizeUrl(item.url) }))
-    .filter((item) => Boolean(item.url)) as Array<{ label: string; url: string }>;
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildOrganizationDirectoryEntries(): OrganizationCardEntry[] {
+  const entries = opdDirectory as DirectoryOrganizationEntry[];
+
+  return entries
+    .filter((entry) => isMeaningfulValue(entry.name))
+    .map((entry, index) => {
+      const name = entry.name!.trim();
+      const suffix = entry.no ? `${entry.no}` : `${index + 1}`;
+
+      return {
+        id: `${slugify(name)}-${suffix}`,
+        name,
+        description: entry.notes?.trim() || "",
+        website: entry.websiteListed?.trim() || entry.website?.trim() || "",
+        address: entry.address?.trim() || "",
+        phone: entry.phone?.trim() || "",
+        email: entry.email?.trim() || "",
+        whatsapp: entry.whatsapp?.trim() || "",
+        facebook: entry.facebook?.trim() || "",
+        instagram: entry.instagram?.trim() || "",
+        youtube: entry.youtube?.trim() || "",
+        tiktok: entry.tiktok?.trim() || "",
+        twitter: entry.twitter?.trim() || "",
+        sourceUrl: PERANGKAT_DAERAH_SOURCE_URL,
+      };
+    });
 }
 
 function buildOrganizationQuery(params: { q?: string; page?: number }) {
@@ -108,28 +145,19 @@ function buildOrganizationQuery(params: { q?: string; page?: number }) {
 }
 
 function getPages(currentPage: number, totalPages: number): Array<number | "..."> {
-  if (totalPages <= 7) {
+  if (totalPages <= 5) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
   }
 
-  const pages: Array<number | "..."> = [1];
-  const start = Math.max(2, currentPage - 1);
-  const end = Math.min(totalPages - 1, currentPage + 1);
-
-  if (start > 2) {
-    pages.push("...");
+  if (currentPage <= 3) {
+    return [1, 2, 3, "...", totalPages];
   }
 
-  for (let page = start; page <= end; page += 1) {
-    pages.push(page);
+  if (currentPage >= totalPages - 2) {
+    return [1, "...", totalPages - 2, totalPages - 1, totalPages];
   }
 
-  if (end < totalPages - 1) {
-    pages.push("...");
-  }
-
-  pages.push(totalPages);
-  return pages;
+  return [1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages];
 }
 
 export default async function OrganisasiPage({ searchParams }: OrganisasiPageProps) {
@@ -137,24 +165,24 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
   const searchQuery = pickQueryValue(rawParams.q) ?? "";
   const requestedPage = normalizePositiveInteger(rawParams.page, 1);
 
+  const organizations = buildOrganizationDirectoryEntries();
   const normalizedKeyword = searchQuery.trim().toLowerCase();
   const filteredEntries = normalizedKeyword
-    ? directoryEntries.filter((entry) =>
+    ? organizations.filter((entry) =>
         [
           entry.name,
-          entry.status,
+          entry.description,
           entry.address,
           entry.phone,
           entry.email,
           entry.whatsapp,
           entry.website,
-          entry.websiteListed,
         ]
           .join(" ")
           .toLowerCase()
           .includes(normalizedKeyword),
       )
-    : directoryEntries;
+    : organizations;
 
   const totalItems = filteredEntries.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ORGANISASI_PAGE_SIZE));
@@ -163,8 +191,8 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
   const pageEntries = filteredEntries.slice(startIndex, startIndex + ORGANISASI_PAGE_SIZE);
   const pages = getPages(currentPage, totalPages);
 
-  const withWebsiteCount = directoryEntries.filter((item) => isMeaningfulValue(item.website)).length;
-  const withContactCount = directoryEntries.filter(
+  const withWebsiteCount = organizations.filter((item) => isMeaningfulValue(item.website)).length;
+  const withContactCount = organizations.filter(
     (item) =>
       isMeaningfulValue(item.address) ||
       isMeaningfulValue(item.phone) ||
@@ -175,7 +203,7 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
   return (
     <PortalPageShell activeMenu="tentang">
       <section>
-        <Card className="overflow-hidden bg-gradient-to-br from-[#f1efe8] to-[#e7effa]">
+        <Card className="overflow-hidden bg-linear-to-br from-[#f1efe8] to-[#e7effa]">
           <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
             <div>
               <SectionHeading
@@ -183,13 +211,13 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
                 description="Direktori perangkat daerah Kabupaten Bulungan berisi profil OPD, situs resmi, kontak, dan akses cepat menuju dataset."
               />
               <div className="mt-4 flex flex-wrap gap-2">
-                <Badge variant="outline">{directoryEntries.length} OPD</Badge>
+                <Badge variant="outline">{organizations.length} OPD</Badge>
                 <Badge variant="outline">{withWebsiteCount} punya website</Badge>
                 <Badge variant="outline">{withContactCount} ada kontak dasar</Badge>
               </div>
             </div>
 
-            <div className="flex w-full max-w-[280px] items-center gap-4 rounded-2xl border border-[#d7d3cb] bg-white/80 p-4 shadow-sm">
+            <div className="flex w-full max-w-70 items-center gap-4 rounded-2xl border border-[#d7d3cb] bg-white/80 p-4 shadow-sm">
               <Image
                 src="/assets/brand/logos/lambang-bulungan.png"
                 alt="Lambang Pemerintah Kabupaten Bulungan"
@@ -199,7 +227,7 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
               />
               <div>
                 <p className="m-0 text-xs font-semibold uppercase tracking-[0.08em] text-[#6f6967]">Pemerintah Kabupaten</p>
-                <p className="m-0 font-[family-name:var(--font-heading)] text-2xl font-semibold leading-tight text-[#2d2826]">
+                <p className="m-0 font-(family-name:--font-heading) text-2xl font-semibold leading-tight text-[#2d2826]">
                   Bulungan
                 </p>
               </div>
@@ -208,7 +236,11 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
         </Card>
       </section>
 
-      <SearchBar action="/organisasi" defaultValue={searchQuery} placeholder="Cari nama OPD, website, alamat, email, atau kontak..." />
+      <SearchBar
+        action="/organisasi"
+        defaultValue={searchQuery}
+        placeholder="Cari nama OPD, website, alamat, email, atau kontak..."
+      />
 
       <section>
         <Card className="p-5 sm:p-6">
@@ -230,29 +262,37 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
           {pageEntries.length > 0 ? (
             <>
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {pageEntries.map((entry) => {
+                {pageEntries.map((entry, index) => {
                   const website = normalizeUrl(entry.website);
                   const sourceUrl = normalizeUrl(entry.sourceUrl);
-                  const socialLinks = toSocialLinks(entry);
+                  const socialLinks = [
+                    { label: "Facebook", url: normalizeUrl(entry.facebook) },
+                    { label: "Instagram", url: normalizeUrl(entry.instagram) },
+                    { label: "YouTube", url: normalizeUrl(entry.youtube) },
+                    { label: "TikTok", url: normalizeUrl(entry.tiktok) },
+                    { label: "X/Twitter", url: normalizeUrl(entry.twitter) },
+                  ].filter((item) => Boolean(item.url)) as Array<{ label: string; url: string }>;
+
                   const hasAddress = isMeaningfulValue(entry.address);
                   const hasPhone = isMeaningfulValue(entry.phone);
                   const hasEmail = isMeaningfulValue(entry.email);
                   const hasWhatsapp = isMeaningfulValue(entry.whatsapp);
                   const hasContact = hasAddress || hasPhone || hasEmail || hasWhatsapp;
+                  const number = startIndex + index + 1;
 
                   return (
-                    <Card key={`${entry.no}-${entry.name}`} className="flex h-full flex-col gap-4 border-[#ddd7cd] p-5">
+                    <Card key={entry.id} className="flex h-full flex-col gap-4 border-[#ddd7cd] p-5">
                       <div className="flex items-start justify-between gap-2">
-                        <h2 className="m-0 font-[family-name:var(--font-heading)] text-xl font-semibold leading-tight text-[#2d2826]">
+                        <h2 className="m-0 font-(family-name:--font-heading) text-xl font-semibold leading-tight text-[#2d2826]">
                           {entry.name}
                         </h2>
                         <Badge variant="secondary" className="shrink-0">
-                          OPD #{entry.no}
+                          OPD #{number}
                         </Badge>
                       </div>
 
-                      {isMeaningfulValue(entry.status) ? (
-                        <p className="m-0 text-xs leading-relaxed text-[var(--color-muted)]">{entry.status}</p>
+                      {entry.description ? (
+                        <p className="m-0 text-xs leading-relaxed text-(--color-muted)">{entry.description}</p>
                       ) : null}
 
                       {website ? (
@@ -265,14 +305,14 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
                             href={website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="mt-1 inline-flex items-center gap-1 break-all text-sm font-medium text-[var(--color-accent-blue)] underline underline-offset-2"
+                            className="mt-1 inline-flex items-center gap-1 break-all text-sm font-medium text-(--color-accent-blue) underline underline-offset-2"
                           >
                             {toDisplayWebsite(website)}
                             <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
                           </a>
                         </div>
                       ) : (
-                        <p className="m-0 text-sm leading-relaxed text-[var(--color-muted)]">Website belum tersedia pada sumber yang terdaftar.</p>
+                        <p className="m-0 text-sm leading-relaxed text-(--color-muted)">Website belum tersedia pada sumber yang terdaftar.</p>
                       )}
 
                       {hasContact ? (
@@ -308,7 +348,7 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
                         <div className="flex flex-wrap gap-2">
                           {socialLinks.map((social) => (
                             <Button
-                              key={`${entry.name}-${social.label}`}
+                              key={`${entry.id}-${social.label}`}
                               asChild
                               variant="secondary"
                               size="sm"
@@ -323,9 +363,8 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
                       ) : null}
 
                       <div className="mt-auto grid gap-2 pt-1 sm:grid-cols-2">
-
                         {sourceUrl ? (
-                          <Button asChild variant="ghost" className="h-10 w-full rounded-lg text-sm text-[var(--color-muted)]">
+                          <Button asChild variant="ghost" className="h-10 w-full rounded-lg text-sm text-(--color-muted)">
                             <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
                               Sumber Profil
                             </a>
@@ -346,7 +385,7 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
               </div>
 
               {totalPages > 1 ? (
-                <nav className="mt-7 border-t border-[var(--color-border)] pt-5" aria-label="Navigasi halaman organisasi">
+                <nav className="mt-7 border-t border-(--color-border) pt-5" aria-label="Navigasi halaman organisasi">
                   <div className="flex flex-wrap items-center justify-center gap-2 rounded-2xl bg-[#f8fbff] p-3 sm:p-4">
                     <Button
                       asChild
@@ -366,7 +405,7 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
                     <div className="flex items-center gap-2">
                       {pages.map((page, index) =>
                         page === "..." ? (
-                          <span key={`dots-${index}`} className="px-1 text-sm font-medium text-[var(--color-muted)]">
+                          <span key={`dots-${index}`} className="px-1 text-sm font-medium text-(--color-muted)">
                             ...
                           </span>
                         ) : (
@@ -403,8 +442,8 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
             </>
           ) : (
             <div className="mt-4 rounded-2xl border border-dashed border-[#c9ced8] bg-[#f8fbff] p-5">
-              <h3 className="m-0 font-[family-name:var(--font-heading)] text-2xl font-semibold text-[#2d2826]">Organisasi tidak ditemukan</h3>
-              <p className="mb-0 mt-2 text-sm text-[var(--color-muted)] sm:text-base">
+              <h3 className="m-0 font-(family-name:--font-heading) text-2xl font-semibold text-[#2d2826]">Organisasi tidak ditemukan</h3>
+              <p className="mb-0 mt-2 text-sm text-(--color-muted) sm:text-base">
                 Coba kata kunci lain atau reset pencarian untuk melihat seluruh daftar OPD.
               </p>
               <Button asChild variant="secondary" className="mt-4 rounded-lg">
@@ -417,3 +456,4 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
     </PortalPageShell>
   );
 }
+

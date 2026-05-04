@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { persistWorkflowTransition } from "@/lib/services/workflow-persistence";
 import { canTransition, isDatasetStatus } from "@/lib/types/workflow";
+import { inferInternalApiErrorStatus } from "@/lib/utils/internal-api-response";
+import { sanitizeStoredText } from "@/lib/utils/input-sanitizer";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
 
 type TransitionPayload = {
@@ -14,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
-    const session = getInternalSessionFromCookieHeader(request.headers.get("cookie"));
+    const session = await getInternalSessionFromCookieHeader(request.headers.get("cookie"));
     if (!session) {
       return NextResponse.json(
         {
@@ -67,7 +69,7 @@ export async function POST(request: Request) {
       toStatus,
       actor,
       session,
-      reviewNote: payload.reviewNote,
+      reviewNote: sanitizeStoredText(payload.reviewNote?.trim() ?? "") || undefined,
     });
 
     return NextResponse.json({
@@ -75,12 +77,14 @@ export async function POST(request: Request) {
       result,
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Gagal memproses transisi workflow.";
+    const status = inferInternalApiErrorStatus(message);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Gagal memproses transisi workflow.",
+        error: message,
       },
-      { status: 500 },
+      { status },
     );
   }
 }

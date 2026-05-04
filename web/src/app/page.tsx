@@ -19,12 +19,14 @@ import { TopicCarousel } from "@/components/portal/topic-carousel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { homepageTopics, matchesHomepageTopic } from "@/lib/data/homepage-topics";
-import { getDatasets } from "@/lib/services/dataset-service";
+import { getPublicDatasets } from "@/lib/services/dataset-service";
 import { getInfografisApiPayload } from "@/lib/services/infografis-service";
 import { loadKabarDataItems } from "@/lib/services/news-service";
 import type { Dataset } from "@/lib/types/dataset";
+import { AsyncTimeoutError, withTimeout } from "@/lib/utils/async-timeout";
 import { formatCompactNumber, formatIndonesianDate } from "@/lib/utils/formatters";
 import { buildPageMetadata } from "@/lib/utils/metadata";
+import { DEFAULT_PUBLICATION_IMAGE_SRC, normalizePublicationImageSrc } from "@/lib/utils/publication-query";
 import { buildDatasetQuery } from "@/lib/utils/query";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -36,6 +38,7 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 export const dynamic = "force-dynamic";
+const HOMEPAGE_INFOGRAFIS_TIMEOUT_MS = 4_000;
 
 function countDatasetsForHomepageTopic(
   datasets: Dataset[],
@@ -54,24 +57,34 @@ function buildHomepageTopicHref(definition: (typeof homepageTopics)[number]) {
 
 export default async function Home() {
   const [datasets, kabarDataItems, infografisPayload] = await Promise.all([
-    getDatasets({ sort: "terbaru" }),
+    getPublicDatasets({ sort: "terbaru" }),
     loadKabarDataItems(3),
-    getInfografisApiPayload({
-      page: 1,
-      limit: 6,
-      source: "auto",
-    }).catch(() => ({
-      success: true as const,
-      data: [],
-      meta: {
+    withTimeout(
+      getInfografisApiPayload({
         page: 1,
         limit: 6,
-        total: 0,
-        hasNextPage: false,
-        sourceUsed: "html_scrape" as const,
-        externalSource: "https://diskominfo.bulungan.go.id/wp/infografis/",
-      },
-    })),
+        source: "live",
+      }),
+      HOMEPAGE_INFOGRAFIS_TIMEOUT_MS,
+      "Timeout mengambil infografis homepage.",
+    ).catch((error) => {
+      if (error instanceof AsyncTimeoutError) {
+        console.warn("[homepage] Infografis source timed out, rendering empty fallback.");
+      }
+
+      return {
+        success: true as const,
+        data: [],
+        meta: {
+          page: 1,
+          limit: 6,
+          total: 0,
+          hasNextPage: false,
+          sourceUsed: "html_scrape" as const,
+          externalSource: "https://diskominfo.bulungan.go.id/wp/infografis/",
+        },
+      };
+    }),
   ]);
 
   const totalTopicCount = homepageTopics.length;
@@ -290,8 +303,13 @@ export default async function Home() {
                   <Link href={item.postUrl} target="_blank" rel="noreferrer" className="block">
                     <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-[#eff3f8]">
                       <Image
-                        src={item.imageOriginalUrl ?? item.imageUrl}
-                        alt={item.alt || item.title}
+                        src={
+                          normalizePublicationImageSrc(
+                            item.imageOriginalUrl ?? item.imageUrl,
+                            DEFAULT_PUBLICATION_IMAGE_SRC,
+                          ) ?? DEFAULT_PUBLICATION_IMAGE_SRC
+                        }
+                        alt={item.title}
                         fill
                         className="object-cover"
                         sizes="(max-width: 640px) 100vw, (max-width: 1279px) 50vw, 25vw"

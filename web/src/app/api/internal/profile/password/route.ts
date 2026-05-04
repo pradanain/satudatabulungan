@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
-    const session = getInternalSessionFromCookieHeader(request.headers.get("cookie"));
+    const session = await getInternalSessionFromCookieHeader(request.headers.get("cookie"));
     if (!session) {
       return NextResponse.json(
         {

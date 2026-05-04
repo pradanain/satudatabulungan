@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test:visual": "playwright test tests/visual/public-pages.spec.ts",
     "test:visual:update": "playwright test tests/visual/public-pages.spec.ts --update-snapshots",
-    "test:a11y": "playwright test tests/accessibility/public-a11y.spec.ts"
+    "test:a11y": "playwright test tests/accessibility/public-a11y.spec.ts",
+    "test:security": "playwright test tests/security/internal-remediation.spec.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

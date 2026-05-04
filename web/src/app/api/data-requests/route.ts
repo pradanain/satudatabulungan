@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { appendFile, mkdir } from "node:fs/promises";
-import { basename, dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import { NextResponse } from "next/server";
 import { walidataTargets } from "@/lib/data/layanan-data";
+import { resolveLocalStorePath } from "@/lib/utils/local-store-path";
 
 type DataRequestPayload = {
   requesterName?: string;
@@ -29,13 +30,8 @@ const WINDOW_MS = 10 * 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 10;
 const rateLimitStore = new Map<string, RateLimitState>();
 
-function getProjectRoot(): string {
-  const cwd = process.cwd();
-  return basename(cwd).toLowerCase() === "app" ? resolve(cwd, "..") : cwd;
-}
-
 function getStorePath(): string {
-  return resolve(getProjectRoot(), ".local", "public-data-requests.jsonl");
+  return resolveLocalStorePath("public-data-requests.jsonl", "public-data-requests");
 }
 
 function cleanText(value: unknown): string {

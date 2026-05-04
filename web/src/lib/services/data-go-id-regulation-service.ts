@@ -170,7 +170,7 @@ async function fetchTextWithRetry(url: string): Promise<string> {
 }
 
 function parseEmbeddedResponse(html: string): DataGoIdRegulationResponse {
-  const match = html.match(/\\"response\\":(\{.*?\}),\\"listData\\":/s);
+  const match = html.match(/\\"response\\":(\{[\s\S]*?\}),\\"listData\\":/);
   if (!match) {
     throw new Error("Struktur response regulasi data.go.id tidak dikenali.");
   }

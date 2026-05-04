@@ -50,9 +50,9 @@ export function InternalPasswordForm() {
 
   return (
     <form className="grid gap-4" onSubmit={handleSubmit}>
-      <Card className="p-5 sm:p-6">
+      <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6">
         <div className="grid gap-4">
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Password Saat Ini
             <Input
               type="password"
@@ -60,7 +60,7 @@ export function InternalPasswordForm() {
               onChange={(event) => setForm((current) => ({ ...current, currentPassword: event.target.value }))}
             />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Password Baru
             <Input
               type="password"
@@ -68,7 +68,7 @@ export function InternalPasswordForm() {
               onChange={(event) => setForm((current) => ({ ...current, nextPassword: event.target.value }))}
             />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Konfirmasi Password Baru
             <Input
               type="password"
@@ -80,12 +80,12 @@ export function InternalPasswordForm() {
       </Card>
 
       {errorMessage ? (
-        <p className="m-0 rounded-2xl border border-[#f2c4c4] bg-[#fff4f4] px-4 py-3 text-sm font-semibold text-[#9a1a1a]">
+        <p className="internal-alert-error">
           {errorMessage}
         </p>
       ) : null}
       {message ? (
-        <p className="m-0 rounded-2xl border border-[#c7e6cf] bg-[#eef9f1] px-4 py-3 text-sm font-semibold text-[#1f6a2a]">
+        <p className="internal-alert-success">
           {message}
         </p>
       ) : null}

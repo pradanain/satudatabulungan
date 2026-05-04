@@ -10,6 +10,17 @@ interface PreviewPanelProps {
 export function PreviewPanel({ preview }: PreviewPanelProps) {
   const hasRows = preview.rows.length > 0;
   const hasInsights = preview.insights.length > 0;
+  const chartTitle = preview.chartTitle ?? "Grafik Distribusi";
+  const chartUnit = preview.chartUnit ?? "Skala";
+
+  const dynamicColumns = preview.columns ?? [];
+  const fallbackColumns = [
+    { key: "area", label: "Wilayah", isNumeric: false },
+    { key: "male", label: "Laki-laki", isNumeric: true },
+    { key: "female", label: "Perempuan", isNumeric: true },
+    { key: "total", label: "Total", isNumeric: true },
+  ];
+  const tableColumns = dynamicColumns.length > 0 ? dynamicColumns : fallbackColumns;
 
   const chartSeries = hasRows
     ? preview.rows.map((row) => ({ label: row.area, value: row.total }))
@@ -18,6 +29,73 @@ export function PreviewPanel({ preview }: PreviewPanelProps) {
   const maxValue = Math.max(...chartSeries.map((item) => item.value), 1);
   const totalPopulation = preview.rows.reduce((acc, row) => acc + row.total, 0);
   const rankedRows = [...preview.rows].sort((a, b) => b.total - a.total);
+
+  function readCellValue(
+    row: (typeof preview.rows)[number],
+    key: string,
+  ): number | string | undefined {
+    if (key === "area") return row.area;
+    if (key === "total") return row.total;
+    if (key === "male") return row.male;
+    if (key === "female") return row.female;
+    return row.values?.[key];
+  }
+
+  function renderCellValue(
+    row: (typeof preview.rows)[number],
+    column: (typeof tableColumns)[number],
+  ): string {
+    const value = readCellValue(row, column.key);
+    if (typeof value === "number") {
+      return formatCompactNumber(value);
+    }
+    if (value === null || value === undefined || value === "") {
+      return "-";
+    }
+    return `${value}`;
+  }
+
+  const metricColumns = tableColumns.filter(
+    (column) =>
+      column.isNumeric &&
+      column.key !== "total" &&
+      preview.rows.some((row) => typeof readCellValue(row, column.key) === "number"),
+  );
+  const maxMetricValue = Math.max(
+    1,
+    ...preview.rows.flatMap((row) =>
+      metricColumns.map((column) => {
+        const value = readCellValue(row, column.key);
+        return typeof value === "number" ? value : 0;
+      }),
+    ),
+  );
+
+  function metricColor(key: string) {
+    const normalized = key.toLowerCase();
+    if (normalized.includes("mantap") || normalized.includes("bagus")) {
+      return {
+        bar: "bg-[linear-gradient(90deg,#1f8f5f_0%,#41c98a_100%)]",
+        badge: "bg-[#e9f9f1] text-[#1d7b52]",
+      };
+    }
+    if (normalized.includes("ringan")) {
+      return {
+        bar: "bg-[linear-gradient(90deg,#d9a622_0%,#f1cb66_100%)]",
+        badge: "bg-[#fff6e0] text-[#9d6e00]",
+      };
+    }
+    if (normalized.includes("berat")) {
+      return {
+        bar: "bg-[linear-gradient(90deg,#c94848_0%,#e77878_100%)]",
+        badge: "bg-[#fdecec] text-[#a22c2c]",
+      };
+    }
+    return {
+      bar: "bg-[linear-gradient(90deg,#2f66d2_0%,#88acee_100%)]",
+      badge: "bg-[#edf2ff] text-[#2f66d2]",
+    };
+  }
 
   return (
     <section>
@@ -31,11 +109,51 @@ export function PreviewPanel({ preview }: PreviewPanelProps) {
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[1.3fr_0.9fr]">
           <article className="rounded-2xl border border-[#d6deed] bg-white p-4 shadow-[0_10px_24px_rgba(41,59,94,0.06)]">
-            {chartSeries.length ? (
+            {hasRows && metricColumns.length > 0 ? (
+              <div className="rounded-2xl border border-[#dce4f1] bg-[linear-gradient(180deg,#f8fbff_0%,#f3f7ff_100%)] px-3 py-3.5 sm:px-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#5f7398]">
+                  <span>{chartTitle}</span>
+                  <span>{chartUnit}</span>
+                </div>
+
+                <div className="max-h-[460px] overflow-y-auto pr-1">
+                  <div className="grid gap-2 lg:grid-cols-2">
+                    {rankedRows.map((row) => (
+                      <div key={`grouped-${row.area}`} className="rounded-xl border border-[#d9e1ef] bg-white p-2.5 shadow-[0_4px_12px_rgba(40,54,88,0.06)]">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <p className="m-0 text-sm font-semibold text-[#213255]">{row.area}</p>
+                          <span className="text-xs font-semibold text-[#6279a2]">Total {formatCompactNumber(row.total)}</span>
+                        </div>
+
+                        <div className="grid gap-1.5 sm:grid-cols-3">
+                          {metricColumns.map((column) => {
+                            const raw = readCellValue(row, column.key);
+                            const value = typeof raw === "number" ? raw : 0;
+                            const ratio = Math.max(4, Math.round((value / maxMetricValue) * 100));
+                            const color = metricColor(column.key);
+                            return (
+                              <div key={`${row.area}-${column.key}`} className="grid gap-1">
+                                <span className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${color.badge}`}>
+                                  {column.label}
+                                </span>
+                                <div className="h-2 overflow-hidden rounded-full bg-[#e7edf8]">
+                                  <div className={`h-full rounded-full ${color.bar}`} style={{ width: `${ratio}%` }} />
+                                </div>
+                                <span className="text-[11px] font-semibold text-[#3d5278]">{formatCompactNumber(value)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : chartSeries.length ? (
               <div className="rounded-2xl border border-[#dce4f1] bg-[linear-gradient(180deg,#f8fbff_0%,#f3f7ff_100%)] px-2.5 py-3 sm:px-3">
                 <div className="mb-2 flex items-center justify-between px-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#5f7398]">
-                  <span>Grafik Populasi</span>
-                  <span>Skala Jiwa</span>
+                  <span>{chartTitle}</span>
+                  <span>{chartUnit}</span>
                 </div>
                 <div className="grid min-h-52 grid-cols-[repeat(auto-fit,minmax(72px,1fr))] items-end gap-2 sm:min-h-64">
                   {chartSeries.map((item) => {
@@ -70,25 +188,33 @@ export function PreviewPanel({ preview }: PreviewPanelProps) {
               <table className="mt-4 w-full min-w-105 border-collapse text-sm">
                 <thead>
                   <tr>
-                    <th className="border-y border-[#dce3ef] bg-[#f5f8ff] px-2 py-2 text-left font-semibold">Kecamatan</th>
-                    <th className="border-y border-[#dce3ef] bg-[#f5f8ff] px-2 py-2 text-left font-semibold">Laki-laki</th>
-                    <th className="border-y border-[#dce3ef] bg-[#f5f8ff] px-2 py-2 text-left font-semibold">Perempuan</th>
-                    <th className="border-y border-[#dce3ef] bg-[#f5f8ff] px-2 py-2 text-left font-semibold">Total</th>
+                    {tableColumns.map((column) => (
+                      <th
+                        key={column.key}
+                        className={`border-y border-[#dce3ef] bg-[#f5f8ff] px-2 py-2 font-semibold ${column.isNumeric ? "text-right" : "text-left"}`}
+                      >
+                        {column.label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {hasRows ? (
                     preview.rows.map((row) => (
                       <tr key={row.area}>
-                        <td className="border-b border-[#e2e8f3] px-2 py-2.5 font-medium">{row.area}</td>
-                        <td className="border-b border-[#e2e8f3] px-2 py-2.5">{formatCompactNumber(row.male)}</td>
-                        <td className="border-b border-[#e2e8f3] px-2 py-2.5">{formatCompactNumber(row.female)}</td>
-                        <td className="border-b border-[#e2e8f3] px-2 py-2.5 font-semibold">{formatCompactNumber(row.total)}</td>
+                        {tableColumns.map((column) => (
+                          <td
+                            key={`${row.area}-${column.key}`}
+                            className={`border-b border-[#e2e8f3] px-2 py-2.5 ${column.isNumeric ? "text-right" : "text-left"} ${column.key === "area" ? "font-medium" : ""} ${column.key === "total" ? "font-semibold" : ""}`}
+                          >
+                            {renderCellValue(row, column)}
+                          </td>
+                        ))}
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={4} className="border-b border-[#e2e8f3] px-2 py-4 text-center text-(--color-muted)">
+                      <td colSpan={tableColumns.length} className="border-b border-[#e2e8f3] px-2 py-4 text-center text-(--color-muted)">
                         Data tabel belum tersedia.
                       </td>
                     </tr>

@@ -14,11 +14,11 @@ const WORDPRESS_REST_BASE_CANDIDATES = [
 ] as const;
 const ALLOWED_IMAGE_HOST = "diskominfo.bulungan.go.id";
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
-const DEFAULT_TIMEOUT_MS = 20_000;
-const DEFAULT_RETRY_COUNT = 2;
+const DEFAULT_TIMEOUT_MS = 4_000;
+const DEFAULT_RETRY_COUNT = 1;
 const DEFAULT_BACKOFF_MS = 500;
 const DEFAULT_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const DEFAULT_MAX_HTML_PAGES = 8;
+const DEFAULT_MAX_HTML_PAGES = 2;
 
 type FetchJsonOptions = {
   timeoutMs?: number;
@@ -463,7 +463,7 @@ async function fetchFromHtmlScrape(): Promise<FetchResult> {
     }
 
     visited.add(pageUrl);
-    const html = await fetchTextWithRetry(pageUrl, { timeoutMs: DEFAULT_TIMEOUT_MS, retries: 2 });
+    const html = await fetchTextWithRetry(pageUrl, { timeoutMs: DEFAULT_TIMEOUT_MS, retries: 0 });
     const parsed = parseInfografisHtml(html, pageUrl);
 
     collected.push(...parsed.items);
@@ -544,12 +544,12 @@ async function fetchWordPressPostsByCategory(
   categoryId: number,
 ): Promise<WordPressPost[]> {
   const endpoint = `${restBase}/posts?categories=${categoryId}&per_page=100&page=1&_embed=1&_fields=id,date,link,title,_embedded`;
-  return fetchJsonWithRetry<WordPressPost[]>(endpoint, { retries: 2 });
+  return fetchJsonWithRetry<WordPressPost[]>(endpoint, { retries: 1 });
 }
 
 async function fetchWordPressPostsBySearch(restBase: string): Promise<WordPressPost[]> {
   const endpoint = `${restBase}/posts?search=infografis&per_page=100&page=1&_embed=1&_fields=id,date,link,title,_embedded`;
-  return fetchJsonWithRetry<WordPressPost[]>(endpoint, { retries: 2 });
+  return fetchJsonWithRetry<WordPressPost[]>(endpoint, { retries: 1 });
 }
 
 async function fetchFromWordPressRest(): Promise<FetchResult> {
@@ -558,7 +558,7 @@ async function fetchFromWordPressRest(): Promise<FetchResult> {
   for (const restBase of WORDPRESS_REST_BASE_CANDIDATES) {
     try {
       const categoriesEndpoint = `${restBase}/categories?search=infografis&per_page=50&_fields=id,slug,name`;
-      const categories = await fetchJsonWithRetry<WordPressCategory[]>(categoriesEndpoint, { retries: 1 });
+      const categories = await fetchJsonWithRetry<WordPressCategory[]>(categoriesEndpoint, { retries: 0 });
 
       let posts: WordPressPost[] = [];
       if (categories.length > 0) {
@@ -633,7 +633,7 @@ async function fetchCkanAction<T>(action: string, query = ""): Promise<T> {
         Authorization: process.env.CKAN_API_KEY?.trim() || "",
       },
     },
-    { retries: 2 },
+    { retries: 1 },
   );
 
   const data = (await response.json()) as CkanActionResponse<T>;

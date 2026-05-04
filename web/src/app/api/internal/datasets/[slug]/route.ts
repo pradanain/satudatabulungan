@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import type { DatasetFormat, DatasetFrequency } from "@/lib/types/dataset";
 import { updateInternalDataset } from "@/lib/services/internal-store";
+import { inferInternalApiErrorStatus } from "@/lib/utils/internal-api-response";
+import { sanitizeStoredText } from "@/lib/utils/input-sanitizer";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
+import { validateResourceUrl } from "@/lib/utils/resource-url";
 
 type DatasetUpdatePayload = {
   title?: string;
@@ -35,7 +38,12 @@ function getRequired(value: unknown, field: string): string {
     throw new Error(`Field '${field}' wajib diisi.`);
   }
 
-  return value.trim();
+  const cleaned = sanitizeStoredText(value);
+  if (!cleaned) {
+    throw new Error(`Field '${field}' tidak valid.`);
+  }
+
+  return cleaned;
 }
 
 export const dynamic = "force-dynamic";
@@ -45,7 +53,7 @@ export async function PATCH(
   context: { params: Promise<{ slug: string }> },
 ) {
   try {
-    const session = getInternalSessionFromCookieHeader(request.headers.get("cookie"));
+    const session = await getInternalSessionFromCookieHeader(request.headers.get("cookie"));
     if (!session) {
       return NextResponse.json(
         {
@@ -69,6 +77,12 @@ export async function PATCH(
       throw new Error("Field 'resourceFormat' tidak valid.");
     }
 
+    const resourceUrl = getRequired(payload.resourceUrl, "resourceUrl");
+    const resourceUrlValidation = validateResourceUrl(resourceUrl);
+    if (!resourceUrlValidation.valid) {
+      throw new Error(resourceUrlValidation.error);
+    }
+
     const result = await updateInternalDataset(
       slug,
       {
@@ -83,10 +97,12 @@ export async function PATCH(
         organizationId: getRequired(payload.organizationId, "organizationId"),
         resourceName: getRequired(payload.resourceName, "resourceName"),
         resourceFormat: resourceFormat as DatasetFormat,
-        resourceUrl: getRequired(payload.resourceUrl, "resourceUrl"),
+        resourceUrl,
         tags:
-          payload.tags?.filter((item): item is string => typeof item === "string" && item.trim().length > 0) ?? [],
-        reviewSummary: payload.reviewSummary?.trim(),
+          payload.tags
+            ?.map((item) => sanitizeStoredText(item))
+            .filter((item): item is string => Boolean(item && item.trim().length > 0)) ?? [],
+        reviewSummary: sanitizeStoredText(payload.reviewSummary?.trim() ?? "") || undefined,
       },
       session,
     );
@@ -97,7 +113,7 @@ export async function PATCH(
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal memperbarui dataset internal.";
-    const status = message.includes("wajib") || message.includes("tidak valid") ? 400 : 500;
+    const status = inferInternalApiErrorStatus(message);
     return NextResponse.json(
       {
         success: false,

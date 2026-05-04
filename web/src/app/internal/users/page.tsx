@@ -1,8 +1,8 @@
-import { InternalPageHeader } from "@/components/internal/internal-page-header";
+﻿import { InternalPageHeader } from "@/components/internal/internal-page-header";
 import { InternalShell } from "@/components/internal/internal-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { loadInternalPortalStore } from "@/lib/services/internal-store";
+import { getAccounts } from "@/lib/services/ckan-portal-api";
 import { requireInternalSession } from "@/lib/utils/internal-auth-server";
 import { internalRoleLabels } from "@/lib/utils/internal-auth";
 
@@ -10,22 +10,22 @@ export const dynamic = "force-dynamic";
 
 export default async function InternalUsersPage() {
   const session = await requireInternalSession("users");
-  const store = await loadInternalPortalStore();
+  const accounts = await getAccounts().catch(() => []);
 
   return (
     <InternalShell session={session} activeKey="users">
       <InternalPageHeader
         title="Users & Roles"
-        description="Kelola daftar akun internal, role, dan cakupan organisasi yang digunakan selama pengembangan lokal."
+        description="Kelola daftar akun internal, role, dan cakupan organisasi yang disimpan pada backend CKAN."
         badges={
           <>
-            <Badge variant="outline">{store.users.length} akun</Badge>
+            <Badge variant="outline">{accounts.length} akun</Badge>
             <Badge variant="outline">3 role final</Badge>
           </>
         }
       />
 
-      <Card className="overflow-hidden">
+      <Card className="internal-surface overflow-hidden border-transparent shadow-none">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-[var(--color-surface-soft)] text-left text-[var(--color-muted)]">
@@ -38,7 +38,7 @@ export default async function InternalUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {store.users.map((user) => (
+              {accounts.map((user) => (
                 <tr key={user.id} className="border-t border-[var(--color-border)]">
                   <td className="px-5 py-4">
                     <p className="m-0 font-semibold">{user.name}</p>
@@ -47,14 +47,12 @@ export default async function InternalUsersPage() {
                   <td className="px-5 py-4">
                     <Badge variant="secondary">{internalRoleLabels[user.role]}</Badge>
                   </td>
-                  <td className="px-5 py-4 text-[var(--color-muted)]">
-                    {store.organizations.find((item) => item.id === user.organizationId)?.shortName}
-                  </td>
+                  <td className="px-5 py-4 text-[var(--color-muted)]">{user.organizationName}</td>
                   <td className="px-5 py-4 text-[var(--color-muted)]">{user.status}</td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-2">
                       {user.permissions.map((permission) => (
-                        <Badge key={permission} variant="outline">
+                        <Badge key={`${user.id}-${permission}`} variant="outline">
                           {permission}
                         </Badge>
                       ))}
@@ -69,3 +67,4 @@ export default async function InternalUsersPage() {
     </InternalShell>
   );
 }
+

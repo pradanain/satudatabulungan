@@ -51,7 +51,7 @@ test.describe("Public Priority Pages Accessibility Audit", () => {
           const hasVisibleFocus =
             style.outlineStyle !== "none" ||
             style.outlineWidth !== "0px" ||
-            (style.boxShadow && style.boxShadow !== "none");
+            style.boxShadow !== "none";
 
           return {
             marker,

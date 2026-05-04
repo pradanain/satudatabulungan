@@ -56,19 +56,19 @@ export default async function InternalDatasetDetailPage({
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Organisasi</p>
           <p className="mb-0 mt-3 text-xl font-semibold">{dataset.organization}</p>
         </Card>
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Frekuensi</p>
           <p className="mb-0 mt-3 text-xl font-semibold">{dataset.frequency}</p>
         </Card>
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Update Terakhir</p>
           <p className="mb-0 mt-3 text-xl font-semibold">{formatIndonesianDate(dataset.lastUpdated)}</p>
         </Card>
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Jumlah Resource</p>
           <p className="mb-0 mt-3 text-xl font-semibold">{dataset.resources.length}</p>
         </Card>
@@ -83,7 +83,7 @@ export default async function InternalDatasetDetailPage({
           topics={store.topics}
         />
       ) : (
-        <Card className="p-5 sm:p-6">
+        <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6">
           <h2 className="m-0 text-xl font-semibold">Ringkasan Dataset</h2>
           <p className="mb-0 mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{dataset.description}</p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -98,3 +98,4 @@ export default async function InternalDatasetDetailPage({
     </InternalShell>
   );
 }
+

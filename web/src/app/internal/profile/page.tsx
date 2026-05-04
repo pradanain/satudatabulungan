@@ -22,7 +22,7 @@ export default async function InternalProfilePage() {
       />
 
       <section className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
-        <Card className="p-5 sm:p-6">
+        <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6">
           <h2 className="m-0 text-xl font-semibold">Informasi Akun</h2>
           <div className="mt-4 grid gap-3 text-sm">
             <div>
@@ -49,3 +49,5 @@ export default async function InternalProfilePage() {
     </InternalShell>
   );
 }
+
+

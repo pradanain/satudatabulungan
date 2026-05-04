@@ -128,19 +128,19 @@ export default async function WorkflowAuditDetailPage({ params, searchParams }: 
       />
 
       <section>
-        <Card className="p-5 sm:p-6">
+        <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6">
           <h2 className="m-0 font-[family-name:var(--font-heading)] text-2xl font-semibold">Filter Audit</h2>
           <p className="mb-0 mt-2 text-sm text-[var(--color-muted)]">
             Gunakan actor, status, dan rentang tanggal untuk mempersempit event audit.
           </p>
 
           <form method="GET" className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <label className="grid gap-1.5 text-sm font-semibold text-[#47413f]">
+            <label className="internal-field-label gap-1.5">
               Actor
               <select
                 name="actor"
                 defaultValue={actorFilter}
-                className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--color-accent-blue)]"
+                className="internal-select"
               >
                 <option value="">Semua actor</option>
                 {actorOptions.map((actor) => (
@@ -151,12 +151,12 @@ export default async function WorkflowAuditDetailPage({ params, searchParams }: 
               </select>
             </label>
 
-            <label className="grid gap-1.5 text-sm font-semibold text-[#47413f]">
+            <label className="internal-field-label gap-1.5">
               Status
               <select
                 name="status"
                 defaultValue={statusFilter}
-                className="h-11 rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--color-accent-blue)]"
+                className="internal-select"
               >
                 <option value="">Semua status</option>
                 {statusOptions.map((status) => (
@@ -167,12 +167,12 @@ export default async function WorkflowAuditDetailPage({ params, searchParams }: 
               </select>
             </label>
 
-            <label className="grid gap-1.5 text-sm font-semibold text-[#47413f]">
+            <label className="internal-field-label gap-1.5">
               Dari tanggal
               <Input type="date" name="dateFrom" defaultValue={dateFromFilter} />
             </label>
 
-            <label className="grid gap-1.5 text-sm font-semibold text-[#47413f]">
+            <label className="internal-field-label gap-1.5">
               Sampai tanggal
               <Input type="date" name="dateTo" defaultValue={dateToFilter} />
             </label>
@@ -196,14 +196,14 @@ export default async function WorkflowAuditDetailPage({ params, searchParams }: 
       </section>
 
       <section>
-        <Card className="p-5 sm:p-6">
+        <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6">
           <h2 className="m-0 font-[family-name:var(--font-heading)] text-2xl font-semibold">Timeline Audit</h2>
           <p className="mb-0 mt-2 text-sm text-[var(--color-muted)]">
             Menampilkan {filteredTimeline.length} dari {timeline.length} event.
           </p>
 
           {filteredTimeline.length === 0 ? (
-            <div className="mt-4 rounded-xl border border-dashed border-[var(--color-border)] bg-[#fcfdff] p-4">
+            <div className="mt-4 rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
               <h3 className="m-0 text-base font-semibold">Tidak ada event audit sesuai filter</h3>
               <p className="mb-0 mt-1 text-sm text-[var(--color-muted)]">
                 Coba ubah kombinasi filter actor, status, atau rentang tanggal.
@@ -214,7 +214,7 @@ export default async function WorkflowAuditDetailPage({ params, searchParams }: 
               {filteredTimeline.map((entry, index) => (
                 <article
                   key={`${entry.slug}-${entry.at}-${entry.actor}-${index}`}
-                  className="grid gap-2 rounded-xl border border-[var(--color-border)] bg-[#fffef9] p-4"
+                  className="grid gap-2 rounded-xl border border-[var(--color-border)] bg-white p-4"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="m-0 text-base font-semibold">
@@ -224,15 +224,15 @@ export default async function WorkflowAuditDetailPage({ params, searchParams }: 
                       {entry.persistedTo}
                     </Badge>
                   </div>
-                  <p className="m-0 text-sm text-[#4c4644]">
+                  <p className="m-0 text-sm text-[var(--color-text)]">
                     <strong>Actor:</strong> {entry.actor}
                   </p>
-                  <p className="m-0 text-sm text-[#4c4644]">
+                  <p className="m-0 text-sm text-[var(--color-text)]">
                     <strong>Waktu:</strong> {formatIndonesianDateTime(entry.at)} (
                     {formatIndonesianDate(entry.at)})
                   </p>
                   {entry.reviewNote ? (
-                    <p className="m-0 text-sm text-[#4c4644]">
+                    <p className="m-0 text-sm text-[var(--color-text)]">
                       <strong>Catatan:</strong> {entry.reviewNote}
                     </p>
                   ) : null}
@@ -245,3 +245,4 @@ export default async function WorkflowAuditDetailPage({ params, searchParams }: 
     </InternalShell>
   );
 }
+

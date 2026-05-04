@@ -24,7 +24,7 @@ export default async function InternalHelpPage() {
       />
 
       <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <h2 className="m-0 text-xl font-semibold">FAQ Populer</h2>
           <div className="mt-4 grid gap-3">
             {faqItems.map((item) => (
@@ -35,7 +35,7 @@ export default async function InternalHelpPage() {
           </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
           <h2 className="m-0 text-xl font-semibold">Panduan Cepat</h2>
           <div className="mt-4 grid gap-3 text-sm text-[var(--color-muted)]">
             <p className="m-0">1. Buat draft di menu Dataset Internal.</p>
@@ -52,3 +52,5 @@ export default async function InternalHelpPage() {
     </InternalShell>
   );
 }
+
+

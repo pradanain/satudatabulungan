@@ -27,7 +27,7 @@ export default async function InternalOrganizationsPage() {
         }
       />
 
-      <Card className="overflow-hidden">
+      <Card className="internal-surface overflow-hidden border-transparent shadow-none">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-[var(--color-surface-soft)] text-left text-[var(--color-muted)]">
@@ -64,3 +64,5 @@ export default async function InternalOrganizationsPage() {
     </InternalShell>
   );
 }
+
+

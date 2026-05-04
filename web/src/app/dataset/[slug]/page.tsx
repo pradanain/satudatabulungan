@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getDatasetBySlug, getDatasets } from "@/lib/services/dataset-service";
+import { getPublicDatasetBySlug, getPublicDatasets } from "@/lib/services/dataset-service";
 import type { Dataset } from "@/lib/types/dataset";
 import { getPrimaryDatasetDescription } from "@/lib/utils/dataset-description";
 import { formatIndonesianDate } from "@/lib/utils/formatters";
@@ -33,7 +33,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: DatasetDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const dataset = await getDatasetBySlug(slug);
+  const dataset = await getPublicDatasetBySlug(slug);
 
   if (!dataset) {
     return buildPageMetadata({
@@ -164,13 +164,13 @@ function getActivityVisual(type: ActivityType) {
 
 export default async function DatasetDetailPage({ params }: DatasetDetailPageProps) {
   const { slug } = await params;
-  const dataset = await getDatasetBySlug(slug);
+  const dataset = await getPublicDatasetBySlug(slug);
 
   if (!dataset) {
     notFound();
   }
 
-  const allDatasets = await getDatasets();
+  const allDatasets = await getPublicDatasets();
   const topicRelated = allDatasets.filter((item) => item.slug !== dataset.slug && item.topic === dataset.topic);
   const explicitRelated = allDatasets.filter((item) => dataset.relatedSlugs.includes(item.slug));
   const similarDatasets = dedupeDatasets([...explicitRelated, ...topicRelated]).slice(0, 6);

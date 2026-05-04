@@ -95,12 +95,12 @@ export function InternalReviewBoard({ items, role }: InternalReviewBoardProps) {
   return (
     <div className="grid gap-4">
       {errorMessage ? (
-        <p className="m-0 rounded-2xl border border-[#f2c4c4] bg-[#fff4f4] px-4 py-3 text-sm font-semibold text-[#9a1a1a]">
+        <p className="internal-alert-error">
           {errorMessage}
         </p>
       ) : null}
       {successMessage ? (
-        <p className="m-0 rounded-2xl border border-[#c7e6cf] bg-[#eef9f1] px-4 py-3 text-sm font-semibold text-[#1f6a2a]">
+        <p className="internal-alert-success">
           {successMessage}
         </p>
       ) : null}
@@ -109,7 +109,7 @@ export function InternalReviewBoard({ items, role }: InternalReviewBoardProps) {
         {workflowLaneOrder.map((lane) => {
           const laneItems = items.filter((item) => item.status === lane);
           return (
-            <Card key={lane} className="overflow-hidden">
+            <Card key={lane} className="internal-surface overflow-hidden border-transparent shadow-none">
               <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
                 <InternalStatusBadge status={lane} />
                 <span className="text-sm font-semibold text-[var(--color-muted)]">{laneItems.length}</span>
@@ -127,7 +127,7 @@ export function InternalReviewBoard({ items, role }: InternalReviewBoardProps) {
                         <h3 className="m-0 text-base font-semibold">{item.title}</h3>
                         <p className="mb-0 mt-1 text-sm text-[var(--color-muted)]">{item.organization}</p>
                         <p className="mb-0 mt-2 text-xs text-[var(--color-muted)]">
-                          Update {formatIndonesianDate(item.lastUpdated)} • {item.resourceCount} resource
+                          Update {formatIndonesianDate(item.lastUpdated)} - {item.resourceCount} resource
                         </p>
                       </div>
 
@@ -169,3 +169,4 @@ export function InternalReviewBoard({ items, role }: InternalReviewBoardProps) {
     </div>
   );
 }
+

@@ -20,20 +20,43 @@ function redirectToLogin(request: NextRequest) {
   return NextResponse.redirect(url);
 }
 
-export function proxy(request: NextRequest) {
+function isInternalApiPath(pathname: string): boolean {
+  return pathname === "/api/internal" || pathname.startsWith("/api/internal/");
+}
+
+function buildApiAuthError(status: 401 | 403): NextResponse {
+  return NextResponse.json(
+    {
+      success: false,
+      error: status === 401 ? "Sesi internal tidak ditemukan." : "Anda tidak memiliki akses ke endpoint ini.",
+    },
+    { status },
+  );
+}
+
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const isInternalApi = isInternalApiPath(pathname);
 
   if (publicInternalPaths.has(pathname)) {
     return NextResponse.next();
   }
 
-  const session = decodeInternalSession(request.cookies.get(INTERNAL_SESSION_COOKIE)?.value);
+  const session = await decodeInternalSession(request.cookies.get(INTERNAL_SESSION_COOKIE)?.value);
   if (!session) {
+    if (isInternalApi) {
+      return buildApiAuthError(401);
+    }
+
     return redirectToLogin(request);
   }
 
   const navKey = resolveInternalNavKey(pathname);
   if (navKey && !canAccessNav(session.role, navKey)) {
+    if (isInternalApi) {
+      return buildApiAuthError(403);
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = "/internal/dashboard";
     url.search = "";

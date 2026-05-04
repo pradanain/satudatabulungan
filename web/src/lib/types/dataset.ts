@@ -47,9 +47,16 @@ export interface DatasetPreviewPoint {
 
 export interface DatasetPreviewRow {
   area: string;
-  male: number;
-  female: number;
+  male?: number;
+  female?: number;
   total: number;
+  values?: Record<string, number | string>;
+}
+
+export interface DatasetPreviewColumn {
+  key: string;
+  label: string;
+  isNumeric?: boolean;
 }
 
 export interface DatasetInsight {
@@ -62,6 +69,9 @@ export interface DatasetPreview {
   points: DatasetPreviewPoint[];
   rows: DatasetPreviewRow[];
   insights: DatasetInsight[];
+  columns?: DatasetPreviewColumn[];
+  chartTitle?: string;
+  chartUnit?: string;
 }
 
 export interface Dataset {

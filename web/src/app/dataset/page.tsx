@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  getDatasetFilterOptions,
-  getDatasets,
+  getPublicDatasetFilterOptions,
+  getPublicDatasets,
   normalizeDatasetFilters,
   normalizePositiveInteger,
 } from "@/lib/services/dataset-service";
@@ -47,7 +47,10 @@ export default async function DatasetPage({ searchParams }: DatasetPageProps) {
   const pageSize = normalizePositiveInteger(rawParams.pageSize, 10, [5, 10, 25]);
   const requestedPage = normalizePositiveInteger(rawParams.page, 1);
 
-  const [datasets, options] = await Promise.all([getDatasets(filters), getDatasetFilterOptions()]);
+  const [datasets, options] = await Promise.all([
+    getPublicDatasets(filters),
+    getPublicDatasetFilterOptions(),
+  ]);
 
   const totalItems = datasets.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));

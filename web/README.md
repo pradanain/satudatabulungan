@@ -1,4 +1,4 @@
-# Portal Satu Data Bulungan
+﻿# Portal Satu Data Bulungan
 
 Aplikasi Next.js untuk portal publik dan panel internal Portal Satu Data Bulungan.
 
@@ -237,3 +237,80 @@ Contoh payload draft:
 - Cache server-side default 6 jam (`INFOGRAFIS_CACHE_TTL_MS`) dengan stale fallback saat fetch terbaru gagal.
 - Request ke sumber eksternal memakai timeout + retry exponential backoff agar endpoint portal tetap stabil.
 - Jalur `admin-ajax.php` / nonce plugin tidak dipakai sebagai sumber utama karena lebih rapuh dan mudah berubah.
+
+## 10) CKAN Full Integration (May 2026)
+
+Per Mei 2026, data utama frontend sudah dapat diambil dari backend CKAN untuk:
+
+- organisasi
+- dataset + detail dataset
+- infografis (`content_type=infografis`)
+- buku/publikasi (`content_type=publikasi`)
+- akun + role internal (`content_type=accounts`, package `portal-akun-role-kabupaten-bulungan`)
+- dashboard internal role-based
+- upload dataset/infografis/buku
+
+### Environment wajib
+
+```bash
+DATA_SOURCE_MODE=ckan
+NEXT_PUBLIC_CKAN_BASE_URL=http://localhost:5000
+CKAN_API_KEY=<token-api-sysadmin-ckan>
+NEXT_PUBLIC_APP_NAME="Portal Satu Data Kabupaten Bulungan"
+NEXT_PUBLIC_APP_REGION="Kabupaten Bulungan"
+```
+
+### Menjalankan seed dummy data CKAN lengkap
+
+Dari root project:
+
+```bash
+node scripts/ensure-ckan-token.mjs --format powershell
+node scripts/seed-ckan-sample.mjs http://localhost:5000
+```
+
+Seed ini akan membuat:
+
+- organisasi OPD Bulungan
+- dataset sektoral realistis
+- dataset berbasis kecamatan dengan 10 kecamatan Bulungan lengkap:
+  - Tanjung Selor
+  - Tanjung Palas
+  - Tanjung Palas Barat
+  - Tanjung Palas Utara
+  - Tanjung Palas Timur
+  - Tanjung Palas Tengah
+  - Sekatak
+  - Peso
+  - Peso Hilir
+  - Bunyu
+- infografis (DKIP) sebagai dataset `content_type=infografis`
+- buku/publikasi (Bappeda) sebagai dataset `content_type=publikasi`
+- akun + role internal (Admin, Walidata, Operator Organisasi)
+
+### Upload konten dari frontend
+
+- Halaman internal upload: `/internal/uploads`
+- API upload:
+  - `POST /api/internal/uploads/dataset`
+  - `POST /api/internal/uploads/infografis`
+  - `POST /api/internal/uploads/publikasi`
+
+Validasi role:
+
+- `Admin`: akses penuh
+- `Walidata`: validasi, kurasi, publikasi lintas organisasi
+- `Operator Organisasi`: upload hanya untuk organisasinya sendiri
+
+### Catatan desain teknis
+
+CKAN standar tidak memiliki entitas native terpisah untuk infografis dan buku.
+Implementasi memakai pendekatan sederhana dan stabil:
+
+- `dataset` biasa + `extras.content_type`
+- nilai `content_type`:
+  - `dataset`
+  - `infografis`
+  - `publikasi`
+  - `accounts`
+

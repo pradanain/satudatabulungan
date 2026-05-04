@@ -1,7 +1,7 @@
 import "server-only";
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { basename, dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import { mockDatasets } from "@/lib/data/mock-datasets";
 import { matchesHomepageTopicFilter } from "@/lib/data/homepage-topics";
 import type {
@@ -27,6 +27,8 @@ import type {
   PortalSettings,
 } from "@/lib/types/internal";
 import { canTransition, type WorkflowItem } from "@/lib/types/workflow";
+import { sanitizeStoredText } from "@/lib/utils/input-sanitizer";
+import { resolveLocalStorePath } from "@/lib/utils/local-store-path";
 
 const STORE_VERSION = 1;
 const defaultSort: DatasetSort = "terbaru";
@@ -63,13 +65,8 @@ type LegacyDraftEntry = {
 
 type LegacyDrafts = Record<string, LegacyDraftEntry>;
 
-function getProjectRoot(): string {
-  const cwd = process.cwd();
-  return basename(cwd).toLowerCase() === "app" ? resolve(cwd, "..") : cwd;
-}
-
 function getLocalPath(filename: string): string {
-  return resolve(getProjectRoot(), ".local", filename);
+  return resolveLocalStorePath(filename, "internal-portal-store");
 }
 
 function getStorePath(): string {
@@ -1261,10 +1258,29 @@ export async function createInternalDatasetDraft(
   session: InternalSession,
 ): Promise<{ slug: string; persistedTo: "mock-api"; createdAt: string }> {
   return withInternalPortalStore(async (store) => {
+    const requestedOrganization =
+      store.organizations.find(
+        (item) =>
+          item.slug === input.ownerOrgSlug ||
+          item.shortName === input.organization ||
+          item.name === input.organization ||
+          item.id === input.organization,
+      ) ?? null;
+    const sessionOrganization =
+      store.organizations.find((item) => item.id === session.organizationId) ?? store.organizations[0];
+
+    if (
+      session.role === "operator_opd" &&
+      requestedOrganization &&
+      requestedOrganization.id !== session.organizationId
+    ) {
+      throw new Error("Operator hanya boleh membuat draft untuk organisasi sendiri.");
+    }
+
     const organization =
-      store.organizations.find((item) => item.slug === input.ownerOrgSlug || item.shortName === input.organization || item.name === input.organization) ??
-      store.organizations.find((item) => item.id === session.organizationId) ??
-      store.organizations[0];
+      session.role === "operator_opd"
+        ? sessionOrganization
+        : requestedOrganization ?? sessionOrganization;
 
     if (store.datasets.some((item) => item.slug === input.slug)) {
       throw new Error(`Draft dengan slug '${input.slug}' sudah ada.`);
@@ -1289,14 +1305,22 @@ export async function createInternalDatasetDraft(
       ),
     ];
 
-    const tags = [slugify(input.topic), slugify(input.organization), "draft-internal"].filter(Boolean);
+    const safeTitle = sanitizeStoredText(input.title);
+    const safeSummary = sanitizeStoredText(input.summary);
+    const safeDescription = sanitizeStoredText(input.description?.trim() || "") || safeSummary;
+    const safeTopic = sanitizeStoredText(input.topic);
+    const safeOrganizationName = sanitizeStoredText(input.organization);
+    const safeCoverage = sanitizeStoredText(input.coverage?.trim() || "") || "Kabupaten Bulungan";
+    const safePeriod = sanitizeStoredText(input.period);
+    const safeResourceName = sanitizeStoredText(input.resourceName);
+    const tags = [slugify(safeTopic), slugify(safeOrganizationName), "draft-internal"].filter(Boolean);
     const dataset: InternalDataset = {
       id: `INT-${slugify(input.slug)}`.toUpperCase(),
       slug: input.slug,
-      title: input.title,
-      summary: input.summary,
-      description: input.description?.trim() || input.summary,
-      topic: topic?.name ?? input.topic,
+      title: safeTitle,
+      summary: safeSummary,
+      description: safeDescription,
+      topic: topic?.name ?? safeTopic,
       organization: organization.shortName,
       organizationId: organization.id,
       ownerUserId: session.userId,
@@ -1311,15 +1335,15 @@ export async function createInternalDatasetDraft(
         identifier: `INT-${input.slug}`.toUpperCase(),
         opd: organization.shortName,
         walidata: store.users.find((item) => item.id === walidataUserId)?.name ?? "Walidata",
-        coverage: input.coverage?.trim() || "Kabupaten Bulungan",
-        period: input.period,
+        coverage: safeCoverage,
+        period: safePeriod,
         license: "Data Terbuka Pemerintah",
         status: "Draft",
         frequency: input.frequency,
         lastUpdated: now,
         tags,
       },
-      resources: buildDatasetResource(input.slug, input.resourceName, input.resourceFormat, input.resourceUrl, now),
+      resources: buildDatasetResource(input.slug, safeResourceName, input.resourceFormat, input.resourceUrl, now),
       preview: {
         points: [
           { label: "Jan", value: 12 },
@@ -1337,7 +1361,10 @@ export async function createInternalDatasetDraft(
           { label: "Sumber", value: organization.shortName, description: "Dataset dimiliki oleh OPD pembuat draft." },
         ],
       },
-      relatedSlugs: store.datasets.filter((item) => item.topic === (topic?.name ?? input.topic)).slice(0, 2).map((item) => item.slug),
+      relatedSlugs: store.datasets
+        .filter((item) => item.topic === (topic?.name ?? safeTopic))
+        .slice(0, 2)
+        .map((item) => item.slug),
       popularityScore: 12,
       viewCount: 0,
       downloadCount: 0,
@@ -1399,30 +1426,46 @@ export async function updateInternalDataset(
 
     const organization = store.organizations.find((item) => item.id === input.organizationId) ?? store.organizations[0];
     const updatedAt = new Date().toISOString();
+    const safeTitle = sanitizeStoredText(input.title);
+    const safeSummary = sanitizeStoredText(input.summary);
+    const safeDescription = sanitizeStoredText(input.description);
+    const safeTopic = sanitizeStoredText(input.topic);
+    const safeWalidata = sanitizeStoredText(input.walidata);
+    const safeCoverage = sanitizeStoredText(input.coverage);
+    const safePeriod = sanitizeStoredText(input.period);
+    const safeResourceName = sanitizeStoredText(input.resourceName);
+    const safeTags = input.tags.map((item) => sanitizeStoredText(item)).filter(Boolean);
+
     const updated: InternalDataset = {
       ...current,
-      title: input.title,
-      summary: input.summary,
-      description: input.description,
-      topic: input.topic,
+      title: safeTitle,
+      summary: safeSummary,
+      description: safeDescription,
+      topic: safeTopic,
       organization: organization.shortName,
       organizationId: organization.id,
       frequency: input.frequency,
       lastUpdated: updatedAt,
       updatedByUserId: session.userId,
       formats: [input.resourceFormat, "API"],
-      resources: buildDatasetResource(current.slug, input.resourceName, input.resourceFormat, input.resourceUrl, updatedAt),
+      resources: buildDatasetResource(
+        current.slug,
+        safeResourceName,
+        input.resourceFormat,
+        input.resourceUrl,
+        updatedAt,
+      ),
       metadata: {
         ...current.metadata,
         opd: organization.shortName,
-        walidata: input.walidata,
-        coverage: input.coverage,
-        period: input.period,
+        walidata: safeWalidata,
+        coverage: safeCoverage,
+        period: safePeriod,
         frequency: input.frequency,
         lastUpdated: updatedAt,
-        tags: input.tags,
+        tags: safeTags,
       },
-      reviewSummary: input.reviewSummary?.trim() || current.reviewSummary,
+      reviewSummary: sanitizeStoredText(input.reviewSummary?.trim() || "") || current.reviewSummary,
       completionScore: Math.max(75, Math.min(100, current.completionScore + 2)),
       metadataScore: Math.max(78, Math.min(100, current.metadataScore + 2)),
     };
@@ -1465,9 +1508,14 @@ export async function transitionInternalDataset(
     }
 
     const dataset = store.datasets[index];
+    if (session.role === "operator_opd" && dataset.organizationId !== session.organizationId) {
+      throw new Error("Operator hanya boleh melakukan transisi pada dataset organisasi sendiri.");
+    }
+
     ensureTransitionAccess(session, fromStatus, toStatus);
 
     const updatedAt = new Date().toISOString();
+    const safeReviewNote = sanitizeStoredText(reviewNote?.trim() || "") || undefined;
     const event = toInternalWorkflowEvent(
       dataset.slug,
       session.username,
@@ -1476,7 +1524,7 @@ export async function transitionInternalDataset(
       fromStatus,
       toStatus,
       updatedAt,
-      reviewNote,
+      safeReviewNote,
     );
 
     const updated: InternalDataset = {
@@ -1491,7 +1539,7 @@ export async function transitionInternalDataset(
       submissionCount: toStatus === "Submitted" ? dataset.submissionCount + 1 : dataset.submissionCount,
       revisionCount: toStatus === "Need Revision" ? dataset.revisionCount + 1 : dataset.revisionCount,
       reviewSummary:
-        reviewNote?.trim() ||
+        safeReviewNote ||
         (toStatus === "Published"
           ? "Dataset dipublikasikan dan langsung tersedia di portal publik."
           : toStatus === "Need Revision"
@@ -1530,7 +1578,7 @@ export async function transitionInternalDataset(
       nextStore = pushNotification(
         nextStore,
         "Dataset perlu revisi",
-        `${updated.title} perlu revisi. Catatan: ${reviewNote?.trim() || "Lengkapi metadata."}`,
+        `${updated.title} perlu revisi. Catatan: ${safeReviewNote || "Lengkapi metadata."}`,
         `/internal/datasets/${updated.slug}`,
         ["operator_opd"],
         updated.ownerUserId,

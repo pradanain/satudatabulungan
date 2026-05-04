@@ -50,39 +50,39 @@ export function InternalSettingsForm({ settings }: { settings: PortalSettings })
 
   return (
     <form className="grid gap-4" onSubmit={handleSubmit}>
-      <Card className="p-5 sm:p-6">
+      <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6">
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Nama Portal
             <Input value={form.portalName} onChange={(event) => setForm((current) => ({ ...current, portalName: event.target.value }))} />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Email Publik
             <Input value={form.publicEmail} onChange={(event) => setForm((current) => ({ ...current, publicEmail: event.target.value }))} />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Telepon Publik
             <Input value={form.publicPhone} onChange={(event) => setForm((current) => ({ ...current, publicPhone: event.target.value }))} />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f]">
+          <label className="internal-field-label">
             Hero Headline
             <Input value={form.heroHeadline} onChange={(event) => setForm((current) => ({ ...current, heroHeadline: event.target.value }))} />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f] md:col-span-2">
+          <label className="internal-field-label md:col-span-2">
             Hero Subheadline
             <Input
               value={form.heroSubheadline}
               onChange={(event) => setForm((current) => ({ ...current, heroSubheadline: event.target.value }))}
             />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f] md:col-span-2">
+          <label className="internal-field-label md:col-span-2">
             Banner Notifikasi
             <Input
               value={form.notificationBanner}
               onChange={(event) => setForm((current) => ({ ...current, notificationBanner: event.target.value }))}
             />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#47413f] md:col-span-2">
+          <label className="internal-field-label md:col-span-2">
             Catatan Footer
             <Input value={form.footerNote} onChange={(event) => setForm((current) => ({ ...current, footerNote: event.target.value }))} />
           </label>
@@ -90,12 +90,12 @@ export function InternalSettingsForm({ settings }: { settings: PortalSettings })
       </Card>
 
       {errorMessage ? (
-        <p className="m-0 rounded-2xl border border-[#f2c4c4] bg-[#fff4f4] px-4 py-3 text-sm font-semibold text-[#9a1a1a]">
+        <p className="internal-alert-error">
           {errorMessage}
         </p>
       ) : null}
       {message ? (
-        <p className="m-0 rounded-2xl border border-[#c7e6cf] bg-[#eef9f1] px-4 py-3 text-sm font-semibold text-[#1f6a2a]">
+        <p className="internal-alert-success">
           {message}
         </p>
       ) : null}
