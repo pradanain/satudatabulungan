@@ -11,7 +11,8 @@ function resolveApiKey() {
   const fromEnv = process.env.CKAN_API_KEY?.trim();
   if (fromEnv) return fromEnv;
   const helper = resolve(scriptDir, "ensure-ckan-token.mjs");
-  const token = execFileSync(process.execPath, [helper, "--format", "token"], { encoding: "utf8" }).trim();
+  const container = process.env.CKAN_CONTAINER_NAME?.trim() || "portal_ckan";
+  const token = execFileSync(process.execPath, [helper, "--format", "token", "--container", container], { encoding: "utf8" }).trim();
   if (!token) throw new Error("Gagal mendapatkan CKAN_API_KEY otomatis.");
   return token;
 }

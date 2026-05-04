@@ -10,7 +10,7 @@ const defaultCacheFile = resolve(rootDir, ".local", "ckan-admin.token");
 
 function parseArgs(argv) {
   const args = {
-    container: "bulungan-ckan-app",
+    container: process.env.CKAN_CONTAINER_NAME?.trim() || "portal_ckan",
     user: "admin",
     label: "local-dev",
     cacheFile: defaultCacheFile,
@@ -71,7 +71,7 @@ function printHelp() {
   node scripts/ensure-ckan-token.mjs [options]
 
 Options:
-  --container <name>    Container CKAN (default: bulungan-ckan-app)
+  --container <name>    Container CKAN (default: portal_ckan or $CKAN_CONTAINER_NAME)
   --user <name>         Username CKAN (default: admin)
   --label <label>       Label token saat create (default: local-dev)
   --cache-file <path>   Lokasi cache token (default: .local/ckan-admin.token)
@@ -109,6 +109,48 @@ function createToken(container, user, label) {
   }
 
   return token;
+}
+
+function resolveComposeCkanContainer() {
+  const composeFile = resolve(rootDir, "services", "ckan", "docker-compose.yml");
+  if (!existsSync(composeFile)) return "";
+  const result = spawnSync("docker", ["compose", "-f", composeFile, "ps", "-q", "ckan"], { encoding: "utf8" });
+  if (result.status !== 0) return "";
+  return (result.stdout ?? "").trim();
+}
+
+function dedupe(values) {
+  const seen = new Set();
+  const output = [];
+  for (const value of values) {
+    if (!value) continue;
+    if (seen.has(value)) continue;
+    seen.add(value);
+    output.push(value);
+  }
+  return output;
+}
+
+function createTokenWithFallback(container, user, label) {
+  const candidates = dedupe([
+    container,
+    process.env.CKAN_CONTAINER_NAME?.trim(),
+    "portal_ckan",
+    resolveComposeCkanContainer(),
+    "bulungan-ckan-app",
+  ]);
+
+  const failures = [];
+  for (const candidate of candidates) {
+    try {
+      return createToken(candidate, user, label);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      failures.push(`- ${candidate}: ${message}`);
+    }
+  }
+
+  throw new Error(`Gagal membuat token CKAN pada semua kandidat container.\n${failures.join("\n")}`);
 }
 
 function formatOutput(token, format, source, cacheFile) {
@@ -158,7 +200,7 @@ try {
   }
 
   if (!token) {
-    token = createToken(args.container, args.user, args.label);
+    token = createTokenWithFallback(args.container, args.user, args.label);
     source = "created";
   }
 

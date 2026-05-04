@@ -17,6 +17,7 @@ jobs:
       INTERNAL_BASIC_AUTH_USER: admin
       INTERNAL_BASIC_AUTH_PASSWORD: bulungan123
       CKAN_BASE_URL: http://localhost:5000
+      CKAN_CONTAINER_NAME: portal_ckan
 
     steps:
       - name: Checkout
@@ -57,6 +58,13 @@ jobs:
 
       - name: CKAN connectivity check
         run: node scripts/test-ckan-connection.mjs http://localhost:5000
+
+      - name: Generate CKAN admin token
+        shell: bash
+        run: |
+          set -euo pipefail
+          token="$(node scripts/ensure-ckan-token.mjs --force-create --container portal_ckan --format token)"
+          echo "CKAN_API_KEY=$token" >> "$GITHUB_ENV"
 
       - name: Seed sample CKAN data
         run: node scripts/seed-ckan-sample.mjs http://localhost:5000
