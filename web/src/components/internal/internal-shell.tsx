@@ -78,12 +78,6 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-const quickAccessByRole: Record<InternalSession["role"], InternalNavKey[]> = {
-  admin: ["dashboard", "datasets", "review", "monitoring", "users"],
-  walidata: ["dashboard", "datasets", "review", "monitoring", "notifications"],
-  operator_opd: ["dashboard", "datasets", "review", "notifications", "workflowHistory"],
-};
-
 function getHref(key: InternalNavKey): string {
   switch (key) {
     case "dashboard":
@@ -128,9 +122,6 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
       keys: group.keys.filter((key) => visibleNavSet.has(key)),
     }))
     .filter((group) => group.keys.length > 0);
-  const quickAccessKeys = quickAccessByRole[session.role]
-    .filter((key) => visibleNavSet.has(key))
-    .slice(0, 4);
 
   return (
     <div className="internal-page-bg">
@@ -164,33 +155,6 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
                   <p className="mb-0 mt-1 text-base font-semibold">{session.name}</p>
                   <p className="mb-0 mt-0.5 text-sm text-[var(--color-muted)]">{session.organizationName}</p>
                 </div>
-
-                {quickAccessKeys.length > 0 ? (
-                  <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-white p-3">
-                    <p className="m-0 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-primary)]">
-                      Menu Cepat
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {quickAccessKeys.map((key) => {
-                        const Icon = iconByKey[key];
-                        return (
-                          <Link
-                            key={`quick-${key}`}
-                            href={getHref(key)}
-                            className={cn(
-                              "inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--color-muted)] transition hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-soft)] hover:text-[var(--color-primary)]",
-                              activeKey === key &&
-                                "border-[var(--color-primary)] bg-[var(--color-surface-soft)] text-[var(--color-primary)]",
-                            )}
-                          >
-                            <Icon className="size-3.5" />
-                            {internalNavLabels[key]}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
 
                 <nav aria-label="Navigasi internal" className="mt-3 grid gap-2">
                   <div className="max-h-[calc(100dvh-420px)] overflow-y-auto pr-1">
@@ -281,39 +245,6 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
               </div>
 
               <nav aria-label="Navigasi internal mobile" className="mt-3 grid gap-2 xl:hidden">
-                {quickAccessKeys.length > 0 ? (
-                  <details
-                    open
-                    className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white [&_summary::-webkit-details-marker]:hidden"
-                  >
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2">
-                      <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-primary)]">
-                        Menu Cepat
-                      </span>
-                      <ChevronDown className="size-4 text-[var(--color-muted)]" />
-                    </summary>
-                    <div className="flex flex-wrap gap-2 border-t border-[var(--color-border)] p-2">
-                      {quickAccessKeys.map((key) => {
-                        const Icon = iconByKey[key];
-                        return (
-                          <Link
-                            key={`mobile-quick-${key}`}
-                            href={getHref(key)}
-                            className={cn(
-                              "inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--color-muted)] transition hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-soft)] hover:text-[var(--color-primary)]",
-                              activeKey === key &&
-                                "border-[var(--color-primary)] bg-[var(--color-surface-soft)] text-[var(--color-primary)]",
-                            )}
-                          >
-                            <Icon className="size-3.5" />
-                            {internalNavLabels[key]}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </details>
-                ) : null}
-
                 <details className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white [&_summary::-webkit-details-marker]:hidden">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2">
                     <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-primary)]">

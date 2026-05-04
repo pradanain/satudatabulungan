@@ -156,3 +156,11 @@ Opsional jika file/sheet berbeda:
 CI quality gate otomatis:
 
 - `.github/workflows/quality-gate.yml` menjalankan lint + CKAN stack + seed + smoke workflow API + smoke dual-mode.
+
+Deployment satu server non-Docker (Next.js + CKAN native install):
+
+- `docs/06_deployment_single_server_non_docker.md`
+
+Runbook install CKAN dari nol (pilihan Docker vs Non-Docker):
+
+- `docs/07_ckan_install_runbook_zero_to_live.md`

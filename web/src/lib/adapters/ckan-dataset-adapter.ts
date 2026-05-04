@@ -8,6 +8,11 @@ import type {
   PortalStats,
 } from "@/lib/types/dataset";
 import { matchesHomepageTopicFilter } from "@/lib/data/homepage-topics";
+import {
+  fetchWithTimeout,
+  isUpstreamNetworkError,
+  summarizeUpstreamError,
+} from "@/lib/utils/upstream-error";
 import type { DatasetAdapter } from "./dataset-adapter";
 
 interface CkanOrganization {
@@ -68,6 +73,32 @@ type RawRecord = Record<string, string | number>;
 
 const defaultFrequency: DatasetFrequency = "Tahunan";
 const defaultStatus: DatasetStatus = "Published";
+const DEFAULT_CKAN_UNAVAILABLE_COOLDOWN_MS = 30_000;
+
+let ckanUnavailableUntil = 0;
+
+function getCkanUnavailableCooldownMs(): number {
+  const parsed = Number(
+    process.env.CKAN_UNAVAILABLE_COOLDOWN_MS ?? DEFAULT_CKAN_UNAVAILABLE_COOLDOWN_MS,
+  );
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_CKAN_UNAVAILABLE_COOLDOWN_MS;
+  }
+
+  return Math.floor(parsed);
+}
+
+function isInUnavailableWindow(): boolean {
+  return Date.now() < ckanUnavailableUntil;
+}
+
+function markCkanUnavailable(): void {
+  ckanUnavailableUntil = Date.now() + getCkanUnavailableCooldownMs();
+}
+
+function clearCkanUnavailable(): void {
+  ckanUnavailableUntil = 0;
+}
 
 function normalizeFormat(value?: string): DatasetFormat {
   const normalized = (value ?? "").trim().toUpperCase();
@@ -592,11 +623,26 @@ export class CkanDatasetAdapter implements DatasetAdapter {
   constructor(private readonly ckanBaseUrl: string) {}
 
   private async fetchAction<T>(action: string, query = ""): Promise<T> {
+    if (isInUnavailableWindow()) {
+      throw new Error("CKAN upstream sementara tidak tersedia.");
+    }
+
     const endpoint = `${this.ckanBaseUrl}/api/3/action/${action}${query ? `?${query}` : ""}`;
-    const response = await fetch(endpoint, {
-      next: { revalidate: 120 },
-      headers: { Accept: "application/json" },
-    });
+    let response: Response;
+    try {
+      response = await fetchWithTimeout(endpoint, {
+        next: { revalidate: 120 },
+        headers: { Accept: "application/json" },
+      });
+      clearCkanUnavailable();
+    } catch (error) {
+      if (isUpstreamNetworkError(error)) {
+        markCkanUnavailable();
+      }
+
+      const reason = summarizeUpstreamError(error);
+      throw new Error(`CKAN request gagal: ${reason}`);
+    }
 
     if (!response.ok) {
       throw new Error(`CKAN request gagal: ${response.status}`);

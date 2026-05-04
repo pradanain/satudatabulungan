@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { buildPageMetadata } from "@/lib/utils/metadata";
 import { PublikasiContent, type PublicationCatalogItem } from "@/app/publikasi/publikasi-content";
-import { getBooks } from "@/lib/services/ckan-portal-api";
+import { getCombinedBukuDigitalPublications } from "@/lib/services/publication-aggregator-service";
 import {
   normalizePositiveInteger,
   normalizePublicationSort,
@@ -12,12 +12,13 @@ import {
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Publikasi Buku Digital",
-  description: "Daftar buku digital dan dokumen terbitan resmi yang tersedia di backend CKAN Portal Satu Data Bulungan.",
+  description:
+    "Daftar buku digital dari sumber Bappeda Bulungan dan tambahan upload operator internal (CKAN).",
   path: "/publikasi-buku-digital",
   keywords: ["buku digital", "publikasi dokumen", "dokumen data Bulungan"],
 });
 
-export const revalidate = 600;
+export const revalidate = 21_600;
 
 type PublikasiBukuDigitalPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -40,20 +41,7 @@ export default async function PublikasiBukuDigitalPage({ searchParams }: Publika
   const sort = normalizePublicationSort(pickQueryValue(rawParams.sort));
   const pageSize = PUBLICATION_PAGE_SIZE;
   const requestedPage = normalizePositiveInteger(rawParams.page, 1);
-
-  const allItems: PublicationCatalogItem[] = (await getBooks().catch(() => [])).map((item) => ({
-    id: item.id,
-    title: item.title,
-    summary: item.summary || item.description || "Publikasi resmi Bappeda Kabupaten Bulungan",
-    organization: item.organizationName,
-    lastUpdated: item.metadataModified.slice(0, 10),
-    href: item.resources[0]?.url || `/dataset/${item.slug}`,
-    hrefLabel: "Lihat Dokumen",
-    downloadHref: item.resources.find((resource) => resource.format.toUpperCase().includes("PDF"))?.url,
-    downloadLabel: "Unduh Dokumen",
-    openInNewTab: Boolean(item.resources[0]?.url),
-    imageSrc: undefined,
-  }));
+  const allItems: PublicationCatalogItem[] = await getCombinedBukuDigitalPublications();
 
   const normalizedKeyword = searchQuery.trim().toLowerCase();
   const filteredItems = normalizedKeyword

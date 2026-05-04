@@ -1,0 +1,313 @@
+Kamu adalah Codex AI Agent yang sekarang bertugas melakukan REMEDIASI terhadap hasil audit Portal Satu Data Bulungan.
+
+Jangan audit ulang dari nol. Fokus memperbaiki temuan yang sudah terbukti dari laporan:
+- AUDIT_TEST_REPORT.md
+- AUDIT_BUG_LOG.md
+- AUDIT_SECURITY_FINDINGS.md
+- AUDIT_OPTIMIZATION_NOTES.md
+
+Tujuan utama:
+1. Perbaiki semua temuan Critical dan High terlebih dahulu.
+2. Jangan membuat fitur baru yang tidak diminta.
+3. Jangan mengubah behavior bisnis yang sudah sesuai panduan.
+4. Jangan membuat test palsu.
+5. Setiap fix harus disertai test yang benar-benar memverifikasi bug tersebut sudah tertutup.
+6. Setelah fix, jalankan lint, typecheck, build, dan test terkait.
+7. Catat semua file yang diubah dan alasan perubahannya.
+
+Urutan prioritas wajib:
+
+## PRIORITY 0 - Build blocker
+
+Perbaiki dulu error TypeScript:
+1. `src/app/page.tsx:294`
+2. `tests/accessibility/public-a11y.spec.ts:65`
+
+Acceptance criteria:
+- `npx tsc --noEmit` PASS.
+- `npm run build` tidak gagal karena type error yang sama.
+- Jangan men-disable typecheck hanya untuk membuat build lulus.
+
+## PRIORITY 1 - Critical session security
+
+Bug:
+- Session internal dapat dipalsukan karena cookie hanya base64 JSON tanpa signature.
+- File terkait yang perlu diperiksa:
+  - `web/src/lib/utils/internal-auth.ts`
+  - `web/src/lib/utils/internal-auth-server.ts`
+  - semua guard auth internal
+  - route login/logout internal
+
+Tugas:
+1. Ganti mekanisme session plain-base64 menjadi signed/encrypted session.
+2. Minimal gunakan HMAC signature dengan secret server-side.
+3. Jangan simpan secret di client.
+4. Pastikan cookie tetap `HttpOnly`.
+5. Pastikan payload cookie yang dimodifikasi manual ditolak.
+6. Pastikan session lama/plain-base64 tidak lagi diterima.
+
+Acceptance criteria:
+- Cookie forged role admin tidak bisa lagi mengakses `PATCH /api/internal/settings`.
+- Request dengan cookie invalid return `401`.
+- Login valid tetap menghasilkan session valid.
+- Logout tetap clear cookie.
+- Tambahkan test untuk:
+  - valid session accepted
+  - tampered session rejected
+  - forged admin rejected
+
+## PRIORITY 2 - Login fallback CKAN ke local
+
+Bug:
+- Saat CKAN down, `POST /api/internal/auth/login` gagal `500 fetch failed`.
+- Fallback local store tidak dieksekusi.
+
+File terkait:
+- `web/src/app/api/internal/auth/login/route.ts`
+- service login CKAN
+- local auth service
+
+Tugas:
+1. Bungkus call login CKAN dengan try/catch.
+2. Jika CKAN network error/unreachable, lanjutkan fallback local.
+3. Jika credential invalid di CKAN, tetap evaluasi fallback local sesuai desain saat ini.
+4. Jangan return raw `fetch failed` ke client.
+5. Bedakan error credential invalid vs upstream unavailable.
+
+Acceptance criteria:
+- Dengan CKAN down dan credential local valid, login sukses.
+- Dengan CKAN down dan credential invalid, login gagal aman dengan status 401.
+- Response tidak membocorkan stack trace.
+- Test otomatis atau script verifikasi tersedia.
+
+## PRIORITY 3 - Operator ownership enforcement pada draft
+
+Bug:
+- Operator bisa membuat draft untuk OPD lain.
+
+File terkait:
+- `web/src/app/api/internal/workflow/draft/route.ts`
+- `web/src/lib/services/internal-store.ts`
+- permission/session helper
+
+Tugas:
+1. Untuk role `operator_opd`, paksa organisasi dataset berasal dari `session.organizationId`.
+2. Tolak request yang mencoba menggunakan `ownerOrgSlug`, `organizationId`, atau organisasi lain.
+3. Untuk admin/walidata, pertahankan kemampuan lintas organisasi jika sesuai aturan proyek.
+4. Pastikan audit/owner tetap mencatat actor yang benar.
+
+Acceptance criteria:
+- Operator OPD A membuat draft OPD A -> sukses.
+- Operator OPD A membuat draft OPD B -> 403.
+- Admin/walidata membuat draft lintas OPD -> sesuai aturan yang ada.
+- Test mencakup direct API call, bukan hanya UI.
+
+## PRIORITY 4 - Operator ownership enforcement pada workflow transition
+
+Bug:
+- Operator bisa transisi dataset OPD lain untuk transisi yang secara role diperbolehkan.
+
+File terkait:
+- `web/src/app/api/internal/workflow/transition/route.ts`
+- `web/src/lib/services/internal-store.ts`
+- workflow permission helper
+
+Tugas:
+1. Sebelum transition, ambil dataset target.
+2. Jika role `operator_opd`, pastikan dataset organisasi sama dengan session organisasi.
+3. Jika tidak sama, return 403.
+4. Pastikan valid transition tetap memakai aturan workflow resmi:
+   - Draft -> Submitted
+   - Submitted -> Need Revision | Approved
+   - Need Revision -> Submitted
+   - Approved -> Published
+   - Published -> Archived
+5. Jangan merusak hak admin dan walidata.
+
+Acceptance criteria:
+- Operator OPD A transisi dataset OPD A Need Revision -> Submitted -> sukses.
+- Operator OPD A transisi dataset OPD B Need Revision -> Submitted -> 403.
+- Operator tetap tidak bisa Approved/Published/Archived.
+- Admin tetap bisa override sesuai aturan.
+- Test direct API tersedia.
+
+## PRIORITY 5 - API error contract
+
+Bug:
+- API internal tanpa auth redirect 307, bukan JSON 401/403.
+- Unauthorized action return 500, bukan 403.
+
+File terkait:
+- `web/src/proxy.ts`
+- API route internal
+- error helper/response helper jika ada
+
+Tugas:
+1. Pisahkan behavior page internal dan API internal.
+2. Untuk `/internal/*` page tanpa login: redirect boleh.
+3. Untuk `/api/internal/*` tanpa login: return JSON 401.
+4. Untuk role tidak berhak: return JSON 403.
+5. Jangan gunakan 500 untuk error permission.
+6. Standarkan response shape JSON.
+
+Acceptance criteria:
+- GET/POST `/api/internal/*` tanpa session -> 401 JSON.
+- Role salah -> 403 JSON.
+- Validasi salah -> 400 JSON.
+- Error server asli -> 500 JSON.
+- Tidak ada redirect HTML untuk API internal.
+
+## PRIORITY 6 - Validasi resourceUrl
+
+Bug:
+- `resourceUrl=javascript:alert(1)` diterima.
+
+File terkait:
+- draft workflow validator
+- upload validator jika memakai URL
+- resource schema
+
+Tugas:
+1. Tambahkan validator URL.
+2. Hanya izinkan `http:` dan `https:`.
+3. Tolak `javascript:`, `data:`, `file:`, relative path berbahaya, dan URL malformed.
+4. Pastikan pesan error jelas.
+
+Acceptance criteria:
+- `https://example.com/file.csv` diterima.
+- `http://example.com/file.csv` diterima.
+- `javascript:alert(1)` ditolak 400.
+- `data:text/html,...` ditolak 400.
+- URL kosong tetap mengikuti aturan required existing.
+
+## PRIORITY 7 - Sanitasi field teks / stored XSS risk
+
+Bug:
+- Payload XSS tersimpan pada draft fields.
+
+Tugas:
+1. Identifikasi field teks yang disimpan:
+   - title
+   - summary
+   - description
+   - notes
+   - resourceName
+   - review notes
+   - request data public fields jika relevan
+2. Terapkan sanitasi server-side atau validasi yang menolak tag/script berbahaya.
+3. Pastikan UI tetap melakukan escaping.
+4. Jangan merusak karakter Bahasa Indonesia normal.
+
+Acceptance criteria:
+- `<script>alert(1)</script>` tidak tersimpan mentah.
+- `<img src=x onerror=alert(1)>` tidak tersimpan mentah.
+- Teks normal tetap tersimpan.
+- Test mencakup create draft dan minimal satu field publik jika relevan.
+
+## PRIORITY 8 - Public dataset must be Published only
+
+Bug/risk:
+- Katalog publik berpotensi memuat status non-published.
+- HTML katalog menunjukkan status `Submitted`.
+
+File terkait:
+- `web/src/app/dataset/page.tsx`
+- `web/src/app/dataset/[slug]/page.tsx`
+- `dataset-service`
+- adapter mock/ckan
+
+Tugas:
+1. Buat atau gunakan fungsi public-only:
+   - `getPublicDatasets`
+   - `getPublicDatasetBySlug`
+2. Enforce `status === "Published"` di server-side service.
+3. Jangan hanya sembunyikan di UI.
+4. Filter options publik juga hanya boleh berasal dari dataset Published.
+5. Direct slug non-published harus 404/not found.
+
+Acceptance criteria:
+- Draft/Submitted/Need Revision/Approved/Archived tidak tampil di `/dataset`.
+- Direct `/dataset/[slug]` non-published return 404.
+- Filter options publik tidak memuat status non-published.
+- Test tersedia untuk katalog dan detail slug.
+
+## PRIORITY 9 - Homepage dan infografis timeout
+
+Bug:
+- Homepage TTFB sekitar 34 detik.
+- `/api/infografis?source=auto/live` timeout >25 detik.
+
+File terkait:
+- `src/app/page.tsx`
+- `api/infografis/route.ts`
+- `infografis-service.ts`
+
+Tugas:
+1. Tambahkan timeout pendek untuk fetch upstream live, 2-5 detik.
+2. Tambahkan fallback deterministic:
+   - cached payload terakhir jika ada
+   - empty state jika tidak ada cache
+   - structured error untuk API
+3. Jangan blok SSR homepage terlalu lama.
+4. Pastikan `source=ckan` tetap graceful jika CKAN down.
+5. Tambahkan logging aman tanpa secret.
+
+Acceptance criteria:
+- GET `/` tidak menunggu 34 detik saat upstream live down.
+- `/api/infografis?source=auto` return dalam batas wajar.
+- `/api/infografis?source=live` return error/fallback terstruktur saat upstream gagal.
+- Tidak ada stack trace/secret di response.
+
+## PRIORITY 10 - Local store path consistency
+
+Bug:
+- `.local` bergantung pada current working directory, bisa tersimpan di `web/.local`.
+
+File terkait:
+- helper `getProjectRoot()` atau path store lokal
+- internal store
+- data request store
+
+Tugas:
+1. Tetapkan canonical root repo untuk `.local`.
+2. Jangan bergantung pada cwd `web`.
+3. Tambahkan log startup atau helper debug yang menunjukkan lokasi store aktif.
+4. Pastikan test/dev dari root maupun dari `web` memakai store yang sama.
+
+Acceptance criteria:
+- Menjalankan app dari root dan dari `web` tetap memakai `.local` yang sama.
+- Tidak ada duplikasi store `web/.local` vs root `.local`.
+
+## Setelah semua fix
+
+Jalankan:
+1. `npm run lint`
+2. `npx tsc --noEmit`
+3. `npm run build`
+4. Test unit/integration/e2e yang relevan
+5. Minimal regression manual/API untuk:
+   - forged cookie
+   - login CKAN down fallback local
+   - operator cross-org draft
+   - operator cross-org transition
+   - resourceUrl javascript
+   - public dataset non-published
+   - homepage latency
+   - infografis timeout
+
+Output akhir yang harus dibuat:
+1. `REMEDIATION_REPORT.md`
+2. `SECURITY_FIX_VERIFICATION.md`
+3. `REGRESSION_TEST_RESULTS.md`
+
+Format laporan:
+- Issue ID
+- File changed
+- Root cause
+- Fix summary
+- Tests added/updated
+- Commands run
+- Result
+- Remaining risk/blocker
+
+Jangan menandai fixed jika belum ada bukti test atau verifikasi runtime.

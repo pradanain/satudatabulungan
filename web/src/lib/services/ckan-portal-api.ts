@@ -1,6 +1,11 @@
 ﻿import "server-only";
 
 import type { InternalRole, InternalSession } from "@/lib/types/internal";
+import {
+  fetchWithTimeout,
+  isUpstreamNetworkError,
+  summarizeUpstreamError,
+} from "@/lib/utils/upstream-error";
 
 export type PortalContentType = "dataset" | "infografis" | "publikasi" | "accounts";
 
@@ -140,6 +145,9 @@ type CkanPackageSearchResult = {
 
 const DEFAULT_BASE_URL = "http://localhost:5000";
 const ACCOUNTS_PACKAGE_NAME = "portal-akun-role-kabupaten-bulungan";
+const DEFAULT_CKAN_UNAVAILABLE_COOLDOWN_MS = 30_000;
+
+let ckanUnavailableUntil = 0;
 
 const rolePermissions: Record<InternalRole, string[]> = {
   admin: [
@@ -180,6 +188,29 @@ function getActionEndpoint(action: string): string {
   return `${getBaseUrl()}/api/3/action/${action}`;
 }
 
+function getCkanUnavailableCooldownMs(): number {
+  const parsed = Number(
+    process.env.CKAN_UNAVAILABLE_COOLDOWN_MS ?? DEFAULT_CKAN_UNAVAILABLE_COOLDOWN_MS,
+  );
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_CKAN_UNAVAILABLE_COOLDOWN_MS;
+  }
+
+  return Math.floor(parsed);
+}
+
+function isInUnavailableWindow(): boolean {
+  return Date.now() < ckanUnavailableUntil;
+}
+
+function markCkanUnavailable(): void {
+  ckanUnavailableUntil = Date.now() + getCkanUnavailableCooldownMs();
+}
+
+function clearCkanUnavailable(): void {
+  ckanUnavailableUntil = 0;
+}
+
 function toExtrasMap(extras?: CkanExtra[]): Record<string, string> {
   const pairs = (extras ?? []).map((item) => [item.key, item.value] as const);
   return Object.fromEntries(pairs);
@@ -202,6 +233,10 @@ async function ckanAction<T>(
   payload: Record<string, unknown> | undefined,
   options?: { method?: "GET" | "POST"; requireAuth?: boolean; nextRevalidateSeconds?: number },
 ): Promise<T> {
+  if (isInUnavailableWindow()) {
+    throw new Error("CKAN upstream sementara tidak tersedia.");
+  }
+
   const method = options?.method ?? "POST";
   const endpoint = method === "GET" ? `${getActionEndpoint(action)}?${new URLSearchParams(payload as Record<string, string>).toString()}` : getActionEndpoint(action);
   const headers: Record<string, string> = {
@@ -221,12 +256,23 @@ async function ckanAction<T>(
     throw new Error("CKAN_API_KEY belum diisi.");
   }
 
-  const response = await fetch(endpoint, {
-    method,
-    headers,
-    body: method === "POST" ? JSON.stringify(payload ?? {}) : undefined,
-    next: { revalidate: options?.nextRevalidateSeconds ?? 120 },
-  });
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method,
+      headers,
+      body: method === "POST" ? JSON.stringify(payload ?? {}) : undefined,
+      next: { revalidate: options?.nextRevalidateSeconds ?? 120 },
+    });
+    clearCkanUnavailable();
+  } catch (error) {
+    if (isUpstreamNetworkError(error)) {
+      markCkanUnavailable();
+    }
+
+    const reason = summarizeUpstreamError(error);
+    throw new Error(`CKAN request gagal untuk action ${action} (${reason}).`);
+  }
 
   if (!response.ok) {
     throw new Error(`CKAN request gagal (${response.status}) untuk action ${action}.`);
@@ -591,7 +637,7 @@ async function upsertDataset(payload: UploadPayload, contentType: PortalContentT
     payload.resourceFileName,
   );
 
-  const createResponse = await fetch(getActionEndpoint("package_create"), {
+  const createResponse = await fetchWithTimeout(getActionEndpoint("package_create"), {
     method: "POST",
     headers: {
       Authorization: apiKey,

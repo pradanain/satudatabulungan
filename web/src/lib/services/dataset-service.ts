@@ -10,6 +10,7 @@ import type {
   DatasetSort,
   PortalStats,
 } from "@/lib/types/dataset";
+import { summarizeUpstreamError } from "@/lib/utils/upstream-error";
 import { normalizeOrganizationName } from "@/lib/utils/organization";
 
 const config = getRuntimeConfig();
@@ -33,7 +34,8 @@ async function withFallback<T>(fn: (adapter: DatasetAdapter) => Promise<T>): Pro
       throw error;
     }
 
-    console.warn("Gagal mengambil data CKAN, fallback ke mock dataset.", error);
+    const reason = summarizeUpstreamError(error);
+    console.warn(`[dataset-service] CKAN unavailable, fallback ke mock dataset. reason=${reason}`);
     return fn(mockAdapter);
   }
 }

@@ -79,7 +79,8 @@ const VIEW_CONFIG: Record<
   "buku-digital": {
     icon: BookOpenText,
     title: "Publikasi Buku Digital",
-    description: "Daftar buku digital dan dokumen terbitan resmi yang tersedia dalam format digital.",
+    description:
+      "Daftar buku digital dari sumber resmi Bappeda Bulungan, ditambah konten yang diunggah operator internal melalui CKAN.",
     listTitle: "Semua Buku Digital",
     emptyTitle: "Buku digital belum tersedia",
     emptyDescription: "Belum ada buku digital yang dapat ditampilkan untuk pilihan saat ini.",
@@ -90,7 +91,7 @@ const VIEW_CONFIG: Record<
     icon: ImageIcon,
     title: "Publikasi Infografis",
     description:
-      "Daftar infografis resmi DKIP Bulungan yang ditarik otomatis melalui endpoint internal dengan fallback sumber terkelola.",
+      "Daftar infografis resmi DKIP Bulungan dari sumber live, ditambah konten unggahan operator internal melalui CKAN.",
     listTitle: "Semua Infografis",
     emptyTitle: "Infografis belum tersedia",
     emptyDescription: "Belum ada infografis yang dapat ditampilkan untuk pilihan saat ini.",
