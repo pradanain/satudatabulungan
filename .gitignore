@@ -22,3 +22,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Deploy runtime secrets
+deploy/env/*.env
+deploy/env/*.env.local
+!deploy/env/*.env.example

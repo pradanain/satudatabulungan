@@ -1,0 +1,32 @@
+name: satudata-portal
+
+services:
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/your-github-owner/satudatabulungan-web:deploy-latest}
+    restart: unless-stopped
+    env_file:
+      - ../env/web.production.env
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    networks:
+      - portal
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    env_file:
+      - ../env/cloudflared.env
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+    depends_on:
+      web:
+        condition: service_started
+    networks:
+      - portal
+
+networks:
+  portal:
+    driver: bridge

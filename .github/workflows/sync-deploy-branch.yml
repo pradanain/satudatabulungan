@@ -1,0 +1,52 @@
+name: Sync Deploy Branch
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build deploy tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPLOY_DIR="$RUNNER_TEMP/deploy-tree"
+          mkdir -p "$DEPLOY_DIR/.github/workflows"
+
+          cp -a web "$DEPLOY_DIR/"
+          cp -a services "$DEPLOY_DIR/"
+          cp -a deploy "$DEPLOY_DIR/"
+          cp -a .gitignore "$DEPLOY_DIR/"
+          cp -a README.deploy.md "$DEPLOY_DIR/README.md"
+          cp -a .github/workflows/build-web-image.yml "$DEPLOY_DIR/.github/workflows/"
+
+      - name: Publish deploy branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPLOY_DIR="$RUNNER_TEMP/deploy-tree"
+          cd "$DEPLOY_DIR"
+
+          git init
+          git checkout -b deploy
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: sync deploy branch from ${GITHUB_SHA}"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

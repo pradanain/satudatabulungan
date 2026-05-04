@@ -164,3 +164,24 @@ Deployment satu server non-Docker (Next.js + CKAN native install):
 Runbook install CKAN dari nol (pilihan Docker vs Non-Docker):
 
 - `docs/07_ckan_install_runbook_zero_to_live.md`
+
+## Deploy Docker + Cloudflared (Branch Bersih)
+
+Untuk kebutuhan deploy server yang ringan (tanpa build ulang di server), gunakan pipeline:
+
+- `.github/workflows/build-web-image.yml` -> build + push image web ke GHCR
+- `.github/workflows/sync-deploy-branch.yml` -> sinkronisasi branch `deploy` (hanya file deploy penting)
+
+Langkah operasional:
+
+1. Push perubahan ke branch `main`.
+2. Tunggu workflow `Build Web Image` sukses (image tag `deploy-latest`).
+3. Di server, clone/pull branch `deploy`.
+4. Salin env contoh:
+   - `deploy/env/web.production.env.example` -> `deploy/env/web.production.env`
+   - `deploy/env/cloudflared.env.example` -> `deploy/env/cloudflared.env`
+5. Jalankan:
+
+```bash
+docker compose --env-file deploy/env/cloudflared.env -f deploy/docker/docker-compose.portal.yml up -d
+```
