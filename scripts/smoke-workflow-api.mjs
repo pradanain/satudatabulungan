@@ -78,10 +78,11 @@ async function fetchWithTimeout(url, timeoutMs = 15000, extraHeaders = {}) {
 
 async function waitServerReady(baseUrl, timeoutMs, logs) {
   const start = Date.now();
+  const readinessPath = process.env.SMOKE_READY_PATH ?? "/api/internal/workflow/transition";
   while (Date.now() - start < timeoutMs) {
     try {
-      const response = await fetchWithTimeout(`${baseUrl}/`, 3000);
-      if (response.ok) {
+      const response = await fetchWithTimeout(`${baseUrl}${readinessPath}`, 10000);
+      if (response.status < 500) {
         return;
       }
     } catch {
