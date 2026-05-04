@@ -20,10 +20,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
           cache: npm
@@ -42,7 +42,8 @@ jobs:
         run: |
           set -euo pipefail
           for i in {1..60}; do
-            status=$(docker inspect bulungan-ckan-app --format '{{.State.Health.Status}}' 2>/dev/null || true)
+            ckan_id="$(docker compose -f services/ckan/docker-compose.yml ps -q ckan || true)"
+            status="$(docker inspect "$ckan_id" --format '{{.State.Health.Status}}' 2>/dev/null || true)"
             if [[ "$status" == "healthy" ]]; then
               echo "CKAN healthy"
               exit 0
@@ -51,7 +52,7 @@ jobs:
           done
           echo "CKAN failed to reach healthy state"
           docker compose -f services/ckan/docker-compose.yml ps
-          docker logs bulungan-ckan-app --tail 200 || true
+          docker compose -f services/ckan/docker-compose.yml logs ckan --tail 200 || true
           exit 1
 
       - name: CKAN connectivity check

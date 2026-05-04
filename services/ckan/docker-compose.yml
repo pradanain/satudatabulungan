@@ -1,7 +1,9 @@
+name: portal
+
 services:
   db:
     image: postgres:14
-    container_name: bulungan-ckan-db
+    container_name: portal_db
     environment:
       POSTGRES_DB: ckan
       POSTGRES_USER: ckan
@@ -18,7 +20,7 @@ services:
 
   datastore-db:
     image: postgres:14
-    container_name: bulungan-ckan-datastore
+    container_name: portal_datastore_db
     environment:
       POSTGRES_DB: datastore
       POSTGRES_USER: datastore
@@ -35,7 +37,7 @@ services:
 
   datastore-init:
     image: postgres:14
-    container_name: bulungan-ckan-datastore-init
+    container_name: portal_datastore_init
     depends_on:
       datastore-db:
         condition: service_healthy
@@ -55,19 +57,19 @@ services:
 
   solr:
     image: ckan/ckan-solr:2.10-solr9
-    container_name: bulungan-ckan-solr
+    container_name: portal_solr
     ports:
       - "8983:8983"
 
   redis:
     image: redis:7-alpine
-    container_name: bulungan-ckan-redis
+    container_name: portal_redis
     ports:
       - "6379:6379"
 
   ckan:
     image: ckan/ckan-dev:2.10
-    container_name: bulungan-ckan-app
+    container_name: portal_ckan
     depends_on:
       db:
         condition: service_healthy
