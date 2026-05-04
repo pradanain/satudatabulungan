@@ -23,8 +23,14 @@ File audit, docs, prompt, dan artefak non-runtime tidak ikut ke branch ini.
 
 ```bash
 cp deploy/env/web.production.env.example deploy/env/web.production.env
-cp deploy/env/cloudflared.env.example deploy/env/cloudflared.env
+cp deploy/env/portal.deploy.env.example deploy/env/portal.deploy.env
 
-# sesuaikan WEB_IMAGE dan TUNNEL_TOKEN
-docker compose --env-file deploy/env/cloudflared.env -f deploy/docker/docker-compose.portal.yml up -d
+# sesuaikan WEB_IMAGE dan WEB_HOST_PORT
+docker compose --env-file deploy/env/portal.deploy.env -f deploy/docker/docker-compose.portal.yml up -d
 ```
+
+## Mapping Cloudflare Tunnel Global
+
+Saat membuat Public Hostname untuk `portal.databenuanta.id`, arahkan service ke:
+
+- `http://<IP-atau-host-server>:<WEB_HOST_PORT>`

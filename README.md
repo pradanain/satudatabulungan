@@ -179,9 +179,13 @@ Langkah operasional:
 3. Di server, clone/pull branch `deploy`.
 4. Salin env contoh:
    - `deploy/env/web.production.env.example` -> `deploy/env/web.production.env`
-   - `deploy/env/cloudflared.env.example` -> `deploy/env/cloudflared.env`
+   - `deploy/env/portal.deploy.env.example` -> `deploy/env/portal.deploy.env`
 5. Jalankan:
 
 ```bash
-docker compose --env-file deploy/env/cloudflared.env -f deploy/docker/docker-compose.portal.yml up -d
+docker compose --env-file deploy/env/portal.deploy.env -f deploy/docker/docker-compose.portal.yml up -d
 ```
+
+Jika cloudflared Anda berjalan global/terpisah, arahkan hostname `portal.databenuanta.id` ke host server:
+
+- `http://<IP-atau-host-server>:<WEB_HOST_PORT>`
