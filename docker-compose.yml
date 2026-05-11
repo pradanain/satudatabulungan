@@ -1,0 +1,132 @@
+name: satu-data-bulungan
+
+services:
+  # --- FRONTEND GATEWAY (NGINX) ---
+  nginx:
+    image: nginx:stable-alpine
+    container_name: portal_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./services/deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+      - ckan
+    restart: always
+
+  # --- BACKEND SERVICES (CKAN & STACK) ---
+  db:
+    image: postgres:14
+    container_name: portal_db
+    environment:
+      POSTGRES_DB: ckan
+      POSTGRES_USER: ckan
+      POSTGRES_PASSWORD: ckan
+    volumes:
+      - ckan_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ckan -d ckan"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  datastore-db:
+    image: postgres:14
+    container_name: portal_datastore_db
+    environment:
+      POSTGRES_DB: datastore
+      POSTGRES_USER: datastore
+      POSTGRES_PASSWORD: datastore
+    volumes:
+      - ckan_datastore_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U datastore -d datastore"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  datastore-init:
+    image: postgres:14
+    container_name: portal_datastore_init
+    depends_on:
+      datastore-db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: datastore
+    command: >
+      sh -ec "
+        if ! psql -h datastore-db -U datastore -d datastore -tAc \"SELECT 1 FROM pg_roles WHERE rolname='datastore_ro'\" | grep -q 1; then
+          psql -h datastore-db -U datastore -d datastore -c \"CREATE ROLE datastore_ro LOGIN PASSWORD 'datastore'\";
+        fi;
+        psql -h datastore-db -U datastore -d datastore -c \"GRANT CONNECT ON DATABASE datastore TO datastore_ro\";
+        psql -h datastore-db -U datastore -d datastore -c \"GRANT USAGE ON SCHEMA public TO datastore_ro\";
+        psql -h datastore-db -U datastore -d datastore -c \"GRANT SELECT ON ALL TABLES IN SCHEMA public TO datastore_ro\";
+        psql -h datastore-db -U datastore -d datastore -c \"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO datastore_ro\";
+      "
+
+  solr:
+    image: ckan/ckan-solr:2.10-solr9
+    container_name: portal_solr
+
+  redis:
+    image: redis:7-alpine
+    container_name: portal_redis
+
+  ckan:
+    image: ckan/ckan-dev:2.10
+    container_name: portal_ckan
+    depends_on:
+      db:
+        condition: service_healthy
+      datastore-db:
+        condition: service_healthy
+      datastore-init:
+        condition: service_completed_successfully
+      solr:
+        condition: service_started
+      redis:
+        condition: service_started
+    environment:
+      CKAN_SITE_URL: ${NEXT_PUBLIC_CKAN_BASE_URL:-http://localhost:5000}
+      CKAN_SQLALCHEMY_URL: postgresql://ckan:ckan@db/ckan
+      CKAN_DATASTORE_WRITE_URL: postgresql://datastore:datastore@datastore-db/datastore
+      CKAN_DATASTORE_READ_URL: postgresql://datastore_ro:datastore@datastore-db/datastore
+      CKAN_SOLR_URL: http://solr:8983/solr/ckan
+      CKAN_REDIS_URL: redis://redis:6379/1
+      CKAN_SYSADMIN_NAME: ${CKAN_SYSADMIN_NAME:-admin}
+      CKAN_SYSADMIN_PASSWORD: ${CKAN_SYSADMIN_PASSWORD:-bulunganbisa}
+      CKAN_SYSADMIN_EMAIL: ${CKAN_SYSADMIN_EMAIL:-admin@bulungan.go.id}
+    # ports:
+    #   - "5000:5000" # Tutup akses langsung, lewat Nginx saja
+    volumes:
+      - ckan_storage:/var/lib/ckan
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5000/api/3/action/status_show >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  # --- FRONTEND SERVICE (NEXT.JS) ---
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: portal_web
+    depends_on:
+      ckan:
+        condition: service_healthy
+    # ports:
+    #   - "3000:3000" # Tutup akses langsung, lewat Nginx saja
+    environment:
+      - DATA_SOURCE_MODE=ckan
+      - CKAN_BASE_URL=http://ckan:5000
+      - NEXT_PUBLIC_CKAN_BASE_URL=${NEXT_PUBLIC_CKAN_BASE_URL:-http://localhost:5000}
+      - CKAN_API_KEY=${CKAN_API_KEY}
+    restart: always
+
+volumes:
+  ckan_pg_data:
+  ckan_datastore_pg_data:
+  ckan_storage:

@@ -128,7 +128,7 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
       <div className="internal-shell py-4 sm:py-6">
         <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="hidden xl:block">
-            <Card className="internal-surface sticky top-4 overflow-hidden border-transparent shadow-none">
+            <Card className="sticky top-4 overflow-hidden border-transparent bg-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl">
               <div className="internal-ornament-band border-b border-[var(--color-border)] px-4 py-3">
                 <div className="flex items-center justify-between gap-2">
                   <Image
@@ -148,11 +148,11 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
               </div>
 
               <div className="px-3 pb-3 pt-3">
-                <div className="rounded-xl border border-[var(--color-border)] bg-white p-3">
-                  <p className="m-0 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-primary)]">
+                <div className="rounded-xl border border-[var(--color-border)] bg-gradient-to-br from-white to-[var(--color-surface-soft)] p-3 shadow-sm">
+                  <p className="m-0 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-primary)]/80">
                     Akun Aktif
                   </p>
-                  <p className="mb-0 mt-1 text-base font-semibold">{session.name}</p>
+                  <p className="mb-0 mt-1 text-base font-semibold text-[var(--color-text)]">{session.name}</p>
                   <p className="mb-0 mt-0.5 text-sm text-[var(--color-muted)]">{session.organizationName}</p>
                 </div>
 
@@ -184,12 +184,12 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
                                   key={key}
                                   href={getHref(key)}
                                   className={cn(
-                                    "flex items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-[var(--color-muted)] transition hover:border-[var(--color-border)] hover:bg-[var(--color-surface-soft)] hover:text-[var(--color-primary)]",
+                                    "group flex items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-[var(--color-muted)] transition-all duration-200 hover:border-[var(--color-border)] hover:bg-white hover:text-[var(--color-primary)] hover:shadow-sm",
                                     activeKey === key &&
-                                      "border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-primary)]",
+                                      "border-[var(--color-border)] bg-white text-[var(--color-primary)] shadow-sm",
                                   )}
                                 >
-                                  <Icon className="size-4" />
+                                  <Icon className={cn("size-4 transition-transform group-hover:scale-110", activeKey === key && "text-[var(--color-primary)]")} />
                                   <span>{internalNavLabels[key]}</span>
                                 </Link>
                               );
@@ -209,7 +209,7 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
           </aside>
 
           <div className="min-w-0">
-            <Card className="internal-surface overflow-hidden border-transparent p-3.5 shadow-none sm:p-4">
+            <Card className="overflow-hidden border-transparent bg-white/70 p-3.5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl sm:p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2.5">
                   <Image

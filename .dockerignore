@@ -1,0 +1,31 @@
+# Ignore Git
+.git
+.gitignore
+.github
+
+# Ignore Documentation (Not needed in runtime)
+docs/
+references/
+*.md
+
+# Ignore Local State
+.local/
+services/ckan/postgresql/
+services/ckan/solr/
+services/ckan/storage/
+
+# Ignore Node.js / Build artifacts
+node_modules
+web/node_modules
+web/.next
+web/out
+web/build
+
+# Ignore Environment files (will be passed via docker-compose/secrets)
+.env
+.env.*
+web/.env*
+
+# Ignore OS files
+.DS_Store
+Thumbs.db

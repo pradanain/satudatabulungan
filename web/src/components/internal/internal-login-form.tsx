@@ -66,10 +66,10 @@ export function InternalLoginForm() {
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-      <Card className="internal-surface overflow-hidden border-transparent shadow-none">
-        <div className="internal-ornament-band h-8 border-b border-[var(--color-border)]" />
-        <div className="flex h-full flex-col justify-between gap-6 p-6">
+    <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      <Card className="overflow-hidden border-transparent bg-white/70 shadow-[0_20px_50px_rgba(0,0,0,0.1)] backdrop-blur-2xl">
+        <div className="h-2 w-full bg-gradient-to-r from-[var(--color-primary)] via-[var(--color-accent-blue)] to-[var(--color-primary)]" />
+        <div className="flex h-full flex-col justify-between gap-6 p-7 sm:p-8">
           <div>
             <p className="m-0 text-xs font-extrabold uppercase tracking-[0.2em] text-[var(--color-primary)]">
               Portal Internal
@@ -85,38 +85,43 @@ export function InternalLoginForm() {
 
           <div className="grid gap-3">
             {demoAccounts.map((account) => (
-              <button
+                <button
                 key={account.label}
                 type="button"
                 onClick={() => setForm({ username: account.username, password: account.password })}
-                className="rounded-2xl border border-[var(--color-border)] bg-white p-4 text-left transition hover:border-[var(--color-accent-blue)]/25 hover:bg-[var(--color-surface-soft)]"
+                className="group relative rounded-2xl border border-[var(--color-border)] bg-white/50 p-4 text-left transition-all duration-300 hover:border-[var(--color-primary)]/30 hover:bg-white hover:shadow-md"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="m-0 text-base font-semibold">{account.label}</h2>
-                  <Badge className="border-[var(--color-border)] bg-white text-[var(--color-text)]" variant="outline">
+                  <h2 className="m-0 text-base font-bold text-[var(--color-text)] transition-colors group-hover:text-[var(--color-primary)]">
+                    {account.label}
+                  </h2>
+                  <Badge className="border-[var(--color-border)] bg-white/80 text-[var(--color-text)] shadow-xs" variant="outline">
                     Demo Lokal
                   </Badge>
                 </div>
-                <p className="mb-0 mt-2 text-sm text-[var(--color-muted)]">{account.note}</p>
-                <p className="mb-0 mt-3 text-xs text-[var(--color-muted)]">
-                  {account.username} / {account.password}
-                </p>
+                <p className="mb-0 mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{account.note}</p>
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="size-1.5 rounded-full bg-[var(--color-primary)]/40" />
+                  <p className="mb-0 text-xs font-medium text-[var(--color-muted)]/80">
+                    {account.username}
+                  </p>
+                </div>
               </button>
             ))}
           </div>
         </div>
       </Card>
 
-      <Card className="internal-surface border-transparent p-6 shadow-none sm:p-7">
-        <p className="m-0 text-xs font-extrabold uppercase tracking-[0.18em] text-[var(--color-primary)]">
+      <Card className="relative overflow-hidden border-transparent bg-white/90 p-7 shadow-[0_20px_50px_rgba(0,0,0,0.1)] backdrop-blur-2xl sm:p-9">
+        <div className="absolute right-0 top-0 size-32 translate-x-12 -translate-y-12 rounded-full bg-[var(--color-primary)]/5 blur-3xl" />
+        <p className="m-0 text-xs font-extrabold uppercase tracking-[0.25em] text-[var(--color-primary)]">
           Masuk
         </p>
-        <h2 className="mt-3 font-[family-name:var(--font-heading)] text-3xl font-semibold">
-          Masuk ke Portal Internal
+        <h2 className="mt-4 font-[family-name:var(--font-heading)] text-3xl font-bold tracking-tight text-[var(--color-text)] sm:text-4xl">
+          Akses Workspace
         </h2>
-        <p className="mb-0 mt-3 text-sm leading-relaxed text-[var(--color-muted)]">
-          Login ini membaca akun dari backend CKAN (dengan fallback akun lokal saat backend belum siap).
-          Silakan pilih akun contoh di panel kiri atau isi manual.
+        <p className="mb-0 mt-4 text-sm leading-relaxed text-[var(--color-muted)]">
+          Masuk untuk mengelola dataset publikasi. Sistem terhubung ke sinkronisasi draf CKAN.
         </p>
 
         <form className="mt-6 grid gap-4" onSubmit={handleLogin}>

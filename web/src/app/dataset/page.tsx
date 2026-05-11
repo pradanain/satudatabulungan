@@ -49,7 +49,7 @@ export default async function DatasetPage({ searchParams }: DatasetPageProps) {
 
   const [datasets, options] = await Promise.all([
     getPublicDatasets(filters),
-    getPublicDatasetFilterOptions(),
+    getPublicDatasetFilterOptions({ q: filters.q }),
   ]);
 
   const totalItems = datasets.length;

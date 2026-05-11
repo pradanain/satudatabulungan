@@ -1050,32 +1050,33 @@ function sortDatasets(datasets: Dataset[], sort: DatasetSort = defaultSort): Dat
 }
 
 function buildFilterOptions(datasets: Dataset[]): DatasetFilterOptions {
-  const years = [
-    ...new Set(
-      datasets.flatMap((item) => {
-        const fromUpdated = item.lastUpdated.slice(0, 4);
-        const fromPeriod = item.metadata.period.match(/\d{4}/g) ?? [];
-        return [fromUpdated, ...fromPeriod];
-      }),
-    ),
-  ]
-    .filter((value) => value && /^\d{4}$/.test(value))
-    .sort((a, b) => Number(b) - Number(a));
+  const countOccurrences = (values: string[]) => {
+    const map = new Map<string, number>();
+    values.forEach((v) => {
+      if (!v) return;
+      map.set(v, (map.get(v) || 0) + 1);
+    });
+    return [...map.entries()]
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value, "id-ID"));
+  };
+
+  const years = countOccurrences(
+    datasets.flatMap((item) => {
+      const fromUpdated = item.lastUpdated.slice(0, 4);
+      const fromPeriod = item.metadata.period.match(/\d{4}/g) ?? [];
+      return [fromUpdated, ...fromPeriod];
+    }),
+  ).filter((item) => /^\d{4}$/.test(item.value));
 
   return {
-    topics: [...new Set(datasets.map((item) => item.topic))].sort((a, b) => a.localeCompare(b, "id-ID")),
-    organizations: [...new Set(datasets.map((item) => item.organization))].sort((a, b) =>
-      a.localeCompare(b, "id-ID"),
-    ),
-    formats: [...new Set(datasets.flatMap((item) => item.formats))].sort((a, b) =>
-      a.localeCompare(b, "id-ID"),
-    ),
-    frequencies: [...new Set(datasets.map((item) => item.frequency))],
+    topics: countOccurrences(datasets.map((item) => item.topic)),
+    organizations: countOccurrences(datasets.map((item) => item.organization)),
+    formats: countOccurrences(datasets.flatMap((item) => item.formats)),
+    frequencies: countOccurrences(datasets.map((item) => item.frequency)),
     statuses: [...new Set(datasets.map((item) => item.status))],
-    years,
-    tags: [...new Set(datasets.flatMap((item) => item.metadata.tags))].sort((a, b) =>
-      a.localeCompare(b, "id-ID"),
-    ),
+    years: years.length > 0 ? years : [],
+    tags: countOccurrences(datasets.flatMap((item) => item.metadata.tags)),
   };
 }
 

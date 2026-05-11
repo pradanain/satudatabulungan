@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     const payload = (await request.json()) as DraftPayload;
 
     const title = getRequired(payload, "title");
-    const summary = getRequired(payload, "summary");
+    const summary = sanitizeStoredText(payload.summary?.trim() || title);
     const organization = getRequired(payload, "organization");
     const topic = getRequired(payload, "topic");
     const period = getRequired(payload, "period");

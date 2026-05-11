@@ -107,14 +107,19 @@ export interface DatasetFilters {
   sort?: DatasetSort;
 }
 
+export interface DatasetFilterOption {
+  value: string;
+  count: number;
+}
+
 export interface DatasetFilterOptions {
-  topics: string[];
-  organizations: string[];
-  formats: string[];
-  frequencies: string[];
+  topics: DatasetFilterOption[];
+  organizations: DatasetFilterOption[];
+  formats: DatasetFilterOption[];
+  frequencies: DatasetFilterOption[];
   statuses: string[];
-  years: string[];
-  tags: string[];
+  years: DatasetFilterOption[];
+  tags: DatasetFilterOption[];
 }
 
 export interface PortalStats {

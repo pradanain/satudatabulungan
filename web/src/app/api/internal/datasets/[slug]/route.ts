@@ -87,8 +87,8 @@ export async function PATCH(
       slug,
       {
         title: getRequired(payload.title, "title"),
-        summary: getRequired(payload.summary, "summary"),
-        description: getRequired(payload.description, "description"),
+        summary: sanitizeStoredText(payload.summary?.trim() || (payload.title || "")),
+        description: sanitizeStoredText(payload.description?.trim() || ""),
         topic: getRequired(payload.topic, "topic"),
         frequency: frequency as DatasetFrequency,
         period: getRequired(payload.period, "period"),

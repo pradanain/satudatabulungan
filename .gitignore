@@ -1,18 +1,35 @@
-# Local runtime state
+# --- Dependencies ---
+node_modules/
+web/node_modules/
+web/.next/
+web/out/
+web/build/
+web/.env.local
+web/.env.development.local
+web/.env.test.local
+web/.env.production.local
+
+# --- Docker & Services ---
+services/ckan/postgresql/data/
+services/ckan/solr/data/
+services/ckan/storage/
 .local/
 
-# Generated audit artifacts
-AUDIT_*.md
-REMEDIATION_REPORT.md
-SECURITY_FIX_VERIFICATION.md
-REGRESSION_TEST_RESULTS.md
-
-# Local environment files
+# --- Environment Secrets ---
 .env
 .env.*
 !.env.example
+services/deploy/env/*.env
+services/deploy/env/*.env.local
+!services/deploy/env/*.env.example
 
-# Editor / OS
+# --- Documentation & Prompts ---
+docs/prompts/
+# Jika Anda ingin menyimpan audit di Git, hapus tanda # di bawah
+# docs/audit/AUDIT_*.md
+# docs/audit/SECURITY_*.md
+
+# --- Editor / OS ---
 .DS_Store
 Thumbs.db
 .idea/
@@ -20,10 +37,6 @@ Thumbs.db
 *.swp
 *.swo
 
-# Logs
+# --- Logs ---
 *.log
-
-# Deploy runtime secrets
-deploy/env/*.env
-deploy/env/*.env.local
-!deploy/env/*.env.example
+web/.next-dev-*.log

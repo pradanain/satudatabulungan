@@ -37,7 +37,7 @@ export const internalNavAccess: Record<InternalNavKey, InternalRole[]> = {
   organizations: ["admin", "walidata"],
   topics: ["admin", "walidata"],
   notifications: ["admin", "walidata", "operator_opd"],
-  workflowHistory: ["admin", "walidata", "operator_opd"],
+  workflowHistory: ["admin", "walidata"],
   settings: ["admin"],
   profile: ["admin", "walidata", "operator_opd"],
   help: ["admin", "walidata", "operator_opd"],

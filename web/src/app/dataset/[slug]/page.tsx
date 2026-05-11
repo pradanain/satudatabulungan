@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -15,6 +15,7 @@ import type { Dataset } from "@/lib/types/dataset";
 import { getPrimaryDatasetDescription } from "@/lib/utils/dataset-description";
 import { formatIndonesianDate } from "@/lib/utils/formatters";
 import { buildPageMetadata } from "@/lib/utils/metadata";
+import ChoroplethMap from "@/components/shared/choropleth-map";
 
 type DatasetDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -270,6 +271,23 @@ export default async function DatasetDetailPage({ params }: DatasetDetailPagePro
 
           <TabsContent value="resource" className="grid gap-4 pt-1">
             <ResourceList resources={dataset.resources} />
+            
+            {dataset.preview.rows.length > 0 && (
+              <Card className="overflow-hidden border-[#d6ddeb] bg-white p-0">
+                <div className="border-b border-[#f0f2f5] bg-[#f8faff] px-5 py-3">
+                  <h3 className="m-0 text-sm font-bold uppercase tracking-wider text-[#4b5563]">Visualisasi Geospasial</h3>
+                </div>
+                <div className="h-[450px] w-full">
+                  <ChoroplethMap data={dataset.preview.rows} className="h-full w-full" />
+                </div>
+                <div className="bg-[#fcfdfe] px-5 py-3 border-t border-[#f0f2f5]">
+                  <p className="m-0 text-[11px] text-[#6b7280]">
+                    Peta interaktif sebaran data di 10 Kecamatan Kabupaten Bulungan. Warna lebih gelap menunjukkan nilai yang lebih tinggi.
+                  </p>
+                </div>
+              </Card>
+            )}
+
             <PreviewPanel preview={dataset.preview} />
           </TabsContent>
 

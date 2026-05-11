@@ -31,7 +31,7 @@ function SelectField({
   label: string;
   name: string;
   value?: string;
-  options: string[];
+  options: { value: string; count: number }[];
 }) {
   return (
     <label className="grid min-w-0 gap-1.5 text-sm font-semibold text-[#47413f]" htmlFor={id}>
@@ -44,8 +44,8 @@ function SelectField({
       >
         <option value="">Semua</option>
         {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
+          <option key={option.value} value={option.value}>
+            {option.value} {option.count > 0 ? `(${option.count})` : ""}
           </option>
         ))}
       </select>

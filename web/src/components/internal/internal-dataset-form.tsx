@@ -57,9 +57,9 @@ export function InternalDatasetForm({
     summary: dataset?.summary ?? "",
     description: dataset?.description ?? "",
     organizationId: dataset?.organizationId ?? session.organizationId,
-    topic: dataset?.topic ?? topics[0]?.name ?? "Kependudukan",
+    topic: dataset?.topic ?? topics[0]?.name ?? "Statistik Sektoral",
     frequency: dataset?.frequency ?? "Tahunan",
-    period: dataset?.metadata.period ?? "2026",
+    period: dataset?.metadata.period ?? new Date().getFullYear().toString(),
     walidata: dataset?.metadata.walidata ?? "Walidata Bulungan",
     coverage: dataset?.metadata.coverage ?? "Kabupaten Bulungan",
     resourceName: dataset?.resources[0]?.name ?? "",
@@ -134,20 +134,10 @@ export function InternalDatasetForm({
             Judul Dataset
             <Input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} required />
           </label>
-          <label className="internal-field-label">
-            Slug
-            <Input
-              value={form.slug}
-              onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))}
-              placeholder="otomatis dari judul jika kosong"
-              disabled={!isCreate}
-            />
-          </label>
+          {/* Slug hidden - automatically generated from title */}
+          <input type="hidden" value={form.slug} />
 
-          <label className="internal-field-label md:col-span-2">
-            Ringkasan
-            <Input value={form.summary} onChange={(event) => setForm((current) => ({ ...current, summary: event.target.value }))} required />
-          </label>
+          {/* Ringkasan removed per user feedback */}
           <label className="internal-field-label">
             Topik
             <select
@@ -163,21 +153,24 @@ export function InternalDatasetForm({
             </select>
           </label>
 
-          <label className="internal-field-label">
-            Organisasi / OPD
-            <select
-              value={form.organizationId}
-              onChange={(event) => setForm((current) => ({ ...current, organizationId: event.target.value }))}
-              className="internal-select"
-              disabled={session.role === "operator_opd"}
-            >
-              {organizations.map((organization) => (
-                <option key={organization.id} value={organization.id}>
-                  {organization.shortName}
-                </option>
-              ))}
-            </select>
-          </label>
+          {session.role !== "operator_opd" ? (
+            <label className="internal-field-label">
+              Organisasi / OPD
+              <select
+                value={form.organizationId}
+                onChange={(event) => setForm((current) => ({ ...current, organizationId: event.target.value }))}
+                className="internal-select"
+              >
+                {organizations.map((organization) => (
+                  <option key={organization.id} value={organization.id}>
+                    {organization.shortName}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <input type="hidden" value={form.organizationId} />
+          )}
 
           <label className="internal-field-label">
             Frekuensi
@@ -198,14 +191,9 @@ export function InternalDatasetForm({
             Periode
             <Input value={form.period} onChange={(event) => setForm((current) => ({ ...current, period: event.target.value }))} required />
           </label>
-          <label className="internal-field-label">
-            Walidata
-            <Input value={form.walidata} onChange={(event) => setForm((current) => ({ ...current, walidata: event.target.value }))} required />
-          </label>
-          <label className="internal-field-label">
-            Cakupan Wilayah
-            <Input value={form.coverage} onChange={(event) => setForm((current) => ({ ...current, coverage: event.target.value }))} required />
-          </label>
+          {/* Walidata & Cakupan hidden - fixed values for Bulungan */}
+          <input type="hidden" value={form.walidata} />
+          <input type="hidden" value={form.coverage} />
 
           <label className="internal-field-label md:col-span-2">
             Nama Resource
