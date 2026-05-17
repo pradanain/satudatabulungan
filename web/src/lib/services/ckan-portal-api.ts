@@ -161,6 +161,14 @@ const rolePermissions: Record<InternalRole, string[]> = {
     "upload_infografis",
     "upload_buku",
   ],
+  pembina: [
+    "validate_dataset",
+    "curate_dataset",
+    "publish_dataset",
+    "upload_dataset",
+    "upload_infografis",
+    "upload_buku",
+  ],
   walidata: [
     "validate_dataset",
     "curate_dataset",
@@ -365,7 +373,8 @@ function getRolePermissions(role: InternalRole): string[] {
 
 function mapAccountRow(row: Record<string, unknown>, organizationsById: Map<string, PortalOrganization>): PortalAccount {
   const roleRaw = `${row.role ?? "operator"}` as InternalRole;
-  const role: InternalRole = roleRaw === "admin" || roleRaw === "walidata" ? roleRaw : "operator";
+  const role: InternalRole =
+    roleRaw === "admin" || roleRaw === "pembina" || roleRaw === "walidata" ? roleRaw : "operator";
   const orgId = `${row.organizationId ?? ""}`;
   const org = organizationsById.get(orgId);
 
