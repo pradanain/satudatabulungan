@@ -28,9 +28,7 @@ jobs:
 
           cp -a web "$DEPLOY_DIR/"
           cp -a services "$DEPLOY_DIR/"
-          cp -a deploy "$DEPLOY_DIR/"
           cp -a .gitignore "$DEPLOY_DIR/"
-          cp -a README.deploy.md "$DEPLOY_DIR/README.md"
           cp -a .github/workflows/build-web-image.yml "$DEPLOY_DIR/.github/workflows/"
 
       - name: Publish deploy branch

@@ -56,9 +56,6 @@ jobs:
           docker compose -f services/ckan/docker-compose.yml logs ckan --tail 200 || true
           exit 1
 
-      - name: CKAN connectivity check
-        run: node scripts/test-ckan-connection.mjs http://localhost:5000
-
       - name: Generate CKAN admin token
         shell: bash
         run: |
@@ -68,6 +65,9 @@ jobs:
 
       - name: Seed sample CKAN data
         run: node scripts/seed-ckan-sample.mjs http://localhost:5000
+
+      - name: CKAN E2E Verification
+        run: node scripts/verify-ckan-e2e.mjs http://localhost:5000
 
       - name: Workflow API smoke gate
         run: node scripts/smoke-workflow-api.mjs
