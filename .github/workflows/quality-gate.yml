@@ -63,8 +63,8 @@ jobs:
           token="$(node scripts/ensure-ckan-token.mjs --force-create --container portal_ckan --format token)"
           echo "CKAN_API_KEY=$token" >> "$GITHUB_ENV"
 
-      - name: Seed sample CKAN data
-        run: node scripts/seed-ckan-sample.mjs http://localhost:5000
+      - name: Seed realistic CKAN data
+        run: node scripts/seed-realistic-bulungan.mjs http://localhost:5000
 
       - name: CKAN E2E Verification
         run: node scripts/verify-ckan-e2e.mjs http://localhost:5000
@@ -72,8 +72,8 @@ jobs:
       - name: Workflow API smoke gate
         run: node scripts/smoke-workflow-api.mjs
 
-      - name: Reset seed sample CKAN data
-        run: node scripts/seed-ckan-sample.mjs http://localhost:5000
+      - name: Reset seed realistic CKAN data
+        run: node scripts/seed-realistic-bulungan.mjs http://localhost:5000
 
       - name: Lint app
         working-directory: web
