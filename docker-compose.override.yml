@@ -1,0 +1,4 @@
+services:
+  ckan:
+    ports:
+      - "5000:5000"

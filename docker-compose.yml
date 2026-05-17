@@ -1,4 +1,4 @@
-name: satu-data-bulungan
+name: portal
 
 services:
   # --- FRONTEND GATEWAY (NGINX) ---
@@ -97,6 +97,11 @@ services:
       CKAN_SYSADMIN_NAME: ${CKAN_SYSADMIN_NAME:-admin}
       CKAN_SYSADMIN_PASSWORD: ${CKAN_SYSADMIN_PASSWORD:-bulunganbisa}
       CKAN_SYSADMIN_EMAIL: ${CKAN_SYSADMIN_EMAIL:-admin@bulungan.go.id}
+    command: >
+      /bin/sh -ec "
+        ln -sf /usr/bin/ckan /usr/local/bin/ckan;
+        /srv/app/start_ckan_development.sh
+      "
     # ports:
     #   - "5000:5000" # Tutup akses langsung, lewat Nginx saja
     volumes:

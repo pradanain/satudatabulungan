@@ -19,7 +19,7 @@ export function PortalStatsCards({ items }: PortalStatsProps) {
       {items.map((item) => (
         <Card
           key={item.label}
-          className={`relative overflow-hidden rounded-[24px] border-[var(--color-border)] ${item.surfaceClassName} p-5 shadow-[0_10px_22px_rgba(33,41,52,0.08)]`}
+          className={`relative overflow-hidden rounded-[24px] border-[var(--color-border)] ${item.surfaceClassName} p-4 shadow-[0_10px_22px_rgba(33,41,52,0.08)]`}
         >
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.76),transparent_62%)]" />
           <div
@@ -31,7 +31,7 @@ export function PortalStatsCards({ items }: PortalStatsProps) {
           <div className="relative flex h-full flex-col gap-4">
             <div className="flex items-center justify-between gap-3">
               <span
-                className="inline-flex size-11 items-center justify-center rounded-xl text-white shadow-[0_10px_20px_rgba(33,41,52,0.12)]"
+                className="inline-flex size-10 items-center justify-center rounded-xl text-white shadow-[0_10px_20px_rgba(33,41,52,0.12)]"
                 style={{ backgroundColor: item.accentColor }}
               >
                 <item.icon className="size-5" />

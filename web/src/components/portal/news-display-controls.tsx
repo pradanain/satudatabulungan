@@ -1,6 +1,13 @@
 "use client";
 
 import { useRef } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { PublicationSort } from "@/lib/utils/query";
 
 interface NewsDisplayControlsProps {
@@ -13,7 +20,9 @@ export function NewsDisplayControls({ basePath, sort, query }: NewsDisplayContro
   const formRef = useRef<HTMLFormElement | null>(null);
 
   function handleSelectChange() {
-    formRef.current?.requestSubmit();
+    setTimeout(() => {
+      formRef.current?.requestSubmit();
+    }, 10);
   }
 
   return (
@@ -26,20 +35,19 @@ export function NewsDisplayControls({ basePath, sort, query }: NewsDisplayContro
       <input type="hidden" name="page" value="1" suppressHydrationWarning />
       {query ? <input type="hidden" name="q" value={query} suppressHydrationWarning /> : null}
 
-      <label className="grid min-w-0 gap-1 text-xs font-semibold text-[#47413f] sm:text-sm" htmlFor="news-sort-control">
-        Urutkan
-        <select
-          id="news-sort-control"
-          name="sort"
-          defaultValue={sort}
-          onChange={handleSelectChange}
-          className="h-10 w-full min-w-0 rounded-xl border border-[#cad1dd] bg-white px-3 text-sm text-[var(--color-text)] outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--color-accent-blue)]"
-        >
-          <option value="terbaru">Terbaru</option>
-          <option value="terlama">Terlama</option>
-          <option value="az">A-Z</option>
-        </select>
-      </label>
+      <div className="grid min-w-0 gap-1">
+        <span className="text-xs font-semibold text-[#47413f] sm:text-sm">Urutkan</span>
+        <Select name="sort" defaultValue={sort} onValueChange={handleSelectChange}>
+          <SelectTrigger id="news-sort-control" className="h-10">
+            <SelectValue placeholder="Pilih urutan" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="terbaru">Terbaru</SelectItem>
+            <SelectItem value="terlama">Terlama</SelectItem>
+            <SelectItem value="az">A-Z</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </form>
   );
 }

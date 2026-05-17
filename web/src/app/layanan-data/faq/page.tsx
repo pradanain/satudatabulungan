@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { BookOpenCheck, ExternalLink } from "lucide-react";
-import { FaqAccordion } from "@/components/portal/faq-accordion";
+import { BookOpenCheck, ExternalLink, HelpCircle, FileSearch } from "lucide-react";
+import { FaqInteractiveSection } from "@/components/portal/faq-interactive-section";
+import { PortalHeroCard } from "@/components/portal/portal-hero-card";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
-import { SectionHeading } from "@/components/portal/section-heading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,64 +24,56 @@ export default function LayananDataFaqPage() {
 
   return (
     <PortalPageShell activeMenu="layanan-data">
-      <section>
-        <Card className="bg-gradient-to-br from-[#f1efe8] to-[#e7effa] p-5 sm:p-6">
-          <SectionHeading
-            title="FAQ Layanan Data"
-            description="Kumpulan jawaban detail untuk membantu Anda menggunakan layanan data publik dengan tepat, aman, dan efektif."
+      <div className="space-y-12 pb-20">
+        {/* Institutional FAQ Hero */}
+        <section>
+          <PortalHeroCard
+            eyebrow="PORTAL SATU DATA"
+            title={
+              <>
+                FAQ Layanan <span className="text-(--color-primary)">Data</span>
+              </>
+            }
+            description="Temukan jawaban cepat atas pertanyaan umum seputar lisensi data, format file, penggunaan portal, dan tata kelola data."
+            decoration={
+              <>
+                <div className="absolute left-6 top-6 z-10 rounded-2xl border border-[#d5dbe7] bg-white/95 px-5 py-3 shadow-[0_12px_24px_rgba(33,41,52,0.12)]">
+                  <p className="m-0 text-[10px] font-bold uppercase tracking-[0.18em] text-(--color-primary)">
+                    REFERENSI RESMI
+                  </p>
+                  <p className="m-0 mt-1 flex items-center gap-2 font-(family-name:--font-heading) text-3xl font-semibold text-(--color-text)">
+                    <HelpCircle className="size-5 text-(--color-primary)" />
+                    {layananReferenceLinks.length} Dokumen
+                  </p>
+                </div>
+
+                <div className="absolute bottom-[clamp(0.5rem,1.5vw,1.25rem)] right-[clamp(1rem,5vw,3rem)] z-2 flex items-end gap-0">
+                  <Image
+                    src="/assets/brand/illustrations/bulungan-laki-laki.png"
+                    alt="Maskot Bulungan Laki-laki"
+                    width={360}
+                    height={520}
+                    className="h-[clamp(12rem,22vw,15.5rem)] w-auto object-contain object-bottom drop-shadow-[0_12px_24px_rgba(40,46,56,0.15)] transition-transform hover:translate-y-[-5px]"
+                  />
+                  <Image
+                    src="/assets/brand/illustrations/bulungan-perempuan.png"
+                    alt="Maskot Bulungan Perempuan"
+                    width={340}
+                    height={500}
+                    className="relative -ml-[24%] h-[clamp(9rem,16vw,11rem)] w-auto object-contain object-bottom drop-shadow-[0_12px_24px_rgba(40,46,56,0.15)] transition-transform hover:translate-y-[-5px]"
+                  />
+                </div>
+              </>
+            }
           />
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Badge variant="outline">{layananFaqSections.length} kategori</Badge>
-            <Badge variant="outline">{totalItems} pertanyaan</Badge>
-            <Badge variant="outline">{layananReferenceLinks.length} referensi resmi</Badge>
-          </div>
-        </Card>
-      </section>
+        </section>
 
-      <section>
-        <Card className="p-5 sm:p-6">
-          <FaqAccordion sections={layananFaqSections} />
-        </Card>
-      </section>
+        {/* Interactive FAQ Section */}
+        <section>
+          <FaqInteractiveSection sections={layananFaqSections} />
+        </section>
 
-      <section>
-        <Card className="p-5 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="m-0 font-(family-name:--font-heading) text-2xl font-semibold sm:text-3xl">
-                Referensi yang Digunakan
-              </h2>
-              <p className="mb-0 mt-2 text-sm text-(--color-muted) sm:text-base">
-                Daftar rujukan untuk prinsip open data, lisensi, keamanan API, dan dokumentasi CKAN.
-              </p>
-            </div>
-            <Button asChild variant="secondary" className="rounded-full">
-              <Link href="/layanan-data/permintaan-data">
-                Ajukan Permintaan Data
-                <BookOpenCheck className="size-4" />
-              </Link>
-            </Button>
-          </div>
-
-          <div className="mt-4 grid gap-3">
-            {layananReferenceLinks.map((reference) => (
-              <article key={reference.url} className="rounded-2xl border border-[#d7deea] bg-[#f8fafd] p-4">
-                <h3 className="m-0 text-base font-semibold">{reference.title}</h3>
-                <p className="mb-0 mt-1 text-sm text-(--color-muted)">{reference.note}</p>
-                <a
-                  href={reference.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-(--color-primary) hover:text-[#8f1717]"
-                >
-                  Buka referensi
-                  <ExternalLink className="size-4" />
-                </a>
-              </article>
-            ))}
-          </div>
-        </Card>
-      </section>
+      </div>
     </PortalPageShell>
   );
 }

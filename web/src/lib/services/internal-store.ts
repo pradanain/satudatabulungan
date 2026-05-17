@@ -241,16 +241,44 @@ function buildOrganizations(): InternalOrganization[] {
       lastUpdated: "2026-04-15T10:42:00.000Z",
     },
     {
-      id: "opd-walidata",
+      id: "opd-dkip",
+      slug: "dkip",
+      name: "DKIP / Walidata Kabupaten Bulungan",
+      shortName: "DKIP",
+      category: "Walidata",
+      leadName: "Bambang Irawan",
+      leadTitle: "Kepala Dinas",
+      email: "dkip@bulungankab.go.id",
+      phone: "(0552) 22123",
+      datasetTarget: 15,
+      status: "Aktif",
+      lastUpdated: "2026-04-22T08:00:00.000Z",
+    },
+    {
+      id: "opd-bappedalitbang",
       slug: "bappedalitbang",
-      name: "Bappedalitbang / Walidata Kabupaten Bulungan",
-      shortName: "Walidata",
-      category: "Koordinasi Data",
+      name: "Bappedalitbang / Sekretariat Satu Data",
+      shortName: "Bappedalitbang",
+      category: "Sekretariat",
       leadName: "Dina Pratiwi",
-      leadTitle: "Koordinator Walidata",
-      email: "walidata@bulungankab.go.id",
+      leadTitle: "Koordinator Sekretariat",
+      email: "sekretariat@bulungankab.go.id",
       phone: "(0552) 22001",
       datasetTarget: 20,
+      status: "Aktif",
+      lastUpdated: "2026-04-22T09:00:00.000Z",
+    },
+    {
+      id: "opd-bps",
+      slug: "bps",
+      name: "Badan Pusat Statistik (BPS)",
+      shortName: "BPS",
+      category: "Pembina Data",
+      leadName: "Supriyanto",
+      leadTitle: "Kepala BPS",
+      email: "bps6504@bps.go.id",
+      phone: "(0552) 21100",
+      datasetTarget: 0,
       status: "Aktif",
       lastUpdated: "2026-04-22T09:00:00.000Z",
     },
@@ -263,12 +291,12 @@ function buildUsers(): InternalUser[] {
       id: "user-admin",
       username: "admin",
       password: "bulungan123",
-      name: "Admin Portal",
+      name: "Admin Sekretariat",
       email: "admin.portal@bulungankab.go.id",
       phone: "0811-5400-001",
       role: "admin",
       title: "Administrator Portal",
-      organizationId: "opd-walidata",
+      organizationId: "opd-bappedalitbang",
       avatar: "female",
       permissions: ["full_access", "manage_users", "manage_settings", "publish_dataset"],
       status: "Aktif",
@@ -277,14 +305,28 @@ function buildUsers(): InternalUser[] {
       id: "user-walidata",
       username: "walidata",
       password: "walidata123",
-      name: "Walidata Bulungan",
+      name: "Walidata DKIP",
       email: "walidata@bulungankab.go.id",
       phone: "0811-5400-002",
       role: "walidata",
       title: "Koordinator Walidata",
-      organizationId: "opd-walidata",
-      avatar: "female",
+      organizationId: "opd-dkip",
+      avatar: "male",
       permissions: ["review_dataset", "publish_dataset", "monitor_audit"],
+      status: "Aktif",
+    },
+    {
+      id: "user-pembina",
+      username: "pembina",
+      password: "pembina123",
+      name: "Pembina Data BPS",
+      email: "pembina@bps.go.id",
+      phone: "0811-5400-003",
+      role: "pembina",
+      title: "Pembina Data",
+      organizationId: "opd-bps",
+      avatar: "male",
+      permissions: ["review_dataset", "monitor_audit"],
       status: "Aktif",
     },
     {
@@ -294,7 +336,7 @@ function buildUsers(): InternalUser[] {
       name: "Ahmad Fadli",
       email: "operator.disdukcapil@bulungankab.go.id",
       phone: "0811-5400-101",
-      role: "operator_opd",
+      role: "operator",
       title: "Operator Data Disdukcapil",
       organizationId: "opd-disdukcapil",
       avatar: "male",
@@ -308,7 +350,7 @@ function buildUsers(): InternalUser[] {
       name: "Maya Lestari",
       email: "operator.dinkes@bulungankab.go.id",
       phone: "0811-5400-102",
-      role: "operator_opd",
+      role: "operator",
       title: "Operator Data Dinas Kesehatan",
       organizationId: "opd-dinkes",
       avatar: "female",
@@ -322,7 +364,7 @@ function buildUsers(): InternalUser[] {
       name: "Raka Maulana",
       email: "operator.pendidikan@bulungankab.go.id",
       phone: "0811-5400-103",
-      role: "operator_opd",
+      role: "operator",
       title: "Operator Data Dinas Pendidikan",
       organizationId: "opd-dikbud",
       avatar: "male",
@@ -371,7 +413,7 @@ function buildInternalDataset(
       dataset.slug,
       ownerUserId,
       ownerUserId,
-      "operator_opd",
+      "operator",
       dataset.status,
       createdAt,
       "Dataset awal dimuat dari seed portal.",
@@ -404,7 +446,7 @@ function cloneDataset(
     overrides.slug,
     overrides.ownerUserId,
     overrides.ownerUserId,
-    "operator_opd",
+    "operator",
     overrides.status,
     overrides.lastUpdated,
     "Dataset seed internal disiapkan untuk simulasi workflow.",
@@ -427,7 +469,7 @@ function cloneDataset(
       ...source.metadata,
       identifier: overrides.id ?? `${source.id}-INT`,
       opd: overrides.organization,
-      walidata: "Bappedalitbang / Walidata",
+      walidata: "DKIP / Walidata",
       status: overrides.status,
       period: overrides.period,
       lastUpdated: overrides.lastUpdated,
@@ -561,13 +603,13 @@ function buildSeedStore(): InternalPortalStore {
   const organizations = buildOrganizations();
   const users = buildUsers();
   const orgByShortName = new Map(organizations.map((item) => [item.shortName, item.id]));
-  const operatorByOrg = new Map(users.filter((item) => item.role === "operator_opd").map((item) => [item.organizationId, item.id]));
+  const operatorByOrg = new Map(users.filter((item) => item.role === "operator").map((item) => [item.organizationId, item.id]));
   const walidataUserId = pickUserIdByRole(users, "walidata");
 
   const publishedDatasets = mockDatasets.map((dataset) =>
     buildInternalDataset(
       dataset,
-      orgByShortName.get(dataset.organization) ?? "opd-walidata",
+      orgByShortName.get(dataset.organization) ?? "opd-bappedalitbang",
       operatorByOrg.get(orgByShortName.get(dataset.organization) ?? "") ?? "user-admin",
       walidataUserId,
     ),
@@ -700,7 +742,7 @@ function buildSeedStore(): InternalPortalStore {
       type: "warning",
       createdAt: "2026-04-21T14:05:00.000Z",
       link: "/internal/datasets/rekap-partisipasi-sekolah-menengah-2026",
-      targetRoles: ["operator_opd"],
+      targetRoles: ["operator"],
       userId: "user-operator-dikbud",
       readByUserIds: [],
     },
@@ -721,7 +763,7 @@ function buildSeedStore(): InternalPortalStore {
       type: "info",
       createdAt: "2026-04-22T06:30:00.000Z",
       link: "/internal/help",
-      targetRoles: ["operator_opd"],
+      targetRoles: ["operator"],
       readByUserIds: [],
     },
   ];
@@ -791,7 +833,7 @@ function attachLegacyWorkflowEvents(dataset: InternalDataset, events: LegacyWork
       dataset.slug,
       event.actor,
       event.actor,
-      dataset.ownerUserId.startsWith("user-walidata") ? "walidata" : "operator_opd",
+      dataset.ownerUserId.startsWith("user-walidata") ? "walidata" : "operator",
       event.fromStatus,
       event.toStatus,
       event.at,
@@ -1133,7 +1175,7 @@ function ensureDatasetWriteAccess(dataset: InternalDataset, session: InternalSes
     return;
   }
 
-  if (session.role === "operator_opd" && dataset.organizationId === session.organizationId) {
+  if (session.role === "operator" && dataset.organizationId === session.organizationId) {
     return;
   }
 
@@ -1153,7 +1195,7 @@ function ensureTransitionAccess(
     return;
   }
 
-  if (session.role === "operator_opd" && ((fromStatus === "Draft" && toStatus === "Submitted") || (fromStatus === "Need Revision" && toStatus === "Submitted"))) {
+  if (session.role === "operator" && ((fromStatus === "Draft" && toStatus === "Submitted") || (fromStatus === "Need Revision" && toStatus === "Submitted"))) {
     return;
   }
 
@@ -1271,7 +1313,7 @@ export async function createInternalDatasetDraft(
       store.organizations.find((item) => item.id === session.organizationId) ?? store.organizations[0];
 
     if (
-      session.role === "operator_opd" &&
+      session.role === "operator" &&
       requestedOrganization &&
       requestedOrganization.id !== session.organizationId
     ) {
@@ -1279,7 +1321,7 @@ export async function createInternalDatasetDraft(
     }
 
     const organization =
-      session.role === "operator_opd"
+      session.role === "operator"
         ? sessionOrganization
         : requestedOrganization ?? sessionOrganization;
 
@@ -1396,7 +1438,7 @@ export async function createInternalDatasetDraft(
       "Draft baru dibuat",
       `${dataset.title} dibuat dan siap dilengkapi sebelum submit review.`,
       `/internal/datasets/${dataset.slug}`,
-      ["admin", "walidata", "operator_opd"],
+      ["admin", "walidata", "operator"],
       session.userId,
     );
 
@@ -1509,7 +1551,7 @@ export async function transitionInternalDataset(
     }
 
     const dataset = store.datasets[index];
-    if (session.role === "operator_opd" && dataset.organizationId !== session.organizationId) {
+    if (session.role === "operator" && dataset.organizationId !== session.organizationId) {
       throw new Error("Operator hanya boleh melakukan transisi pada dataset organisasi sendiri.");
     }
 
@@ -1581,7 +1623,7 @@ export async function transitionInternalDataset(
         "Dataset perlu revisi",
         `${updated.title} perlu revisi. Catatan: ${safeReviewNote || "Lengkapi metadata."}`,
         `/internal/datasets/${updated.slug}`,
-        ["operator_opd"],
+        ["operator"],
         updated.ownerUserId,
       );
     }
@@ -1592,7 +1634,7 @@ export async function transitionInternalDataset(
         "Dataset dipublikasikan",
         `${updated.title} telah dipublikasikan dan kini tampil di portal publik.`,
         `/dataset/${updated.slug}`,
-        ["admin", "walidata", "operator_opd"],
+        ["admin", "walidata", "operator"],
       );
     }
 

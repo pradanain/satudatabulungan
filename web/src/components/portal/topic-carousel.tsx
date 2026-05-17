@@ -222,7 +222,7 @@ export function TopicCarousel({ title, description, items }: TopicCarouselProps)
                       return (
                         <Link key={item.label} href={item.href} className="group h-full">
                           <article
-                            className={`relative flex h-full min-h-[232px] flex-col overflow-hidden border border-[rgba(191,199,214,0.72)] bg-linear-to-br from-white via-white to-[#f5f8ff] shadow-[0_10px_22px_rgba(33,41,52,0.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_26px_rgba(33,41,52,0.11)] ${cardShapeClass} ${cardGapClass}`}
+                            className={`relative flex h-full min-h-[170px] flex-col overflow-hidden border border-[rgba(191,199,214,0.72)] bg-linear-to-br from-white via-white to-[#f5f8ff] shadow-[0_10px_22px_rgba(33,41,52,0.08)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_26px_rgba(33,41,52,0.11)] ${cardShapeClass} ${cardGapClass}`}
                           >
                             <div
                               className={`absolute inset-x-0 top-0 h-1.5 ${isCompactCard ? "rounded-t-3xl" : "rounded-t-[28px]"}`}

@@ -475,7 +475,7 @@ async function mapPackageToDataset(
   const period = getExtra(extras, ["periode", "period", "coverage_period"]) ?? "Tidak disebutkan";
   const status = normalizeStatus(getExtra(extras, ["status", "dataset_status"])) ?? defaultStatus;
   const coverage = getExtra(extras, ["cakupan_wilayah", "spatial", "coverage"]) ?? "Kabupaten Bulungan";
-  const walidata = getExtra(extras, ["walidata", "data_steward"]) ?? "DKIP / Bappedalitbang";
+  const walidata = getExtra(extras, ["walidata", "data_steward"]) ?? "DKIP Kabupaten Bulungan";
 
   const topic =
     pkg.groups?.[0]?.title ??
@@ -554,9 +554,9 @@ async function mapPackageToDataset(
     },
     preview,
     relatedSlugs: [],
-    popularityScore: 75,
-    viewCount: 0,
-    downloadCount: 0,
+    popularityScore: Number(getExtra(extras, ["popularity_score"])) || 0,
+    viewCount: Number(getExtra(extras, ["view_count"])) || 0,
+    downloadCount: Number(getExtra(extras, ["download_count"])) || 0,
   };
 }
 
@@ -684,7 +684,24 @@ export class CkanDatasetAdapter implements DatasetAdapter {
 
   async getFilterOptions(): Promise<DatasetFilterOptions> {
     const datasets = await this.listDatasets();
-    const years = [
+
+    const getCounts = (values: string[]) => {
+      const counts: Record<string, number> = {};
+      values.forEach((v) => {
+        counts[v] = (counts[v] || 0) + 1;
+      });
+      return Object.entries(counts)
+        .map(([value, count]) => ({ value, count }))
+        .sort((a, b) => a.value.localeCompare(b.value, "id-ID"));
+    };
+
+    const topics = getCounts(datasets.map((d) => d.topic));
+    const organizations = getCounts(datasets.map((d) => d.organization));
+    const formats = getCounts(datasets.flatMap((d) => d.formats));
+    const frequencies = getCounts(datasets.map((d) => d.frequency));
+    const tags = getCounts(datasets.flatMap((d) => d.metadata.tags));
+
+    const yearsList = [
       ...new Set(
         datasets.flatMap((item) => {
           const fromUpdated = item.lastUpdated.slice(0, 4);
@@ -696,22 +713,21 @@ export class CkanDatasetAdapter implements DatasetAdapter {
       .filter((value) => value && /^\d{4}$/.test(value))
       .sort((a, b) => Number(b) - Number(a));
 
+    const years = yearsList.map((y) => ({
+      value: y,
+      count: datasets.filter(
+        (d) => d.lastUpdated.startsWith(y) || d.metadata.period.includes(y),
+      ).length,
+    }));
+
     return {
-      topics: [...new Set(datasets.map((dataset) => dataset.topic))].sort((a, b) =>
-        a.localeCompare(b, "id-ID"),
-      ),
-      organizations: [...new Set(datasets.map((dataset) => dataset.organization))].sort((a, b) =>
-        a.localeCompare(b, "id-ID"),
-      ),
-      formats: [...new Set(datasets.flatMap((dataset) => dataset.formats))].sort((a, b) =>
-        a.localeCompare(b, "id-ID"),
-      ),
-      frequencies: [...new Set(datasets.map((dataset) => dataset.frequency))],
+      topics,
+      organizations,
+      formats,
+      frequencies,
       statuses: [...new Set(datasets.map((dataset) => dataset.status))],
       years,
-      tags: [...new Set(datasets.flatMap((dataset) => dataset.metadata.tags))].sort((a, b) =>
-        a.localeCompare(b, "id-ID"),
-      ),
+      tags,
     };
   }
 

@@ -10,12 +10,16 @@ type DataRequestPayload = {
   requesterEmail?: string;
   requesterInstitution?: string;
   requesterPhone?: string;
+  age?: string;
+  gender?: string;
+  education?: string;
+  job?: string;
   targetWalidataId?: string;
   requestPurpose?: string;
   requestedDataDescription?: string;
   usagePurpose?: string;
   periodStart?: string;
-  periodEnd?: string;
+  periodYear?: string;
   preferredFormat?: string;
   additionalNotes?: string;
   company?: string;
@@ -105,12 +109,15 @@ function getValidationError(payload: DataRequestPayload): string | null {
   const requesterEmail = cleanText(payload.requesterEmail).toLowerCase();
   const requesterInstitution = cleanText(payload.requesterInstitution);
   const requesterPhone = cleanText(payload.requesterPhone);
-  const targetWalidataId = cleanText(payload.targetWalidataId);
+  const age = cleanText(payload.age);
+  const gender = cleanText(payload.gender);
+  const education = cleanText(payload.education);
+  const job = cleanText(payload.job);
   const requestPurpose = cleanText(payload.requestPurpose);
   const requestedDataDescription = cleanText(payload.requestedDataDescription);
   const usagePurpose = cleanText(payload.usagePurpose);
   const periodStart = cleanText(payload.periodStart);
-  const periodEnd = cleanText(payload.periodEnd);
+  const periodYear = cleanText(payload.periodYear);
   const preferredFormat = cleanText(payload.preferredFormat);
   const additionalNotes = cleanText(payload.additionalNotes);
 
@@ -130,14 +137,12 @@ function getValidationError(payload: DataRequestPayload): string | null {
     return "Nomor kontak tidak valid.";
   }
 
-  if (!targetWalidataId) {
-    return "Tujuan walidata harus dipilih.";
-  }
+  if (!age) return "Umur harus diisi.";
+  if (!gender) return "Jenis kelamin harus dipilih.";
+  if (!education) return "Pendidikan terakhir harus dipilih.";
+  if (!job) return "Pekerjaan harus diisi.";
 
-  const knownTarget = walidataTargets.find((item) => item.id === targetWalidataId);
-  if (!knownTarget) {
-    return "Tujuan walidata tidak ditemukan.";
-  }
+
 
   if (!requestPurpose || requestPurpose.length > 120) {
     return "Tujuan permintaan tidak valid.";
@@ -151,12 +156,12 @@ function getValidationError(payload: DataRequestPayload): string | null {
     return "Tujuan pemanfaatan data belum cukup lengkap.";
   }
 
-  if (!validateDate(periodStart) || !validateDate(periodEnd)) {
-    return "Periode permintaan tidak valid.";
+  if (!periodStart || periodStart.length > 100) {
+    return "Periode mulai tidak valid.";
   }
 
-  if (periodStart > periodEnd) {
-    return "Periode mulai tidak boleh lebih besar dari periode akhir.";
+  if (!periodYear || periodYear.length > 100) {
+    return "Periode tahun tidak valid.";
   }
 
   if (!preferredFormat || preferredFormat.length > 40) {
@@ -223,14 +228,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const target = walidataTargets.find((item) => item.id === cleanText(payload.targetWalidataId));
+  const target = walidataTargets.find((item) => item.id === cleanText(payload.targetWalidataId)) ?? walidataTargets[0];
   if (!target) {
     return NextResponse.json(
       {
         success: false,
-        message: "Tujuan walidata tidak ditemukan.",
+        message: "Tujuan walidata tidak tersedia saat ini.",
       },
-      { status: 400 },
+      { status: 500 },
     );
   }
 
@@ -244,6 +249,10 @@ export async function POST(request: Request) {
     requesterEmail: cleanText(payload.requesterEmail).toLowerCase(),
     requesterInstitution: cleanText(payload.requesterInstitution),
     requesterPhone: cleanText(payload.requesterPhone),
+    age: cleanText(payload.age),
+    gender: cleanText(payload.gender),
+    education: cleanText(payload.education),
+    job: cleanText(payload.job),
     targetWalidataId: target.id,
     targetWalidataLabel: target.label,
     targetWalidataEmail: target.email,
@@ -251,7 +260,7 @@ export async function POST(request: Request) {
     requestedDataDescription: cleanText(payload.requestedDataDescription),
     usagePurpose: cleanText(payload.usagePurpose),
     periodStart: cleanText(payload.periodStart),
-    periodEnd: cleanText(payload.periodEnd),
+    periodYear: cleanText(payload.periodYear),
     preferredFormat: cleanText(payload.preferredFormat),
     additionalNotes: cleanText(payload.additionalNotes),
     sourceIp: (request.headers.get("x-forwarded-for") ?? "").split(",")[0]?.trim() || null,

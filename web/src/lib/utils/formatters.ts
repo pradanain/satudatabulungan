@@ -1,4 +1,5 @@
 const idFormatter = new Intl.DateTimeFormat("id-ID", {
+  weekday: "long",
   day: "2-digit",
   month: "short",
   year: "numeric",
@@ -17,6 +18,31 @@ export function formatIndonesianDate(value: string): string {
 
 export function formatCompactNumber(value: number): string {
   return compactNumberFormatter.format(value);
+}
+
+export function parseIndonesianDateText(dateText: string): number {
+  if (!dateText) return 0;
+  
+  const parsed = Date.parse(dateText);
+  if (!Number.isNaN(parsed)) return parsed;
+
+  const months: Record<string, string> = {
+    januari: "01", februari: "02", maret: "03", april: "04", mei: "05", juni: "06",
+    juli: "07", agustus: "08", september: "09", oktober: "10", november: "11", desember: "12",
+  };
+
+  const regex = /(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4})/;
+  const match = dateText.toLowerCase().match(regex);
+  if (match) {
+    const [, day, monthName, year] = match;
+    const month = months[monthName];
+    if (month) {
+      const paddedDay = day.padStart(2, "0");
+      return Date.parse(`${year}-${month}-${paddedDay}T00:00:00Z`);
+    }
+  }
+
+  return 0;
 }
 
 export function getTopicAccentColor(topic: string): string {

@@ -111,8 +111,9 @@ export function PortalFooter() {
       style={{ width: "100vw", marginInline: "calc(50% - 50vw)" }}
     >
       <div className="relative overflow-hidden rounded-[28px] border border-[#3c3a3a] bg-[radial-gradient(circle_at_top,#142752_0%,#0d1733_44%,#0a132b_100%)]">
+        {/* Motif Watermarks */}
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-0 hidden w-[4.5%] opacity-[0.22] md:block"
+          className="pointer-events-none absolute inset-y-0 left-0 z-0 hidden w-[4%] opacity-[0.15] md:block"
           style={{
             backgroundImage: "url('/assets/brand/motifs/motif-3-suku-alt-soft.webp')",
             backgroundRepeat: "repeat-y",
@@ -121,7 +122,7 @@ export function PortalFooter() {
           }}
         />
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-0 hidden w-[4.5%] opacity-[0.22] md:block"
+          className="pointer-events-none absolute inset-y-0 right-0 z-0 hidden w-[4%] opacity-[0.15] md:block"
           style={{
             backgroundImage: "url('/assets/brand/motifs/motif-3-suku-alt-soft.webp')",
             backgroundRepeat: "repeat-y",
@@ -130,119 +131,112 @@ export function PortalFooter() {
           }}
         />
 
-        <div className="relative z-10 px-5 py-8 text-white sm:px-8 sm:py-10 lg:px-12 lg:py-12">
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(180px,0.4fr)_minmax(0,0.95fr)] lg:gap-8 xl:gap-10">
-            <div className="space-y-8 lg:border-r lg:border-(--color-accent-gold)/45 lg:pr-8 xl:pr-10">
-              <div className="flex items-start gap-4 sm:gap-5 lg:gap-3">
+        <div className="relative z-10 px-6 py-8 text-white sm:px-8 md:px-16 lg:px-24 xl:px-32 lg:py-10">
+          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+            {/* Column 1: Identity & Address */}
+            <div className="space-y-6 lg:border-r lg:border-white/5 lg:pr-12">
+              <div className="flex items-center gap-4">
                 <Image
                   src="/assets/brand/logos/lambang-bulungan.png"
                   alt="Lambang Kabupaten Bulungan"
-                  width={90}
-                  height={108}
-                  className="h-auto w-16 shrink-0 sm:w-20 lg:w-18 xl:w-22"
+                  width={64}
+                  height={76}
+                  className="h-auto w-12 shrink-0 sm:w-16 drop-shadow-2xl"
                 />
-
-                <div className="pt-1">
-                  <p className="m-0 font-(family-name:--font-heading) text-base font-semibold uppercase leading-tight tracking-[0.08em] text-(--color-accent-gold) sm:text-xl lg:text-lg xl:text-2xl">
+                <div>
+                  <p className="m-0 font-(family-name:--font-heading) text-[10px] font-bold uppercase tracking-[0.2em] text-(--color-accent-gold) sm:text-xs">
                     Pemerintah Kabupaten
                   </p>
-                  <h2 className="mt-1 font-(family-name:--font-heading) text-4xl font-semibold uppercase leading-[0.92] tracking-tight text-white sm:text-5xl lg:text-[2.55rem] xl:text-[3.15rem] 2xl:text-6xl">
+                  <h2 className="mt-0.5 font-(family-name:--font-heading) text-2xl font-bold uppercase leading-none tracking-tight text-white sm:text-4xl">
                     Bulungan
                   </h2>
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-white/20 bg-white/6 p-5 sm:p-6">
-                <div className="flex items-start gap-5">
-                  <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-white/8 text-(--color-accent-gold)">
-                    <MapPin className="size-7" />
-                  </div>
+              <p className="text-sm leading-relaxed text-white/70 max-w-md">
+                Satu Data Kabupaten Bulungan adalah portal terintegrasi untuk pengelolaan, penyajian, dan berbagi pakai data statistik sektoral dan geospasial di lingkungan Pemerintah Kabupaten Bulungan guna mendukung perencanaan pembangunan yang akurat dan terukur.
+              </p>
 
-                  <div className="max-w-3xl pt-1">
-                    <h3 className="font-(family-name:--font-heading) text-2xl font-semibold leading-tight text-white">
-                      Alamat
-                    </h3>
-                    <div className="mt-2 h-px w-full bg-[linear-gradient(90deg,#bfa354_0%,#bfa354_44%,rgba(191,163,84,0)_100%)]" />
-                    <p className="mt-3 text-lg leading-9 text-white/80">
+              <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-5 backdrop-blur-[2px]">
+                <div className="flex items-start gap-4">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-(--color-accent-gold) border border-white/5">
+                    <MapPin className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider opacity-60">Alamat</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-white/60 font-medium">
                       {bappedaContact.address}
                     </p>
                   </div>
                 </div>
-                <div className="mt-4 h-5 rounded-full bg-[url('/assets/brand/motifs/motif-3-suku-band.webp')] bg-[length:auto_100%] bg-repeat-x bg-center opacity-[0.28]" />
               </div>
             </div>
 
-            <div className="space-y-6 lg:border-r lg:border-(--color-accent-gold)/45 lg:px-6 lg:pt-2">
-              <div className="max-w-fit">
-                <h3 className="font-(family-name:--font-heading) text-2xl font-semibold leading-tight text-white">
-                  Media Sosial
-                </h3>
-                <div className="mt-4 h-2 w-16 rounded-full bg-(--color-accent-gold)" />
+            {/* Column 2: Media Sosial & Tautan Terkait Staked */}
+            <div className="flex flex-col gap-8">
+              <div className="space-y-4">
+                <div className="max-w-fit">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-widest opacity-90">Media Sosial</h3>
+                  <div className="mt-2 h-1 w-8 rounded-full bg-(--color-accent-gold)" />
+                </div>
+                <div className="flex flex-wrap gap-3 pt-1">
+                  {socialLinks
+                    .filter((item) => item.label !== "Website")
+                    .map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <a
+                          key={item.label}
+                          href={item.href}
+                          className="group flex size-10 items-center justify-center rounded-full border border-white/20 bg-white/5 transition hover:bg-(--color-accent-gold) hover:text-[#0a132b]"
+                          aria-label={item.label}
+                          title={item.label}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Icon className="size-5" />
+                        </a>
+                      );
+                    })}
+                </div>
               </div>
 
-              <div className="space-y-3 pt-1">
-                {socialLinks.map((item) => {
-                  const Icon = item.icon;
-
-                  return (
+              <div className="space-y-4">
+                <div className="max-w-fit">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-widest opacity-90">Tautan Terkait</h3>
+                  <div className="mt-2 h-1 w-8 rounded-full bg-(--color-accent-gold)" />
+                </div>
+                <div className="grid grid-cols-3 gap-3 pt-1">
+                  {relatedLinks.map((item) => (
                     <a
                       key={item.label}
                       href={item.href}
-                      className="group flex items-center gap-3 rounded-xl text-white/92 transition hover:text-white"
-                      aria-label={item.label}
-                      title={item.label}
+                      className="group flex aspect-video items-center justify-center rounded-xl bg-white/95 p-2 transition hover:bg-white hover:-translate-y-0.5"
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label={item.label}
+                      title={item.label}
                     >
-                      <span className="inline-flex size-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition group-hover:bg-white group-hover:text-[#0f1e43]">
-                        <Icon className="size-5" />
-                      </span>
-                      <span className="text-base font-medium leading-none tracking-tight sm:text-lg">{item.label}</span>
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="lg:pl-2 lg:pt-2 xl:pl-4 xl:pt-4">
-              <div className="max-w-fit">
-                <h3 className="font-(family-name:--font-heading) text-2xl font-semibold leading-tight text-white sm:text-3xl">
-                  Tautan Terkait
-                </h3>
-                <div className="mt-4 h-2 w-16 rounded-full bg-(--color-accent-gold)" />
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-3">
-                {relatedLinks.map((item) => (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className="group flex min-h-24 items-center justify-center overflow-hidden rounded-3xl bg-white px-4 py-3 shadow-[0_18px_34px_rgba(0,0,0,0.15)] transition duration-200 hover:-translate-y-1 sm:min-h-26 sm:px-5 sm:py-3 lg:min-h-22 lg:px-4 lg:py-2.5 xl:min-h-24 xl:px-5 xl:py-3 2xl:min-h-30 2xl:px-6 2xl:py-4"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={item.label}
-                    title={item.label}
-                  >
-                    <div className="relative flex h-10 w-full items-center justify-center sm:h-11 lg:h-10 xl:h-11 2xl:h-14">
                       <Image
                         src={item.logoSrc}
                         alt={item.logoAlt}
-                        width={320}
-                        height={160}
-                        className={`h-full w-auto ${item.imageClassName ?? "max-w-[90%]"} object-contain`}
+                        width={120}
+                        height={60}
+                        className="h-full w-auto object-contain opacity-80 group-hover:opacity-100"
                       />
-                    </div>
-                  </a>
-                ))}
+                    </a>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="relative z-10 border-t border-(--color-accent-gold)/45 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-6 text-center text-sm text-white/74 sm:px-8 sm:text-base lg:px-12">
-          <p className="m-0">&copy; 2026 Pemerintah Kabupaten Bulungan</p>
+        <div className="relative z-10 border-t border-white/10 px-6 py-5 text-center text-sm font-medium text-white/60">
+          <p className="m-0">&copy; {new Date().getFullYear()} Pemerintah Kabupaten Bulungan. Hak Cipta Dilindungi.</p>
         </div>
       </div>
     </footer>
   );
 }
+

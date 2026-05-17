@@ -46,7 +46,7 @@ const menuItems: readonly MenuItem[] = [
   {
     key: "publikasi",
     label: "Publikasi",
-    href: "/publikasi-berita",
+    href: "/publikasi",
     children: [
       { label: "Berita", href: "/publikasi-berita" },
       { label: "Buku Digital", href: "/publikasi-buku-digital" },
@@ -58,7 +58,7 @@ const menuItems: readonly MenuItem[] = [
   {
     key: "layanan-data",
     label: "Layanan Data",
-    href: "/layanan-data/permintaan-data",
+    href: "/layanan-data",
     children: [
       { label: "Permintaan Data", href: "/layanan-data/permintaan-data" },
       { label: "API", href: "/api" },
@@ -98,12 +98,12 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-(--color-bg)">
+    <header className="sticky top-0 z-100 w-full bg-(--color-bg)">
       <div
         className="portal-shell-bleed overflow-visible border border-t-0 border-(--color-border) bg-white"
         style={{ width: "100vw", marginInline: "calc(50% - 50vw)" }}
       >
-        <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-6 sm:py-4">
+        <div className="flex flex-wrap items-center gap-4 px-6 py-3 sm:px-8 sm:py-4 lg:px-10 lg:py-5">
           <div className="order-1 flex items-center gap-2">
             <Sheet open={isMobileMenuOpen} onOpenChange={handleMobileMenuChange}>
               <SheetTrigger
@@ -168,7 +168,7 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
                                       href={child.href}
                                       prefetch
                                       onClick={closeMobileMenu}
-                                      className="rounded-lg px-2 py-2 text-sm font-semibold text-(--color-muted) transition-colors hover:bg-white hover:text-(--color-primary)"
+                                      className="rounded-lg px-2 py-2 text-[15px] font-semibold text-(--color-muted) transition-colors hover:bg-white hover:text-(--color-primary)"
                                     >
                                       {child.label}
                                     </Link>
@@ -207,21 +207,12 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
 
             <Link href="/" prefetch aria-label="Kembali ke beranda" className="shrink-0 lg:ml-2 xl:ml-3">
               <Image
-                src="/assets/brand/logos/lambang-bulungan.png"
-                alt="Lambang Kabupaten Bulungan"
-                width={42}
-                height={50}
-                sizes="42px"
-                className="h-auto w-auto max-h-10 md:hidden"
-                priority
-              />
-              <Image
                 src="/assets/brand/logos/bulungan-bisa-logo.png"
                 alt="Bulungan Bisa"
-                width={220}
-                height={56}
-                sizes="220px"
-                className="hidden h-auto w-auto max-h-11 md:block md:max-h-14.5"
+                width={180}
+                height={46}
+                sizes="(max-width: 768px) 140px, 220px"
+                className="h-auto w-auto max-h-9 sm:max-h-10 md:max-h-11 lg:max-h-12"
                 priority
               />
             </Link>
@@ -247,43 +238,45 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
               }
 
               return (
-                <div key={item.label} className="relative shrink-0">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setOpenDesktopDropdownKey((current) => (current === item.key ? null : item.key))
-                    }
-                    className={cn(baseClass, "inline-flex items-center gap-1")}
-                    aria-label={`Buka submenu ${item.label}`}
-                    aria-expanded={openDesktopDropdownKey === item.key}
-                    aria-controls={`desktop-submenu-${item.key}`}
+                <div
+                  key={item.label}
+                  className="relative shrink-0"
+                  onMouseEnter={() => setOpenDesktopDropdownKey(item.key)}
+                  onMouseLeave={() => setOpenDesktopDropdownKey(null)}
+                >
+                  <Link
+                    href={item.href}
+                    prefetch
+                    onClick={closeDesktopDropdown}
+                    className={cn(baseClass, "inline-flex items-center gap-1.5")}
+                    aria-label={`Buka halaman ${item.label}`}
                   >
                     <span>{item.label}</span>
                     <ChevronDown
                       className={cn(
-                        "size-4 transition-transform",
+                        "size-3.5 transition-transform duration-200",
                         openDesktopDropdownKey === item.key && "rotate-180",
                       )}
                     />
-                  </button>
+                  </Link>
 
                   <div
                     id={`desktop-submenu-${item.key}`}
                     className={cn(
-                      "absolute left-0 top-full z-20 pt-2 transition-all duration-150",
+                      "absolute left-0 top-full z-20 pt-2 transition-all duration-200",
                       openDesktopDropdownKey === item.key
-                        ? "pointer-events-auto visible opacity-100"
-                        : "pointer-events-none invisible opacity-0",
+                        ? "pointer-events-auto visible translate-y-0 opacity-100"
+                        : "pointer-events-none invisible translate-y-1 opacity-0",
                     )}
                   >
-                    <div className="min-w-55 rounded-xl border border-(--color-border) bg-white p-1 shadow-[0_18px_32px_rgba(33,41,52,0.16)]">
+                    <div className="min-w-55 overflow-hidden rounded-xl border border-(--color-border) bg-white p-1.5 shadow-[0_20px_40px_rgba(33,41,52,0.18)]">
                       {item.children.map((child) => (
                         <Link
                           key={`${item.key}-${child.label}`}
                           href={child.href}
                           prefetch
                           onClick={closeDesktopDropdown}
-                          className="block rounded-lg px-3 py-2 text-sm font-semibold text-(--color-muted) transition-colors hover:bg-(--color-surface-soft) hover:text-(--color-primary)"
+                          className="block rounded-lg px-3 py-2.5 text-[15px] lg:text-base font-semibold text-(--color-muted) transition-colors hover:bg-(--color-surface-soft) hover:text-(--color-primary)"
                         >
                           {child.label}
                         </Link>
@@ -296,13 +289,13 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
           </nav>
 
           <div className="order-2 ml-auto flex items-center md:order-3 md:ml-0 lg:mr-2 xl:mr-3">
-            <Button asChild className="h-10 rounded-full px-5 text-[15px] font-semibold md:text-base">
+            <Button asChild className="rounded-full px-6 font-bold">
               <Link href="/internal">Login</Link>
             </Button>
           </div>
         </div>
 
-        <div className="portal-ornament-band h-9 border-t border-(--color-border)" />
+        <div className="portal-ornament-band h-6 border-t border-(--color-border)" />
       </div>
     </header>
   );

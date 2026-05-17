@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 
 import type { InternalRole, InternalSession } from "@/lib/types/internal";
 import {
@@ -169,7 +169,7 @@ const rolePermissions: Record<InternalRole, string[]> = {
     "upload_infografis",
     "upload_buku",
   ],
-  operator_opd: ["manage_own_dataset", "upload_dataset", "upload_infografis", "upload_buku"],
+  operator: ["manage_own_dataset", "upload_dataset", "upload_infografis", "upload_buku"],
 };
 
 function getBaseUrl(): string {
@@ -364,8 +364,8 @@ function getRolePermissions(role: InternalRole): string[] {
 }
 
 function mapAccountRow(row: Record<string, unknown>, organizationsById: Map<string, PortalOrganization>): PortalAccount {
-  const roleRaw = `${row.role ?? "operator_opd"}` as InternalRole;
-  const role: InternalRole = roleRaw === "admin" || roleRaw === "walidata" ? roleRaw : "operator_opd";
+  const roleRaw = `${row.role ?? "operator"}` as InternalRole;
+  const role: InternalRole = roleRaw === "admin" || roleRaw === "walidata" ? roleRaw : "operator";
   const orgId = `${row.organizationId ?? ""}`;
   const org = organizationsById.get(orgId);
 

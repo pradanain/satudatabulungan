@@ -13,7 +13,7 @@ export function PortalPageShell({ activeMenu = "none", children, mainClassName }
   return (
     <div className="page-shell">
       <PortalHeader activeMenu={activeMenu} />
-      <main className={cn("portal-shell flex min-h-0 flex-1 flex-col gap-6 py-6 sm:gap-7 sm:py-7", mainClassName)}>
+      <main className={cn("portal-shell flex min-h-0 flex-1 flex-col gap-4 py-4 sm:gap-5 sm:py-5", mainClassName)}>
         {children}
       </main>
       <PortalFooter />

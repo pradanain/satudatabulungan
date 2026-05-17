@@ -1,10 +1,17 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import type { InternalSession } from "@/lib/types/internal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type UploadType = "dataset" | "infografis" | "publikasi";
 
@@ -65,7 +72,7 @@ function slugFileName(title: string, fallback: string, extension: string): strin
 
 export function InternalContentUploadForm({ session, organizations }: Props) {
   const selectableOrganizations = useMemo(() => {
-    if (session.role === "operator_opd") {
+    if (session.role === "operator") {
       return organizations.filter((item) => item.id === session.organizationId);
     }
 
@@ -183,21 +190,25 @@ export function InternalContentUploadForm({ session, organizations }: Props) {
             />
           </label>
 
-          <label className="internal-field-label">
+          <div className="internal-field-label">
             Organisasi Pemilik
-            <select
-              className="internal-select"
+            <Select
               value={form.ownerOrgId}
-              onChange={(event) => setForm((current) => ({ ...current, ownerOrgId: event.target.value }))}
-              disabled={session.role === "operator_opd"}
+              onValueChange={(value) => setForm((current) => ({ ...current, ownerOrgId: value }))}
+              disabled={session.role === "operator"}
             >
-              {selectableOrganizations.map((organization) => (
-                <option key={organization.id} value={organization.id}>
-                  {organization.name}
-                </option>
-              ))}
-            </select>
-          </label>
+              <SelectTrigger className="h-11 border-(--color-border)">
+                <SelectValue placeholder="Pilih organisasi" />
+              </SelectTrigger>
+              <SelectContent>
+                {selectableOrganizations.map((organization) => (
+                  <SelectItem key={organization.id} value={organization.id}>
+                    {organization.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <label className="internal-field-label">
             Topik
@@ -234,20 +245,24 @@ export function InternalContentUploadForm({ session, organizations }: Props) {
             />
           </label>
 
-          <label className="internal-field-label">
+          <div className="internal-field-label">
             Format Resource
-            <select
-              className="internal-select"
+            <Select
               value={form.resourceFormat}
-              onChange={(event) => setForm((current) => ({ ...current, resourceFormat: event.target.value }))}
+              onValueChange={(value) => setForm((current) => ({ ...current, resourceFormat: value }))}
             >
-              {typeFormats[contentType].map((format) => (
-                <option key={format} value={format}>
-                  {format}
-                </option>
-              ))}
-            </select>
-          </label>
+              <SelectTrigger className="h-11 border-(--color-border)">
+                <SelectValue placeholder="Pilih format" />
+              </SelectTrigger>
+              <SelectContent>
+                {typeFormats[contentType].map((format) => (
+                  <SelectItem key={format} value={format}>
+                    {format}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <label className="internal-field-label md:col-span-3">
             Konten Resource

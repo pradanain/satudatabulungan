@@ -1,7 +1,8 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, ExternalLink, Globe, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { PortalHeroCard } from "@/components/portal/portal-hero-card";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { SearchBar } from "@/components/portal/search-bar";
 import { SectionHeading } from "@/components/portal/section-heading";
@@ -169,19 +170,19 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
   const normalizedKeyword = searchQuery.trim().toLowerCase();
   const filteredEntries = normalizedKeyword
     ? organizations.filter((entry) =>
-        [
-          entry.name,
-          entry.description,
-          entry.address,
-          entry.phone,
-          entry.email,
-          entry.whatsapp,
-          entry.website,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedKeyword),
-      )
+      [
+        entry.name,
+        entry.description,
+        entry.address,
+        entry.phone,
+        entry.email,
+        entry.whatsapp,
+        entry.website,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedKeyword),
+    )
     : organizations;
 
   const totalItems = filteredEntries.length;
@@ -203,37 +204,39 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
   return (
     <PortalPageShell activeMenu="tentang">
       <section>
-        <Card className="overflow-hidden bg-linear-to-br from-[#f1efe8] to-[#e7effa]">
-          <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-            <div>
-              <SectionHeading
-                title="Organisasi / OPD"
-                description="Direktori perangkat daerah Kabupaten Bulungan berisi profil OPD, situs resmi, kontak, dan akses cepat menuju dataset."
-              />
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Badge variant="outline">{organizations.length} OPD</Badge>
-                <Badge variant="outline">{withWebsiteCount} punya website</Badge>
-                <Badge variant="outline">{withContactCount} ada kontak dasar</Badge>
-              </div>
+        <PortalHeroCard
+          eyebrow="PORTAL SATU DATA"
+          title={
+            <>
+              Organisasi <span className="text-(--color-primary)">Perangkat Daerah</span>
+            </>
+          }
+          description="Direktori perangkat daerah Kabupaten Bulungan berisi profil OPD, situs resmi, kontak, dan akses cepat menuju dataset tiap organisasi."
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary" className="bg-white/50 backdrop-blur-sm border-slate-200">{organizations.length} OPD</Badge>
+              <Badge variant="secondary" className="bg-white/50 backdrop-blur-sm border-slate-200">{withWebsiteCount} punya website</Badge>
+              <Badge variant="secondary" className="bg-white/50 backdrop-blur-sm border-slate-200">{withContactCount} ada kontak dasar</Badge>
             </div>
-
-            <div className="flex w-full max-w-70 items-center gap-4 rounded-2xl border border-[#d7d3cb] bg-white/80 p-4 shadow-sm">
+          }
+          decoration={
+            <div className="absolute bottom-[clamp(0.5rem,1.5vw,2rem)] right-[clamp(1rem,5vw,4rem)] z-2 flex items-center gap-4 rounded-3xl border border-white/40 bg-white/30 p-5 backdrop-blur-md shadow-2xl">
               <Image
                 src="/assets/brand/logos/lambang-bulungan.png"
                 alt="Lambang Pemerintah Kabupaten Bulungan"
-                width={80}
-                height={96}
-                className="h-auto w-14 shrink-0 sm:w-16"
+                width={100}
+                height={120}
+                className="h-auto w-16 shrink-0 sm:w-20"
               />
-              <div>
-                <p className="m-0 text-xs font-semibold uppercase tracking-[0.08em] text-[#6f6967]">Pemerintah Kabupaten</p>
-                <p className="m-0 font-(family-name:--font-heading) text-2xl font-semibold leading-tight text-[#2d2826]">
+              <div className="hidden sm:block">
+                <p className="m-0 text-[10px] font-bold uppercase tracking-[0.15em] text-[#6f6967]">Pemerintah Kabupaten</p>
+                <p className="m-0 font-(family-name:--font-heading) text-2xl font-bold leading-tight text-[#2d2826]">
                   Bulungan
                 </p>
               </div>
             </div>
-          </div>
-        </Card>
+          }
+        />
       </section>
 
       <SearchBar

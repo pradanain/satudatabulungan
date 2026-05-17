@@ -30,7 +30,7 @@ function buildMetadata(seed: MockSeedInput): DatasetMetadata {
   return {
     identifier: seed.id,
     opd: seed.organization,
-    walidata: "DKIP / Bappedalitbang",
+    walidata: "DKIP Kabupaten Bulungan",
     coverage: "Kabupaten Bulungan",
     period: seed.period,
     license: "Data Terbuka Pemerintah",

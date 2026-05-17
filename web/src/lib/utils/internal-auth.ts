@@ -22,25 +22,26 @@ export const internalNavLabels: Record<InternalNavKey, string> = {
 };
 
 export const internalRoleLabels: Record<InternalRole, string> = {
-  admin: "Admin",
-  walidata: "Walidata",
-  operator_opd: "Operator OPD",
+  admin: "Admin (Bappedalitbang / Sekretariat)",
+  pembina: "Pembina Data (BPS)",
+  walidata: "Walidata (DKIP)",
+  operator: "Operator (OPD)",
 };
 
 export const internalNavAccess: Record<InternalNavKey, InternalRole[]> = {
-  dashboard: ["admin", "walidata", "operator_opd"],
-  datasets: ["admin", "walidata", "operator_opd"],
-  review: ["admin", "walidata", "operator_opd"],
-  monitoring: ["admin", "walidata"],
+  dashboard: ["admin", "pembina", "walidata", "operator"],
+  datasets: ["admin", "pembina", "walidata", "operator"],
+  review: ["admin", "pembina", "walidata", "operator"],
+  monitoring: ["admin", "pembina", "walidata"],
   users: ["admin"],
-  archive: ["admin", "walidata"],
-  organizations: ["admin", "walidata"],
-  topics: ["admin", "walidata"],
-  notifications: ["admin", "walidata", "operator_opd"],
-  workflowHistory: ["admin", "walidata"],
+  archive: ["admin", "pembina", "walidata"],
+  organizations: ["admin", "pembina", "walidata"],
+  topics: ["admin", "pembina", "walidata"],
+  notifications: ["admin", "pembina", "walidata", "operator"],
+  workflowHistory: ["admin", "pembina", "walidata"],
   settings: ["admin"],
-  profile: ["admin", "walidata", "operator_opd"],
-  help: ["admin", "walidata", "operator_opd"],
+  profile: ["admin", "pembina", "walidata", "operator"],
+  help: ["admin", "pembina", "walidata", "operator"],
   integrations: ["admin", "walidata"],
 };
 

@@ -8,6 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { DatasetFormat, DatasetFrequency, DatasetStatus } from "@/lib/types/dataset";
 import {
   canTransition,
@@ -301,19 +308,25 @@ export function WorkflowBoard({ initialItems }: WorkflowBoardProps) {
               />
             </FormField>
             <FormField label="Frekuensi" required>
-              <select
+              <Select
                 value={draftForm.frequency}
-                onChange={(event) =>
-                  updateDraftField("frequency", event.target.value as DatasetFrequency)
+                onValueChange={(value) =>
+                  updateDraftField("frequency", value as DatasetFrequency)
                 }
-                className="flex h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent-blue)]"
+                name="frequency"
+                required
               >
-                {frequencyOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-11 border-(--color-border)">
+                  <SelectValue placeholder="Pilih frekuensi" />
+                </SelectTrigger>
+                <SelectContent>
+                  {frequencyOptions.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </FormField>
             <FormField label="Periode" required>
               <Input
@@ -343,17 +356,23 @@ export function WorkflowBoard({ initialItems }: WorkflowBoardProps) {
               />
             </FormField>
             <FormField label="Format Resource" required>
-              <select
+              <Select
                 value={draftForm.resourceFormat}
-                onChange={(event) => updateDraftField("resourceFormat", event.target.value as DatasetFormat)}
-                className="flex h-11 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-text)] shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent-blue)]"
+                onValueChange={(value) => updateDraftField("resourceFormat", value as DatasetFormat)}
+                name="resourceFormat"
+                required
               >
-                {resourceFormatOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-11 border-(--color-border)">
+                  <SelectValue placeholder="Pilih format" />
+                </SelectTrigger>
+                <SelectContent>
+                  {resourceFormatOptions.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </FormField>
             <FormField label="URL Resource" required className="md:col-span-2 xl:col-span-3">
               <Input

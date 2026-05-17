@@ -31,7 +31,7 @@ export default async function InternalDatasetDetailPage({
     notFound();
   }
 
-  const canEdit = session.role === "admin" || session.role === "operator_opd";
+  const canEdit = session.role === "admin" || session.role === "operator";
 
   return (
     <InternalShell session={session} activeKey="datasets">

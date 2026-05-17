@@ -5,10 +5,11 @@ import { DatasetCard } from "@/components/portal/dataset-card";
 import { DatasetDisplayControls } from "@/components/portal/dataset-display-controls";
 import { FilterPanel, MobileFilterDrawer } from "@/components/portal/filter-panel";
 import { PaginationControls } from "@/components/portal/pagination-controls";
+import { PortalHeroCard } from "@/components/portal/portal-hero-card";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { SearchBar } from "@/components/portal/search-bar";
 import { SectionHeading } from "@/components/portal/section-heading";
-import { Badge } from "@/components/ui/badge";
+import { ArrowRight, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -62,52 +63,16 @@ export default async function DatasetPage({ searchParams }: DatasetPageProps) {
   return (
     <PortalPageShell activeMenu="dataset">
       <section>
-        <Card className="relative overflow-hidden rounded-[28px] border-(--color-border) bg-white p-0 shadow-[0_12px_28px_rgba(33,41,52,0.08)]">
-          <div className="grid min-h-70 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-            <div className="relative z-2 flex flex-col justify-center overflow-hidden bg-[linear-gradient(96deg,#ffffff_0%,#fffefb_44%,#f9f5e9_78%,#f5efdd_100%)] px-6 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
-              <div
-                className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.78)_1px,transparent_0)] [background-size:3px_3px]"
-                aria-hidden="true"
-              />
-              <div className="relative z-10">
-                <Badge
-                  variant="outline"
-                  className="w-fit border-transparent bg-transparent px-0 py-0 text-[11px] font-bold uppercase tracking-[0.2em] text-(--color-primary) shadow-none"
-                >
-                  PORTAL SATU DATA
-                </Badge>
-                <h1 className="mt-3 font-(family-name:--font-heading) text-4xl font-semibold leading-[0.98] tracking-tight text-(--color-text) sm:text-5xl lg:text-6xl">
-                  Katalog Dataset
-                </h1>
-                <p className="mb-0 mt-4 max-w-2xl text-base leading-relaxed text-[#5f5957] sm:text-[1.05rem]">
-                  Kumpulan dataset resmi Kabupaten Bulungan yang dapat diakses dengan mudah untukmendukung layanan publik, inovasi daerah, perencanaan pembangunan, serta pengambilan keputusan berbasis data.
-                </p>
-              </div>
-            </div>
-
-            <aside className="relative min-h-55 overflow-hidden border-t border-(--color-border) bg-[#f7f5ef] lg:min-h-70 lg:border-t-0">
-              <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-[linear-gradient(128deg,#f6f3ea_0%,#f2eee4_26%,#ebedf2_58%,#e3ebf8_79%,#dce7f7_100%)]" />
-                <div
-                  className="absolute inset-0 opacity-[0.06] [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.8)_1px,transparent_0)] [background-size:3px_3px]"
-                  aria-hidden="true"
-                />
-                <div
-                  className="pointer-events-none absolute inset-y-0 left-0 w-[clamp(26px,4.2vw,72px)] bg-[linear-gradient(90deg,rgba(245,239,221,0.72)_0%,rgba(245,239,221,0.38)_45%,rgba(245,239,221,0)_100%)]"
-                  aria-hidden="true"
-                />
-                <div
-                  className="absolute inset-y-0 right-[-12%] w-[56%] opacity-[0.2]"
-                  aria-hidden="true"
-                  style={{
-                    backgroundImage: "url('/assets/brand/motifs/motif-3-suku-alt-optimized.webp')",
-                    backgroundRepeat: "repeat",
-                    backgroundPosition: "center top",
-                    backgroundSize: "280px auto",
-                  }}
-                />
-              </div>
-
+        <PortalHeroCard
+          eyebrow="PORTAL SATU DATA"
+          title={
+            <>
+              Katalog <span className="text-(--color-primary)">Dataset</span>
+            </>
+          }
+          description="Kumpulan dataset resmi Kabupaten Bulungan yang dapat diakses dengan mudah untuk mendukung layanan publik, inovasi daerah, perencanaan pembangunan, serta pengambilan keputusan berbasis data."
+          decoration={
+            <>
               <div className="absolute left-4 top-4 z-10 rounded-2xl border border-[#d5dbe7] bg-white/95 px-4 py-2 shadow-[0_12px_24px_rgba(33,41,52,0.12)] sm:left-6 sm:top-6">
                 <p className="m-0 text-xs font-bold uppercase tracking-[0.18em] text-(--color-primary)">
                   DATA TERINDEKS
@@ -125,9 +90,9 @@ export default async function DatasetPage({ searchParams }: DatasetPageProps) {
                 sizes="(min-width: 1280px) 21rem, (min-width: 1024px) 18rem, (min-width: 640px) 15rem, 12.75rem"
                 className="absolute bottom-0 right-[clamp(0.9rem,1.4vw,1.4rem)] z-2 h-auto w-[clamp(12.75rem,22.5vw,21rem)] drop-shadow-[0_14px_28px_rgba(40,46,56,0.22)]"
               />
-            </aside>
-          </div>
-        </Card>
+            </>
+          }
+        />
       </section>
 
       <SearchBar
@@ -177,16 +142,34 @@ export default async function DatasetPage({ searchParams }: DatasetPageProps) {
               />
             </>
           ) : (
-            <div className="mt-4 rounded-2xl border border-dashed border-[#c9ced8] bg-[#f8fbff] p-5">
-              <h3 className="m-0 font-(family-name:--font-heading) text-2xl font-semibold">
-                Tidak ada dataset yang cocok
-              </h3>
-              <p className="mb-0 mt-2 text-sm text-(--color-muted) sm:text-base">
-                Coba ubah kata kunci atau reset filter untuk melihat daftar dataset lainnya.
-              </p>
-              <Button asChild variant="secondary" className="mt-4 rounded-lg">
-                <Link href="/dataset">Reset Filter</Link>
-              </Button>
+            <div className="mx-auto mt-8 flex max-w-2xl flex-col items-center justify-center rounded-[32px] border border-dashed border-[#d1d9e6] bg-[#f9fbff] px-6 py-10 text-center sm:py-12">
+              <div className="mt-0">
+                <h3 className="m-0 font-(family-name:--font-heading) text-2xl font-bold text-[#2d2826] sm:text-3xl">
+                  Tidak ada dataset yang cocok
+                </h3>
+                <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-[#5f5957] sm:text-base">
+                  {filters.q ? (
+                    <>
+                      Pencarian untuk <span className="font-bold text-[#2d2826]">"{filters.q}"</span> tidak membuahkan hasil.
+                    </>
+                  ) : (
+                    "Kami tidak dapat menemukan dataset yang sesuai dengan kombinasi filter Anda saat ini."
+                  )}
+                  {" "}Silakan coba ubah kata kunci atau hapus beberapa filter untuk melihat daftar dataset lainnya.
+                </p>
+              </div>
+
+              <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
+                <Button asChild className="h-12 rounded-2xl bg-(--color-primary) px-8 font-bold text-white shadow-lg shadow-(--color-primary)/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                  <Link href="/dataset">Reset Semua Filter</Link>
+                </Button>
+                <Button asChild variant="ghost" className="h-12 rounded-2xl px-6 font-bold text-[#5f5957] hover:bg-slate-100/50">
+                  <Link href="/layanan/permintaan-data" className="flex items-center gap-2">
+                    Belum menemukan data? Ajukan Permintaan
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           )}
         </Card>

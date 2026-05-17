@@ -9,6 +9,7 @@ import {
   DEFAULT_PUBLICATION_IMAGE_SRC,
   normalizePublicationImageSrc,
 } from "@/lib/utils/publication-query";
+import { parseIndonesianDateText } from "@/lib/utils/formatters";
 
 const DKIP_ORGANIZATION_NAME = normalizeOrganizationName(
   "Dinas Komunikasi, Informatika dan Persandian",
@@ -65,6 +66,35 @@ function pickInfographicImageFromCkanResources(
   return resources.find((resource) => isImageResourceUrl(resource.url))?.url;
 }
 
+function formatInfografisTitle(title: string): string {
+  if (!title) return "";
+  
+  let formatted = title.toLowerCase();
+  
+  // Expand "kab." or "kab " to "kabupaten "
+  formatted = formatted.replace(/\bkab\.?\s/gi, "kabupaten ");
+  
+  // Title case each word
+  formatted = formatted.replace(/\b\w/g, (char) => char.toUpperCase());
+  
+  // Lowercase specific conjunctions/prepositions and "tahun"
+  const lowerCaseWords = ["Di", "Ke", "Dari", "Dan", "Atau", "Yang", "Untuk", "Dengan", "Dalam", "Pada", "Tahun"];
+  formatted = formatted.replace(/\b([A-Z][a-z]+)\b/g, (match) => {
+    if (lowerCaseWords.includes(match)) {
+      return match.toLowerCase();
+    }
+    return match;
+  });
+  
+  // Uppercase Roman numerals commonly found
+  formatted = formatted.replace(/\b(I|Ii|Iii|Iv|V|Vi|Vii|Viii|Ix|X|Xi|Xii)\b/g, (match) => match.toUpperCase());
+  
+  // Ensure very first letter is always capitalized
+  formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  
+  return formatted.trim();
+}
+
 export async function getCombinedBukuDigitalPublications(): Promise<PublicationCatalogItem[]> {
   const [bappedaItems, ckanBooks] = await Promise.all([
     getBappedaDigitalPublications().catch(() => []),
@@ -82,7 +112,7 @@ export async function getCombinedBukuDigitalPublications(): Promise<PublicationC
     lastUpdated: item.publishedDate,
     href: item.viewUrl,
     hrefLabel: "Lihat Dokumen",
-    downloadHref: item.downloadUrl,
+    downloadHref: item.viewUrl, // Gunakan link langsung (viewUrl) karena count-download diblokir Turnstile
     downloadLabel: "Unduh Dokumen",
     openInNewTab: true,
     imageSrc: undefined,
@@ -90,6 +120,11 @@ export async function getCombinedBukuDigitalPublications(): Promise<PublicationC
 
   const fromCkan: PublicationCatalogItem[] = ckanBooks
     .filter((item) => item.status.trim().toLowerCase() === "published")
+    .filter((item) => {
+      // Filter out mock seed data that uses dummy 'ckan-file-' resources
+      const resourceUrl = item.resources[0]?.url || "";
+      return !resourceUrl.includes("ckan-file-");
+    })
     .map((item) => ({
       id: `ckan-${item.id}`,
       title: item.title,
@@ -97,13 +132,13 @@ export async function getCombinedBukuDigitalPublications(): Promise<PublicationC
         item.summary || item.description || "Konten publikasi tambahan dari upload operator internal (CKAN).",
       organization: normalizeOrganizationName(item.organizationName),
       lastUpdated: item.metadataModified.slice(0, 10),
-      href: item.resources[0]?.url || `/dataset/${item.slug}`,
+      href: `/dataset/${item.slug}`,
       hrefLabel: "Lihat Dokumen",
       downloadHref:
         item.resources.find((resource) => resource.format.toUpperCase().includes("PDF"))?.url ||
         item.resources[0]?.url,
       downloadLabel: "Unduh Dokumen",
-      openInNewTab: Boolean(item.resources[0]?.url),
+      openInNewTab: false,
       imageSrc: undefined,
     }));
 
@@ -131,9 +166,11 @@ export async function getCombinedInfografisPublications(): Promise<PublicationCa
     getInfographics().catch(() => []),
   ]);
 
-  const fromDkipLive: PublicationCatalogItem[] = liveInfografis.data.map((item) => ({
+  const fromDkipLive: PublicationCatalogItem[] = liveInfografis.data
+    .filter((item) => !String(item.id).startsWith("mock-"))
+    .map((item) => ({
     id: `dkip-live-${item.id}`,
-    title: item.title,
+    title: formatInfografisTitle(item.title),
     summary: "Sumber DKIP Bulungan (live).",
     organization: DKIP_ORGANIZATION_NAME,
     lastUpdated: item.publishedDate?.slice(0, 10) ?? "1970-01-01",
@@ -148,21 +185,33 @@ export async function getCombinedInfografisPublications(): Promise<PublicationCa
 
   const fromCkan: PublicationCatalogItem[] = ckanInfografis
     .filter((item) => item.status.trim().toLowerCase() === "published")
+    .filter((item) => {
+      // Filter out mock seed data that uses invalid dummy image URLs
+      const imgCandidate = item.extras?.thumbnail_url || item.extras?.imageUrl || "";
+      return !String(imgCandidate).includes("uploads/infografis-");
+    })
     .map((item) => {
       const resources = item.resources.map((resource) => ({
         url: resource.url,
         format: resource.format,
       }));
-      const imageCandidate = pickInfographicImageFromCkanResources(resources);
+      const imageCandidate = pickInfographicImageFromCkanResources(resources) || item.extras.thumbnail_url || item.extras.imageUrl;
       const firstResourceUrl = resources[0]?.url;
-      const href = firstResourceUrl || `/dataset/${item.slug}`;
+      const href = item.extras.post_url || firstResourceUrl || `/dataset/${item.slug}`;
+      const rawSummary = item.summary || item.description || "Konten infografis tambahan dari upload operator internal (CKAN).";
+
+      const formattedTitle = formatInfografisTitle(item.title);
+      let cleanSummary = rawSummary.replace(/\n*\s*Sumber:[\s\S]*$/i, "").trim();
+      if (item.title) {
+        cleanSummary = cleanSummary.replace(item.title, formattedTitle);
+      }
 
       return {
         id: `ckan-infografis-${item.id}`,
-        title: item.title,
-        summary: "Konten infografis tambahan dari upload operator internal (CKAN).",
+        title: formattedTitle,
+        summary: cleanSummary,
         organization: normalizeOrganizationName(item.organizationName),
-        lastUpdated: item.metadataModified.slice(0, 10),
+        lastUpdated: item.extras.published_date_text || item.metadataModified.slice(0, 10),
         href,
         hrefLabel: "Buka Sumber",
         openInNewTab: isAbsoluteHttpUrl(href),
@@ -173,5 +222,7 @@ export async function getCombinedInfografisPublications(): Promise<PublicationCa
       } satisfies PublicationCatalogItem;
     });
 
-  return dedupeByTitle([...fromDkipLive, ...fromCkan]);
+  return dedupeByTitle([...fromDkipLive, ...fromCkan]).sort((a, b) => {
+    return parseIndonesianDateText(b.lastUpdated) - parseIndonesianDateText(a.lastUpdated);
+  });
 }

@@ -34,7 +34,7 @@ function isTransitionVisible(role: InternalRole, from: DatasetStatus, to: Datase
     return true;
   }
 
-  if (role === "operator_opd") {
+  if (role === "operator") {
     return (from === "Draft" && to === "Submitted") || (from === "Need Revision" && to === "Submitted");
   }
 

@@ -2,7 +2,11 @@ import { CkanDatasetAdapter } from "@/lib/adapters/ckan-dataset-adapter";
 import type { DatasetAdapter } from "@/lib/adapters/dataset-adapter";
 import { MockDatasetAdapter } from "@/lib/adapters/mock-dataset-adapter";
 import { getRuntimeConfig } from "@/lib/config";
-import { getDatasetYearOptions } from "@/lib/services/dataset-filter-config";
+import {
+  getDatasetOrganizationOptions,
+  getDatasetTopicOptions,
+  getDatasetYearOptions,
+} from "@/lib/services/dataset-filter-config";
 import type {
   Dataset,
   DatasetFilterOptions,
@@ -84,9 +88,23 @@ function buildPublicFilterOptionsFromDatasets(datasets: Dataset[]): DatasetFilte
     }),
   ).filter((item) => /^\d{4}$/.test(item.value));
 
+  const foundTopics = countOccurrences(datasets.map((item) => item.topic));
+  const fullTopicLabels = getDatasetTopicOptions();
+  const allTopics = fullTopicLabels.map((label: string) => {
+    const found = foundTopics.find((t) => t.value === label);
+    return found || { value: label, count: 0 };
+  }).sort((a, b) => b.count - a.count || a.value.localeCompare(b.value, "id-ID"));
+
+  const foundOrgs = countOccurrences(datasets.map((item) => item.organization));
+  const fullOrgNames = getDatasetOrganizationOptions();
+  const allOrgs = fullOrgNames.map((name: string) => {
+    const found = foundOrgs.find((o) => o.value === name);
+    return found || { value: name, count: 0 };
+  }).sort((a, b) => b.count - a.count || a.value.localeCompare(b.value, "id-ID"));
+
   return {
-    topics: countOccurrences(datasets.map((item) => item.topic)),
-    organizations: countOccurrences(datasets.map((item) => item.organization)),
+    topics: allTopics,
+    organizations: allOrgs,
     formats: countOccurrences(datasets.flatMap((item) => item.formats)),
     frequencies: countOccurrences(datasets.map((item) => item.frequency)),
     statuses: ["Published"],
@@ -170,7 +188,10 @@ export async function getPublicDatasetBySlug(slug: string): Promise<Dataset | nu
 
 export async function getDatasetFilterOptions(): Promise<DatasetFilterOptions> {
   const options = await withFallback((adapter) => adapter.getFilterOptions());
-  const years = options.years.length > 0 ? options.years : getDatasetYearOptions(2020);
+  const years =
+    options.years.length > 0
+      ? options.years
+      : getDatasetYearOptions(2020).map((v) => ({ value: v, count: 0 }));
 
   return {
     ...options,

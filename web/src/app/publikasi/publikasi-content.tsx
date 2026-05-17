@@ -17,6 +17,7 @@ import { SectionHeading } from "@/components/portal/section-heading";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PortalHeroCard } from "@/components/portal/portal-hero-card";
 import { NewsDisplayControls } from "@/components/portal/news-display-controls";
 import { NewsPaginationControls } from "@/components/portal/news-pagination-controls";
 import { SearchBar } from "@/components/portal/search-bar";
@@ -69,7 +70,7 @@ const VIEW_CONFIG: Record<
     icon: Newspaper,
     title: "Publikasi Berita",
     description:
-      "Informasi terbaru seputar pemutakhiran dataset, tata kelola data, kegiatan statistik sektoral, dan pemanfaatan data di Kabupaten Bulungan.",
+      "Kumpulan berita dan artikel terbaru seputar kegiatan, rilis data, dan informasi terkini dari Pemerintah Kabupaten Bulungan.",
     listTitle: "Semua Berita Satu Data",
     emptyTitle: "Berita belum tersedia",
     emptyDescription: "Belum ada berita yang dapat ditampilkan untuk pilihan saat ini.",
@@ -80,7 +81,7 @@ const VIEW_CONFIG: Record<
     icon: BookOpenText,
     title: "Publikasi Buku Digital",
     description:
-      "Daftar buku digital dari sumber resmi Bappeda Bulungan, ditambah konten yang diunggah operator internal melalui CKAN.",
+      "Dokumen publikasi statistik dalam format elektronik (PDF) yang menyajikan data komprehensif berbagai sektor pembangunan.",
     listTitle: "Semua Buku Digital",
     emptyTitle: "Buku digital belum tersedia",
     emptyDescription: "Belum ada buku digital yang dapat ditampilkan untuk pilihan saat ini.",
@@ -91,7 +92,7 @@ const VIEW_CONFIG: Record<
     icon: ImageIcon,
     title: "Publikasi Infografis",
     description:
-      "Daftar infografis resmi DKIP Bulungan dari sumber live, ditambah konten unggahan operator internal melalui CKAN.",
+      "Visualisasi data statistik yang disajikan secara menarik dan mudah dipahami untuk memberikan gambaran cepat fakta daerah.",
     listTitle: "Semua Infografis",
     emptyTitle: "Infografis belum tersedia",
     emptyDescription: "Belum ada infografis yang dapat ditampilkan untuk pilihan saat ini.",
@@ -101,7 +102,7 @@ const VIEW_CONFIG: Record<
   regulasi: {
     icon: Scale,
     title: "Publikasi Regulasi",
-    description: "Daftar regulasi dan kebijakan resmi terkait tata kelola data pada Portal Satu Data Bulungan.",
+    description: "Daftar payung hukum dan kebijakan terkait pengelolaan data, statistik sektoral, dan Satu Data Indonesia di tingkat daerah.",
     listTitle: "Semua Regulasi",
     emptyTitle: "Regulasi belum tersedia",
     emptyDescription: "Belum ada regulasi yang dapat ditampilkan untuk pilihan saat ini.",
@@ -111,7 +112,7 @@ const VIEW_CONFIG: Record<
   "petunjuk-teknis": {
     icon: FileText,
     title: "Publikasi Petunjuk Teknis",
-    description: "Daftar pedoman teknis, implementasi, dan referensi operasional terkait tata kelola data.",
+    description: "Panduan operasional dan standar prosedur teknis untuk produsen data dalam mengelola dan mengunggah data ke portal.",
     listTitle: "Semua Petunjuk Teknis",
     emptyTitle: "Petunjuk teknis belum tersedia",
     emptyDescription: "Belum ada petunjuk teknis yang dapat ditampilkan untuk pilihan saat ini.",
@@ -141,7 +142,7 @@ function PublicationNewsCard({ item }: { item: PortalNewsItem }) {
       </Link>
 
       <div className="p-5">
-        <h3 className="m-0 line-clamp-3 font-(family-name:--font-heading) text-2xl font-semibold leading-tight tracking-tight text-(--color-text) sm:text-3xl">
+        <h3 className="m-0 line-clamp-3 font-(family-name:--font-heading) text-xl font-semibold leading-tight tracking-tight text-(--color-text) sm:text-2xl">
           {item.title}
         </h3>
         <p className="mb-0 mt-3 line-clamp-2 text-base leading-relaxed text-(--color-muted)">{item.description}</p>
@@ -186,7 +187,7 @@ function PublicationCatalogCard({ item, view }: { item: PublicationCatalogItem; 
       : isPetunjukTeknis
         ? "bg-[#8fb9a8]"
         : "bg-[#9fb7dd]";
-  const imageHeightClassName = isInfografis ? "h-56" : "h-48";
+  const imageHeightClassName = isInfografis ? "aspect-square" : "h-48";
   const openLabel = isRegulasi
     ? "Buka regulasi"
     : isPetunjukTeknis
@@ -208,12 +209,13 @@ function PublicationCatalogCard({ item, view }: { item: PublicationCatalogItem; 
           rel={item.openInNewTab ? "noreferrer" : undefined}
           className="block"
         >
-          <div className={`relative ${imageHeightClassName}`}>
+          <div className={`relative ${imageHeightClassName} bg-[#eff3f8]`}>
             <Image
               src={item.imageSrc}
               alt={item.title}
               fill
-              className="object-cover"
+              unoptimized={item.imageSrc.startsWith("http")}
+              className={isInfografis ? "object-contain" : "object-cover"}
               sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
             />
           </div>
@@ -223,7 +225,7 @@ function PublicationCatalogCard({ item, view }: { item: PublicationCatalogItem; 
       )}
 
       <div className="p-5">
-        <h3 className="m-0 line-clamp-3 font-(family-name:--font-heading) text-2xl font-semibold leading-tight tracking-tight text-(--color-text) sm:text-3xl">
+        <h3 className="m-0 line-clamp-3 font-(family-name:--font-heading) text-xl font-semibold leading-tight tracking-tight text-(--color-text) sm:text-2xl">
           {item.title}
         </h3>
         {item.summary ? (
@@ -261,6 +263,7 @@ function PublicationCatalogCard({ item, view }: { item: PublicationCatalogItem; 
                     href={item.downloadHref}
                     target="_blank"
                     rel="noreferrer"
+                    download
                     aria-label={downloadLabel}
                     title={downloadLabel}
                   >
@@ -308,54 +311,23 @@ export function PublikasiContent({
   return (
     <>
       <section>
-        <Card className="relative overflow-hidden rounded-[28px] border-(--color-border) bg-white p-0 shadow-[0_12px_28px_rgba(33,41,52,0.08)]">
-          <div className="grid min-h-70 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-            <div className="relative z-2 flex flex-col justify-center overflow-hidden bg-[linear-gradient(96deg,#ffffff_0%,#fffefb_44%,#f9f5e9_78%,#f5efdd_100%)] px-6 py-7 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
-              <div
-                className="pointer-events-none absolute inset-0 opacity-[0.08] bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.78)_1px,transparent_0)] bg-size-[3px_3px]"
-                aria-hidden="true"
-              />
-              <div className="relative z-10">
-                <Badge
-                  variant="outline"
-                  className="w-fit border-transparent bg-transparent px-0 py-0 text-[11px] font-bold uppercase tracking-[0.2em] text-(--color-primary) shadow-none"
-                >
-                  PORTAL SATU DATA
-                </Badge>
-                <h1 className="mt-3 font-(family-name:--font-heading) text-4xl font-semibold leading-[0.98] tracking-tight text-(--color-text) sm:text-5xl lg:text-6xl">
-                  {config.title}
-                </h1>
-                <p className="mb-0 mt-4 max-w-2xl text-base leading-relaxed text-[#5f5957] sm:text-[1.05rem]">
-                  {config.description}
-                </p>
-              </div>
-            </div>
-
-            <aside className="relative min-h-55 overflow-hidden border-t border-(--color-border) bg-[#f7f5ef] lg:min-h-70 lg:border-t-0">
-              <div className="absolute inset-0">
-                <div className="absolute inset-0 bg-[linear-gradient(128deg,#f6f3ea_0%,#f2eee4_26%,#ebedf2_58%,#e3ebf8_79%,#dce7f7_100%)]" />
-                <div
-                  className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.8)_1px,transparent_0)] bg-size-[3px_3px]"
-                  aria-hidden="true"
-                />
-                <div
-                  className="pointer-events-none absolute inset-y-0 left-0 w-[clamp(26px,4.2vw,72px)] bg-[linear-gradient(90deg,rgba(245,239,221,0.72)_0%,rgba(245,239,221,0.38)_45%,rgba(245,239,221,0)_100%)]"
-                  aria-hidden="true"
-                />
-                <div
-                  className="absolute inset-y-0 right-[-12%] w-[56%] opacity-[0.2]"
-                  aria-hidden="true"
-                  style={{
-                    backgroundImage: "url('/assets/brand/motifs/motif-3-suku-alt-optimized.webp')",
-                    backgroundRepeat: "repeat",
-                    backgroundPosition: "center top",
-                    backgroundSize: "280px auto",
-                  }}
-                />
-              </div>
-
+        <PortalHeroCard
+          eyebrow="PORTAL SATU DATA"
+          title={
+            <>
+              {config.title.split(" ").slice(0, -1).join(" ")}{" "}
+              <span className="text-(--color-primary)">
+                {config.title.split(" ").slice(-1)}
+              </span>
+            </>
+          }
+          description={config.description}
+          decoration={
+            <>
               <div className="absolute left-4 top-4 z-10 rounded-2xl border border-[#d5dbe7] bg-white/95 px-4 py-2 shadow-[0_12px_24px_rgba(33,41,52,0.12)] sm:left-6 sm:top-6">
-                <p className="m-0 text-xs font-bold uppercase tracking-[0.18em] text-(--color-primary)">KONTEN TERINDEKS</p>
+                <p className="m-0 text-xs font-bold uppercase tracking-[0.18em] text-(--color-primary)">
+                  KONTEN TERINDEKS
+                </p>
                 <p className="m-0 mt-1 flex items-center gap-2 font-(family-name:--font-heading) text-2xl font-semibold text-(--color-text) sm:text-[1.75rem]">
                   <Icon className="size-5 text-(--color-primary)" />
                   {totalCount.toLocaleString("id-ID")}
@@ -372,9 +344,9 @@ export function PublikasiContent({
                   className="object-contain object-bottom drop-shadow-[0_14px_28px_rgba(40,46,56,0.22)]"
                 />
               </div>
-            </aside>
-          </div>
-        </Card>
+            </>
+          }
+        />
       </section>
 
       <section>
@@ -406,7 +378,7 @@ export function PublikasiContent({
 
           {visibleCount > 0 ? (
             <>
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {view === "berita"
                   ? kabarDataItems.map((item) => <PublicationNewsCard key={`${item.href}-${item.date}`} item={item} />)
                   : publicationItems.map((item) => <PublicationCatalogCard key={item.id} item={item} view={view} />)}
@@ -424,9 +396,8 @@ export function PublikasiContent({
             </>
           ) : (
             <div
-              className={`mt-5 rounded-2xl border border-dashed border-[#cbd3e2] bg-[#f8fbff] p-5 ${
-                hasSearchQuery ? "text-center" : ""
-              }`}
+              className={`mt-5 rounded-2xl border border-dashed border-[#cbd3e2] bg-[#f8fbff] p-5 ${hasSearchQuery ? "text-center" : ""
+                }`}
             >
               <h3 className="m-0 font-(family-name:--font-heading) text-2xl font-semibold">
                 {hasSearchQuery ? `Tidak ada hasil untuk "${normalizedSearchQuery}"` : config.emptyTitle}

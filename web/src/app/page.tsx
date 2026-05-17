@@ -8,6 +8,7 @@ import {
   Database,
   Image as ImageIcon,
   LayoutGrid,
+  Newspaper,
   Users,
 } from "lucide-react";
 import { HeroSection } from "@/components/portal/hero-section";
@@ -20,13 +21,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { homepageTopics, matchesHomepageTopic } from "@/lib/data/homepage-topics";
 import { getPublicDatasets } from "@/lib/services/dataset-service";
-import { getInfografisApiPayload } from "@/lib/services/infografis-service";
+import { getCombinedInfografisPublications } from "@/lib/services/publication-aggregator-service";
 import { loadKabarDataItems } from "@/lib/services/news-service";
 import type { Dataset } from "@/lib/types/dataset";
 import { AsyncTimeoutError, withTimeout } from "@/lib/utils/async-timeout";
 import { formatCompactNumber, formatIndonesianDate } from "@/lib/utils/formatters";
 import { buildPageMetadata } from "@/lib/utils/metadata";
-import { DEFAULT_PUBLICATION_IMAGE_SRC, normalizePublicationImageSrc } from "@/lib/utils/publication-query";
+import { InfografisCarousel } from "@/components/portal/infografis-carousel";
 import { buildDatasetQuery } from "@/lib/utils/query";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -56,34 +57,18 @@ function buildHomepageTopicHref(definition: (typeof homepageTopics)[number]) {
 }
 
 export default async function Home() {
-  const [datasets, kabarDataItems, infografisPayload] = await Promise.all([
+  const [datasets, allKabarDataItems, infografisPayload] = await Promise.all([
     getPublicDatasets({ sort: "terbaru" }),
-    loadKabarDataItems(3),
+    loadKabarDataItems(),
     withTimeout(
-      getInfografisApiPayload({
-        page: 1,
-        limit: 6,
-        source: "live",
-      }),
+      getCombinedInfografisPublications(),
       HOMEPAGE_INFOGRAFIS_TIMEOUT_MS,
       "Timeout mengambil infografis homepage.",
     ).catch((error) => {
       if (error instanceof AsyncTimeoutError) {
         console.warn("[homepage] Infografis source timed out, rendering empty fallback.");
       }
-
-      return {
-        success: true as const,
-        data: [],
-        meta: {
-          page: 1,
-          limit: 6,
-          total: 0,
-          hasNextPage: false,
-          sourceUsed: "html_scrape" as const,
-          externalSource: "https://diskominfo.bulungan.go.id/wp/infografis/",
-        },
-      };
+      return [];
     }),
   ]);
 
@@ -91,8 +76,10 @@ export default async function Home() {
   const totalVisitorCount = datasets.reduce((total, dataset) => total + dataset.viewCount, 0);
   const organizationCount = new Set(datasets.map((dataset) => dataset.organization)).size;
 
-  const latestInfografis = infografisPayload.data;
-  const totalInfografis = infografisPayload.meta.total;
+  const latestInfografis = infografisPayload.slice(0, 12);
+  const totalInfografis = infografisPayload.length;
+  const kabarDataItems = allKabarDataItems.slice(0, 3);
+  const totalBerita = allKabarDataItems.length;
 
   const topicItems = homepageTopics.map((item) => ({
     label: item.label,
@@ -118,9 +105,9 @@ export default async function Home() {
       surfaceClassName: "bg-gradient-to-br from-[#f5f8ff] via-white to-[#eff4ff]",
     },
     {
-      label: "Total Organisasi",
-      value: formatCompactNumber(organizationCount),
-      icon: Building2,
+      label: "Total Berita",
+      value: formatCompactNumber(totalBerita),
+      icon: Newspaper,
       accentColor: "#d5852d",
       surfaceClassName: "bg-gradient-to-br from-[#fff9f2] via-white to-[#fff4ea]",
     },
@@ -242,16 +229,6 @@ export default async function Home() {
                             {item.organization}
                           </p>
                         </div>
-
-                        <Link
-                          href={item.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-semibold text-(--color-primary) transition hover:text-[#8f1717]"
-                        >
-                          Baca berita
-                          <ArrowRight className="size-4" />
-                        </Link>
                       </div>
                     </div>
                   </Card>
@@ -294,42 +271,14 @@ export default async function Home() {
 
         <div className="w-full">
           {latestInfografis.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {latestInfografis.slice(0, 4).map((item) => (
-                <article
-                  key={item.id}
-                  className="rounded-3xl border border-(--color-border) bg-white p-3 shadow-[0_12px_26px_rgba(29,40,57,0.08)]"
-                >
-                  <Link href={item.postUrl} target="_blank" rel="noreferrer" className="block">
-                    <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-[#eff3f8]">
-                      <Image
-                        src={
-                          normalizePublicationImageSrc(
-                            item.imageOriginalUrl ?? item.imageUrl,
-                            DEFAULT_PUBLICATION_IMAGE_SRC,
-                          ) ?? DEFAULT_PUBLICATION_IMAGE_SRC
-                        }
-                        alt={item.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1279px) 50vw, 25vw"
-                      />
-                    </div>
-                  </Link>
-
-                  <h3 className="m-0 mt-3 line-clamp-2 font-(family-name:--font-heading) text-2xl font-semibold leading-tight text-(--color-text)">
-                    {item.title}
-                  </h3>
-                </article>
-              ))}
-            </div>
+            <InfografisCarousel items={latestInfografis} />
           ) : (
             <div className="rounded-2xl border border-dashed border-(--color-border) bg-[#f8fbff] p-5">
               <h3 className="m-0 font-(family-name:--font-heading) text-2xl font-semibold text-(--color-text)">
                 Belum ada infografis terbaru
               </h3>
               <p className="mb-0 mt-2 text-sm text-(--color-muted)">
-                Data infografis akan tampil otomatis saat sumber DKIP Bulungan tersedia.
+                Daftar Infografis yang tersedia di Portal Satu Data Kabupaten Bulungan.
               </p>
             </div>
           )}

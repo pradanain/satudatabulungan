@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
@@ -206,7 +206,7 @@ export function InfografisBrowser({ initialLimit = 12 }: InfografisBrowserProps)
                     </div>
                   </Link>
                   <div className="space-y-3 p-4">
-                    <h3 className="m-0 line-clamp-2 font-(family-name:--font-heading) text-2xl font-semibold leading-tight">
+                    <h3 className="m-0 line-clamp-2 font-(family-name:--font-heading) text-xl font-semibold leading-tight sm:text-2xl">
                       {item.title}
                     </h3>
                     <div className="flex items-center gap-2 text-sm text-(--color-muted)">

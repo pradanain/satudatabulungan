@@ -9,6 +9,7 @@ import {
   pickQueryValue,
   PUBLICATION_PAGE_SIZE,
 } from "@/lib/utils/publication-query";
+import { parseIndonesianDateText } from "@/lib/utils/formatters";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Publikasi Infografis",
@@ -18,7 +19,7 @@ export const metadata: Metadata = buildPageMetadata({
   keywords: ["infografis", "DKIP Bulungan", "Satu Data Bulungan", "publikasi data"],
 });
 
-export const revalidate = 600;
+export const revalidate = 0;
 
 type PublikasiInfografisPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -30,7 +31,9 @@ function sortPublicationItems(items: PublicationCatalogItem[], sort: "terbaru" |
       return left.title.localeCompare(right.title, "id-ID", { sensitivity: "base" });
     }
 
-    const comparison = left.lastUpdated.localeCompare(right.lastUpdated);
+    const timeLeft = parseIndonesianDateText(left.lastUpdated);
+    const timeRight = parseIndonesianDateText(right.lastUpdated);
+    const comparison = timeLeft - timeRight;
     return sort === "terlama" ? comparison : -comparison;
   });
 }

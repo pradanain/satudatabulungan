@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getOrganizationById, uploadBook, uploadDataset, uploadInfographic } from "@/lib/services/ckan-portal-api";
 import { inferInternalApiErrorStatus } from "@/lib/utils/internal-api-response";
 import { sanitizeStoredText } from "@/lib/utils/input-sanitizer";
@@ -39,7 +39,7 @@ function ensure(value: unknown, key: string): string {
 function checkUploadPermission(uploadType: UploadType, role: string): boolean {
   if (role === "admin") return true;
   if (role === "walidata") return true;
-  if (role === "operator_opd") {
+  if (role === "operator") {
     return uploadType === "dataset" || uploadType === "infografis" || uploadType === "publikasi";
   }
 
@@ -77,7 +77,7 @@ export async function POST(
     const payload = (await request.json()) as UploadPayload;
 
     const ownerOrgId = ensure(payload.ownerOrgId, "ownerOrgId");
-    if (session.role === "operator_opd" && session.organizationId !== ownerOrgId) {
+    if (session.role === "operator" && session.organizationId !== ownerOrgId) {
       return NextResponse.json(
         { success: false, error: "Operator hanya boleh upload untuk organisasi sendiri." },
         { status: 403 },

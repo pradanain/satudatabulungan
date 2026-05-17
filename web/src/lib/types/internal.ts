@@ -5,7 +5,7 @@ import type {
   DatasetStatus,
 } from "@/lib/types/dataset";
 
-export type InternalRole = "admin" | "walidata" | "operator_opd";
+export type InternalRole = "admin" | "pembina" | "walidata" | "operator";
 
 export type InternalUserStatus = "Aktif" | "Nonaktif";
 

@@ -101,7 +101,7 @@ export default async function InternalDashboardPage() {
           <p className="mb-0 mt-2 text-4xl font-extrabold tracking-tight text-[var(--color-text)]">{formatCompactNumber(dashboard.publishedCount)}</p>
         </Card>
 
-        {session.role !== "operator_opd" && (
+        {session.role !== "operator" && (
           <Card className="group relative overflow-hidden border-transparent bg-gradient-to-br from-white to-[#f8f5ff] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_8px_30px_rgba(117,85,173,0.08)]">
             <div className="absolute -right-2 -top-2 size-20 text-[#7555ad]/5 transition-transform group-hover:scale-110">
               <Activity className="size-full" />

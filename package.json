@@ -1,0 +1,15 @@
+{
+  "name": "satu-data-bulungan-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "docker compose up ckan",
+    "dev:frontend": "npm --prefix web run dev",
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "down": "docker compose down",
+    "clean": "docker compose down -v"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -31,47 +31,21 @@ export type LayananReference = {
   note: string;
 };
 
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 function buildWalidataTargets(): WalidataTarget[] {
-  const entries = opdDirectory as DirectoryEntry[];
-  const byEmail = new Map<string, WalidataTarget>();
-
-  const defaultTarget: WalidataTarget = {
-    id: "walidata-kabupaten-bulungan",
-    label: "Walidata Kabupaten Bulungan (Bappedalitbang)",
-    email: "walidata@bulungankab.go.id",
-  };
-
-  byEmail.set(defaultTarget.email.toLowerCase(), defaultTarget);
-
-  for (const entry of entries) {
-    const email = (entry.email ?? "").trim().toLowerCase();
-    if (!email) {
-      continue;
-    }
-
-    if (byEmail.has(email)) {
-      continue;
-    }
-
-    byEmail.set(email, {
-      id: slugify(`${entry.name}-${email}`),
-      label: `${entry.name} (Walidata/OPD)`,
-      email,
-    });
-  }
-
-  return Array.from(byEmail.values()).sort((a, b) => a.label.localeCompare(b.label, "id-ID"));
+  return [
+    {
+      id: "walidata-bappedalitbang",
+      label: "DKIP (Walidata)",
+      email: "walidata@bulungankab.go.id",
+    },
+  ];
 }
 
 export const walidataTargets: WalidataTarget[] = buildWalidataTargets();
+export const defaultWalidataTarget = walidataTargets[0];
+
+export const allOrganizations: string[] = (opdDirectory as DirectoryEntry[]).map((entry) => entry.name).sort((a, b) => a.localeCompare(b, "id-ID"));
 
 export const layananFaqSections: LayananFaqSection[] = [
   {

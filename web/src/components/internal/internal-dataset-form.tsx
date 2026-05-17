@@ -5,6 +5,13 @@ import { startTransition, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type {
   InternalDataset,
   InternalOrganization,
@@ -138,54 +145,68 @@ export function InternalDatasetForm({
           <input type="hidden" value={form.slug} />
 
           {/* Ringkasan removed per user feedback */}
-          <label className="internal-field-label">
+          <div className="internal-field-label">
             Topik
-            <select
+            <Select
               value={form.topic}
-              onChange={(event) => setForm((current) => ({ ...current, topic: event.target.value }))}
-              className="internal-select"
+              onValueChange={(value) => setForm((current) => ({ ...current, topic: value }))}
             >
-              {topics.map((topic) => (
-                <option key={topic.id} value={topic.name}>
-                  {topic.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {session.role !== "operator_opd" ? (
-            <label className="internal-field-label">
-              Organisasi / OPD
-              <select
-                value={form.organizationId}
-                onChange={(event) => setForm((current) => ({ ...current, organizationId: event.target.value }))}
-                className="internal-select"
-              >
-                {organizations.map((organization) => (
-                  <option key={organization.id} value={organization.id}>
-                    {organization.shortName}
-                  </option>
+              <SelectTrigger className="h-11 border-(--color-border)">
+                <SelectValue placeholder="Pilih topik" />
+              </SelectTrigger>
+              <SelectContent>
+                {topics.map((topic) => (
+                  <SelectItem key={topic.id} value={topic.name}>
+                    {topic.name}
+                  </SelectItem>
                 ))}
-              </select>
-            </label>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {session.role !== "operator" ? (
+            <div className="internal-field-label">
+              Organisasi / OPD
+              <Select
+                value={form.organizationId}
+                onValueChange={(value) => setForm((current) => ({ ...current, organizationId: value }))}
+              >
+                <SelectTrigger className="h-11 border-(--color-border)">
+                  <SelectValue placeholder="Pilih organisasi" />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizations.map((organization) => (
+                    <SelectItem key={organization.id} value={organization.id}>
+                      {organization.shortName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           ) : (
             <input type="hidden" value={form.organizationId} />
           )}
 
-          <label className="internal-field-label">
+          <div className="internal-field-label">
             Frekuensi
-            <select
+            <Select
               value={form.frequency}
-              onChange={(event) => setForm((current) => ({ ...current, frequency: event.target.value as DatasetFrequency }))}
-              className="internal-select"
+              onValueChange={(value) =>
+                setForm((current) => ({ ...current, frequency: value as DatasetFrequency }))
+              }
             >
-              {frequencyOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
+              <SelectTrigger className="h-11 border-(--color-border)">
+                <SelectValue placeholder="Pilih frekuensi" />
+              </SelectTrigger>
+              <SelectContent>
+                {frequencyOptions.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <label className="internal-field-label">
             Periode
@@ -199,20 +220,26 @@ export function InternalDatasetForm({
             Nama Resource
             <Input value={form.resourceName} onChange={(event) => setForm((current) => ({ ...current, resourceName: event.target.value }))} required />
           </label>
-          <label className="internal-field-label">
+          <div className="internal-field-label">
             Format Resource
-            <select
+            <Select
               value={form.resourceFormat}
-              onChange={(event) => setForm((current) => ({ ...current, resourceFormat: event.target.value as DatasetFormat }))}
-              className="internal-select"
+              onValueChange={(value) =>
+                setForm((current) => ({ ...current, resourceFormat: value as DatasetFormat }))
+              }
             >
-              {resourceFormatOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
+              <SelectTrigger className="h-11 border-(--color-border)">
+                <SelectValue placeholder="Pilih format" />
+              </SelectTrigger>
+              <SelectContent>
+                {resourceFormatOptions.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <label className="internal-field-label md:col-span-3">
             URL Resource

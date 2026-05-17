@@ -22,6 +22,8 @@ interface SearchBarProps {
   hiddenValues?: Record<string, string | undefined>;
   className?: string;
   submitLabel?: string;
+  /** Accessible label for screen readers */
+  srLabel?: string;
 }
 
 export function SearchBar({
@@ -31,6 +33,7 @@ export function SearchBar({
   hiddenValues = {},
   className = "",
   submitLabel = "Cari",
+  srLabel,
 }: SearchBarProps) {
   const [query, setQuery] = useState(defaultValue);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -80,18 +83,23 @@ export function SearchBar({
   };
 
   return (
-    <div ref={containerRef} className={cn("relative z-50", className)}>
+    <div ref={containerRef} className={cn("relative z-30", className)}>
       <form
         action={action}
         method="get"
-        className="grid items-stretch gap-2 rounded-[24px] border border-[var(--color-border)] bg-white p-2 shadow-[0_10px_24px_rgba(33,41,52,0.08)] sm:grid-cols-[1fr_auto]"
+        className={cn(
+          "grid items-stretch gap-3 lg:grid-cols-[1fr_auto]",
+        )}
       >
         {Object.entries(hiddenValues).map(([key, value]) =>
           value ? <input key={key} type="hidden" name={key} value={value} /> : null,
         )}
 
-        <div className="relative flex items-center">
-          <Search className="absolute left-4 size-5 text-[var(--color-muted)]" />
+        <div className={cn(
+          "relative flex items-center h-12 lg:h-14 px-2",
+          "rounded-[24px] border border-[var(--color-border)] bg-white shadow-[0_10px_24px_rgba(33,41,52,0.06)]"
+        )}>
+          <Search className="absolute left-5 size-5 text-[var(--color-muted)]" />
           <Input
             name="q"
             type="search"
@@ -99,13 +107,20 @@ export function SearchBar({
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => query.length >= 2 && setIsOpen(true)}
             placeholder={placeholder}
+            aria-label={srLabel ?? placeholder}
             autoComplete="off"
-            className="h-12 border-0 bg-transparent pl-12 pr-4 text-base shadow-none focus-visible:ring-0"
+            className="h-full border-0 bg-transparent pl-12 pr-4 text-base shadow-none focus-visible:ring-0"
           />
-          {isLoading && <Loader2 className="absolute right-4 size-5 animate-spin text-[var(--color-primary)]" />}
+          {isLoading && <Loader2 className="absolute right-5 size-5 animate-spin text-[var(--color-primary)]" />}
         </div>
 
-        <Button type="submit" className="h-12 rounded-xl px-8 text-base font-bold shadow-lg shadow-[var(--color-primary)]/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+        <Button 
+          type="submit" 
+          className={cn(
+            "h-12 lg:h-14 rounded-[22px] px-10 text-base font-bold transition-all hover:scale-[1.02] active:scale-[0.98]",
+            "shadow-lg shadow-[var(--color-primary)]/20"
+          )}
+        >
           {submitLabel}
         </Button>
       </form>

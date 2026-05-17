@@ -1,4 +1,4 @@
-import type { PortalDataset, PortalResource } from "@/lib/services/ckan-portal-api";
+import type { PortalDataset } from "@/lib/services/ckan-portal-api";
 
 export type ValidationReport = {
   score: number;

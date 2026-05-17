@@ -9,9 +9,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "border border-[var(--color-primary)] bg-[var(--color-primary)] text-white hover:bg-[#9f1b1b]",
+          "border border-[var(--color-primary)] bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]",
+        destructive:
+          "border border-rose-600 bg-rose-600 text-white hover:bg-rose-700",
         secondary:
           "border border-[var(--color-border)] bg-white text-[var(--color-text)] hover:bg-[var(--color-surface-soft)]",
+        outline:
+          "border border-[var(--color-border)] bg-transparent text-[var(--color-text)] hover:bg-[var(--color-surface-soft)]",
         ghost: "text-[var(--color-text)] hover:bg-[var(--color-surface-soft)]",
       },
       size: {

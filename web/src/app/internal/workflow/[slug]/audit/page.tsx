@@ -12,6 +12,7 @@ import {
 } from "@/lib/services/workflow-service";
 import { requireInternalSession } from "@/lib/utils/internal-auth-server";
 import { formatIndonesianDate } from "@/lib/utils/formatters";
+import { AuditFilterForm } from "@/components/internal/audit-filter-form";
 
 type AuditPageProps = {
   params: Promise<{ slug: string }>;
@@ -129,69 +130,24 @@ export default async function WorkflowAuditDetailPage({ params, searchParams }: 
 
       <section>
         <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6">
-          <h2 className="m-0 font-[family-name:var(--font-heading)] text-2xl font-semibold">Filter Audit</h2>
+          <h2 className="m-0 font-[family-name:var(--font-heading)] text-2xl font-semibold">
+            Filter Audit
+          </h2>
           <p className="mb-0 mt-2 text-sm text-[var(--color-muted)]">
             Gunakan actor, status, dan rentang tanggal untuk mempersempit event audit.
           </p>
 
-          <form method="GET" className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <label className="internal-field-label gap-1.5">
-              Actor
-              <select
-                name="actor"
-                defaultValue={actorFilter}
-                className="internal-select"
-              >
-                <option value="">Semua actor</option>
-                {actorOptions.map((actor) => (
-                  <option key={actor} value={actor}>
-                    {actor}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="internal-field-label gap-1.5">
-              Status
-              <select
-                name="status"
-                defaultValue={statusFilter}
-                className="internal-select"
-              >
-                <option value="">Semua status</option>
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="internal-field-label gap-1.5">
-              Dari tanggal
-              <Input type="date" name="dateFrom" defaultValue={dateFromFilter} />
-            </label>
-
-            <label className="internal-field-label gap-1.5">
-              Sampai tanggal
-              <Input type="date" name="dateTo" defaultValue={dateToFilter} />
-            </label>
-
-            <div className="flex flex-wrap gap-2 md:col-span-2 xl:col-span-4">
-              <Button type="submit" className="rounded-xl">
-                Terapkan Filter
-              </Button>
-              <Button asChild variant="secondary" className="rounded-xl">
-                <Link href={`/internal/workflow/${item.slug}/audit`}>Reset</Link>
-              </Button>
-              <Button asChild variant="secondary" className="rounded-xl">
-                <Link href={exportJsonHref}>Export JSON</Link>
-              </Button>
-              <Button asChild variant="secondary" className="rounded-xl">
-                <Link href={exportCsvHref}>Export CSV</Link>
-              </Button>
-            </div>
-          </form>
+          <AuditFilterForm
+            slug={item.slug}
+            actorOptions={actorOptions}
+            statusOptions={statusOptions}
+            actorFilter={actorFilter}
+            statusFilter={statusFilter}
+            dateFromFilter={dateFromFilter}
+            dateToFilter={dateToFilter}
+            exportJsonHref={exportJsonHref}
+            exportCsvHref={exportCsvHref}
+          />
         </Card>
       </section>
 

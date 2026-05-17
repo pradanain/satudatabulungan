@@ -6,24 +6,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Eye, EyeOff } from "lucide-react";
 
 const demoAccounts = [
   {
     label: "Admin",
-    username: "admin@bulungan.go.id",
-    password: "AdminBulungan#2026",
+    username: "admin",
+    password: "bulungan123",
     note: "Akses penuh ke seluruh modul, users, settings, dan monitoring.",
   },
   {
-    label: "Walidata DKIP",
-    username: "walidata.dkip@bulungan.go.id",
-    password: "WalidataDKIP#2026",
+    label: "Walidata",
+    username: "walidata",
+    password: "walidata123",
     note: "Fokus review metadata, approval, publikasi, dan monitoring kualitas.",
   },
   {
-    label: "Operator Dinkes",
-    username: "operator.kesehatan@bulungan.go.id",
-    password: "OperatorDinkes#2026",
+    label: "Operator",
+    username: "operator.dinkes",
+    password: "operator123",
     note: "Fokus draft, edit, submit ulang, dan melihat notifikasi OPD.",
   },
 ];
@@ -35,6 +36,7 @@ export function InternalLoginForm() {
     username: "admin@bulungan.go.id",
     password: "AdminBulungan#2026",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
@@ -66,110 +68,157 @@ export function InternalLoginForm() {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-      <Card className="overflow-hidden border-transparent bg-white/70 shadow-[0_20px_50px_rgba(0,0,0,0.1)] backdrop-blur-2xl">
-        <div className="h-2 w-full bg-gradient-to-r from-[var(--color-primary)] via-[var(--color-accent-blue)] to-[var(--color-primary)]" />
-        <div className="flex h-full flex-col justify-between gap-6 p-7 sm:p-8">
-          <div>
-            <p className="m-0 text-xs font-extrabold uppercase tracking-[0.2em] text-[var(--color-primary)]">
-              Portal Internal
-            </p>
-            <h1 className="mt-4 font-[family-name:var(--font-heading)] text-3xl font-semibold leading-tight sm:text-4xl">
-              Satu Data Bulungan
-            </h1>
-            <p className="mb-0 mt-3 max-w-lg text-sm leading-relaxed text-[var(--color-muted)] sm:text-base">
-              Gunakan akun portal internal untuk mengelola dataset, metadata, review, dan workflow OPD
-              sesuai peran yang tersimpan di backend CKAN.
-            </p>
+    <div className="overflow-hidden rounded-3xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)] md:grid md:grid-cols-2">
+      {/* Left Panel: Decorative & Institutional (Footer Style) */}
+      <div className="relative hidden flex-col justify-between p-12 md:flex overflow-hidden bg-[radial-gradient(circle_at_top,#142752_0%,#0d1733_44%,#0a132b_100%)]">
+        {/* Left Motif Band */}
+        <div 
+          className="absolute inset-y-0 left-0 z-0 w-[8%] opacity-[0.18]"
+          style={{ 
+            backgroundImage: 'url("/assets/brand/motifs/motif-3-suku-alt-soft.webp")',
+            backgroundRepeat: 'repeat-y',
+            backgroundPosition: 'left center',
+            backgroundSize: '100% auto'
+          }}
+        />
+
+        <div className="relative z-10">
+          <div className="mb-14 flex items-start gap-4">
+            <img 
+              src="/assets/brand/logos/lambang-bulungan.png" 
+              alt="Logo Bulungan" 
+              className="h-20 w-auto"
+            />
+            <div className="pt-1">
+              <p className="m-0 font-[family-name:var(--font-heading)] text-base font-semibold uppercase leading-tight tracking-[0.08em] text-[var(--color-accent-gold)]">
+                Pemerintah Kabupaten
+              </p>
+              <h1 className="mt-1 font-[family-name:var(--font-heading)] text-4xl font-semibold uppercase leading-[0.92] tracking-tight text-white sm:text-5xl">
+                Bulungan
+              </h1>
+            </div>
           </div>
 
-          <div className="grid gap-3">
-            {demoAccounts.map((account) => (
-                <button
-                key={account.label}
-                type="button"
-                onClick={() => setForm({ username: account.username, password: account.password })}
-                className="group relative rounded-2xl border border-[var(--color-border)] bg-white/50 p-4 text-left transition-all duration-300 hover:border-[var(--color-primary)]/30 hover:bg-white hover:shadow-md"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="m-0 text-base font-bold text-[var(--color-text)] transition-colors group-hover:text-[var(--color-primary)]">
-                    {account.label}
-                  </h2>
-                  <Badge className="border-[var(--color-border)] bg-white/80 text-[var(--color-text)] shadow-xs" variant="outline">
-                    Demo Lokal
-                  </Badge>
-                </div>
-                <p className="mb-0 mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{account.note}</p>
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="size-1.5 rounded-full bg-[var(--color-primary)]/40" />
-                  <p className="mb-0 text-xs font-medium text-[var(--color-muted)]/80">
-                    {account.username}
-                  </p>
-                </div>
-              </button>
-            ))}
+          <div className="space-y-5">
+            <div className="inline-flex rounded-full bg-white/10 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.15em] text-white/80 backdrop-blur-sm border border-white/10">
+              Akses Internal
+            </div>
+            <h2 className="text-3xl font-bold leading-tight tracking-tight text-white">
+              Selamat Datang di <br /> Portal Satu Data!
+            </h2>
+            <div className="h-1.5 w-16 bg-[var(--color-accent-gold)] rounded-full" />
+            <p className="max-w-xs text-sm leading-relaxed text-white/70">
+              Platform terpadu untuk pengelolaan, integrasi, dan analisis data strategis guna mendukung pengambilan keputusan yang berbasis data.
+            </p>
           </div>
         </div>
-      </Card>
 
-      <Card className="relative overflow-hidden border-transparent bg-white/90 p-7 shadow-[0_20px_50px_rgba(0,0,0,0.1)] backdrop-blur-2xl sm:p-9">
-        <div className="absolute right-0 top-0 size-32 translate-x-12 -translate-y-12 rounded-full bg-[var(--color-primary)]/5 blur-3xl" />
-        <p className="m-0 text-xs font-extrabold uppercase tracking-[0.25em] text-[var(--color-primary)]">
-          Masuk
-        </p>
-        <h2 className="mt-4 font-[family-name:var(--font-heading)] text-3xl font-bold tracking-tight text-[var(--color-text)] sm:text-4xl">
-          Akses Workspace
-        </h2>
-        <p className="mb-0 mt-4 text-sm leading-relaxed text-[var(--color-muted)]">
-          Masuk untuk mengelola dataset publikasi. Sistem terhubung ke sinkronisasi draf CKAN.
-        </p>
+        <div className="relative z-10 border-t border-white/10 pt-8">
+          <p className="text-xs font-medium text-white/50">
+            © 2026 Pemerintah Kabupaten Bulungan.
+          </p>
+        </div>
+      </div>
 
-        <form className="mt-6 grid gap-4" onSubmit={handleLogin}>
-          <label className="internal-field-label">
-            Username
+      {/* Right Panel: Form */}
+      <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-16">
+        <div className="mb-10">
+          <h2 className="text-3xl font-bold tracking-tight text-[var(--color-text)]">Dashboard Portal</h2>
+          <p className="mt-2 text-base text-[var(--color-muted)]">
+            Silakan masukkan email atau username dan password Anda.
+          </p>
+        </div>
+
+        <form className="grid gap-5" onSubmit={handleLogin}>
+          <div className="grid gap-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">
+              Email atau Username
+            </label>
             <Input
+              className="h-11 border-[var(--color-border)] bg-white px-4 focus-visible:ring-1 focus-visible:ring-[var(--color-primary)] focus-visible:border-[var(--color-primary)]"
               value={form.username}
               onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
-              placeholder="admin"
+              placeholder="Masukkan email atau username"
+              required
+              autoComplete="username"
             />
-          </label>
+          </div>
 
-          <label className="internal-field-label">
-            Password
-            <Input
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-              placeholder="Masukkan password"
-            />
-          </label>
+          <div className="grid gap-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">
+              Password
+            </label>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                className="h-11 border-[var(--color-border)] bg-white px-4 pr-10 focus-visible:ring-1 focus-visible:ring-[var(--color-primary)] focus-visible:border-[var(--color-primary)]"
+                value={form.password}
+                onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors"
+                aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
+          </div>
 
           {errorMessage ? (
-            <p className="internal-alert-error">
+            <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-600 border border-red-100">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
               {errorMessage}
-            </p>
+            </div>
           ) : null}
 
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" className="rounded-full px-5" disabled={isPending}>
-              {isPending ? "Masuk..." : "Masuk ke Dashboard"}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              className="rounded-full px-5"
-              onClick={() =>
-                setForm({
-                  username: "walidata.dkip@bulungan.go.id",
-                  password: "WalidataDKIP#2026",
-                })
-              }
-            >
-              Gunakan Akun Walidata
-            </Button>
+          <div className="flex items-center justify-between text-xs">
+            <label className="flex items-center gap-2 cursor-pointer text-[var(--color-muted)]">
+              <input type="checkbox" className="accent-[var(--color-primary)] rounded" />
+              Ingat saya
+            </label>
+            <a href="#" className="font-semibold text-[var(--color-primary)] hover:underline">
+              Bantuan akses?
+            </a>
+          </div>
+
+          <Button
+            type="submit"
+            className="h-11 rounded-xl bg-[var(--color-primary)] font-bold text-white transition-all hover:bg-[#8f1717] active:scale-[0.98]"
+            disabled={isPending}
+          >
+            {isPending ? "Memproses..." : "Masuk"}
+          </Button>
+
+          <div className="mt-6">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[var(--color-border)]" />
+              </div>
+              <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
+                <span className="bg-white px-3 text-[var(--color-muted)] font-bold">Opsi Demo</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {demoAccounts.map((account) => (
+                <button
+                  key={account.label}
+                  type="button"
+                  onClick={() => setForm({ username: account.username, password: account.password })}
+                  className="rounded-lg border border-[var(--color-border)] py-2 text-[9px] font-bold uppercase tracking-tight text-[var(--color-muted)] transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+                >
+                  {account.label.split(' ')[0]}
+                </button>
+              ))}
+            </div>
           </div>
         </form>
-      </Card>
+      </div>
     </div>
   );
 }
