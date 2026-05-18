@@ -10,7 +10,7 @@ const ckanBaseUrl = process.env.CKAN_BASE_URL ?? "http://localhost:5000";
 const internalAuthUser = process.env.INTERNAL_BASIC_AUTH_USER ?? "admin";
 const internalAuthPassword = process.env.INTERNAL_BASIC_AUTH_PASSWORD ?? "bulungan123";
 const testPort = Number(process.env.SMOKE_WORKFLOW_API_PORT ?? 3325);
-const testSlug = process.env.SMOKE_WORKFLOW_API_SLUG ?? "jumlah-penduduk-per-kecamatan-2025";
+const testSlug = process.env.SMOKE_WORKFLOW_API_SLUG ?? "jumlah-penduduk-bulungan-2023-2025";
 const basicAuthHeader = `Basic ${Buffer.from(
   `${internalAuthUser}:${internalAuthPassword}`,
   "utf8",
