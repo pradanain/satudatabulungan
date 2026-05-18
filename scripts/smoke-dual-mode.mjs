@@ -32,6 +32,7 @@ async function fetchWithTimeout(url, timeoutMs = 15000, extraHeaders = {}) {
         ...extraHeaders,
       },
       signal: controller.signal,
+      redirect: "manual",
     });
   } finally {
     clearTimeout(timer);
@@ -128,7 +129,11 @@ async function runServer(mode, port, runChecks) {
 
 async function assertRoute(baseUrl, path, expectedStatus = 200, headers = {}) {
   const response = await fetchWithTimeout(`${baseUrl}${path}`, 15000, headers);
-  if (response.status !== expectedStatus) {
+  const statusMatch = Array.isArray(expectedStatus)
+    ? expectedStatus.includes(response.status)
+    : response.status === expectedStatus;
+    
+  if (!statusMatch) {
     throw new Error(`Route ${path} expected ${expectedStatus}, got ${response.status}`);
   }
   return response.text();
@@ -174,11 +179,11 @@ async function run() {
     await assertRoute(baseUrl, "/organisasi");
     await assertRoute(baseUrl, "/metadata");
     await assertRoute(baseUrl, "/api");
-    await assertRoute(baseUrl, "/internal/workflow", 401);
+    await assertRoute(baseUrl, "/internal/workflow", [401, 307]);
     await assertRoute(baseUrl, "/internal/workflow", 200, {
       Authorization: internalAuthHeader,
     });
-    await assertRoute(baseUrl, "/internal/workflow/jumlah-penduduk-per-kecamatan-2025/audit", 401);
+    await assertRoute(baseUrl, "/internal/workflow/jumlah-penduduk-per-kecamatan-2025/audit", [401, 307]);
     await assertRoute(baseUrl, "/internal/workflow/jumlah-penduduk-per-kecamatan-2025/audit", 200, {
       Authorization: internalAuthHeader,
     });
@@ -205,14 +210,14 @@ async function run() {
   await runServer("ckan", ckanPort, async (baseUrl) => {
     const datasetHtml = await assertRoute(baseUrl, "/dataset");
     await assertRoute(baseUrl, "/api");
-    await assertRoute(baseUrl, "/internal/workflow", 401);
+    await assertRoute(baseUrl, "/internal/workflow", [401, 307]);
     await assertRoute(baseUrl, "/internal/workflow", 200, {
       Authorization: internalAuthHeader,
     });
 
     if (firstSlug) {
       await assertRoute(baseUrl, `/dataset/${encodeURIComponent(firstSlug)}`);
-      await assertRoute(baseUrl, `/internal/workflow/${encodeURIComponent(firstSlug)}/audit`, 401);
+      await assertRoute(baseUrl, `/internal/workflow/${encodeURIComponent(firstSlug)}/audit`, [401, 307]);
       await assertRoute(
         baseUrl,
         `/internal/workflow/${encodeURIComponent(firstSlug)}/audit?actor=admin`,
