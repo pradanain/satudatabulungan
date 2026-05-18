@@ -584,7 +584,7 @@ async function action(name, payload = {}) {
   writeFileSync(tmpFile, JSON.stringify(payload));
   
   try {
-    const output = execFileSync("curl.exe", [
+    const output = execFileSync("curl", [
       "-s", "-X", "POST", `${baseUrl}/api/3/action/${name}`,
       "-H", `Authorization: ${apiKey}`,
       "-H", "Content-Type: application/json",
@@ -615,7 +615,7 @@ async function multipart(name, formData) {
   }
 
   try {
-    const output = execFileSync("curl.exe", args, { encoding: "utf8" });
+    const output = execFileSync("curl", args, { encoding: "utf8" });
     const d = JSON.parse(output);
     if (d?.success !== true) throw new Error(`${name} failed: ${JSON.stringify(d?.error || "Unknown error")}`);
     return d.result;
