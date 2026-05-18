@@ -12,6 +12,9 @@ services:
     # Tidak perlu depends_on karena Nginx sekarang pakai resolver DNS dinamis
     # (127.0.0.11) dan bisa start independen dari web & ckan.
     restart: always
+    networks:
+      - default
+      - proxy
 
   # --- BACKEND SERVICES (CKAN & STACK) ---
   db:
@@ -131,4 +134,9 @@ volumes:
   ckan_pg_data:
   ckan_datastore_pg_data:
   ckan_storage:
+
+networks:
+  default:
+  proxy:
+    external: true
 
