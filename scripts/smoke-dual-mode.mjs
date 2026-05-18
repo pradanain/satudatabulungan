@@ -183,7 +183,7 @@ async function run() {
   await runServer("mock", mockPort, async (baseUrl, authCookie) => {
     await assertRoute(baseUrl, "/");
     await assertRoute(baseUrl, "/dataset");
-    await assertRoute(baseUrl, "/dataset/jumlah-penduduk-per-kecamatan-2025");
+    await assertRoute(baseUrl, "/dataset/jumlah-penduduk-bulungan-2023-2025");
     await assertRoute(baseUrl, "/topik");
     await assertRoute(baseUrl, "/organisasi");
     await assertRoute(baseUrl, "/metadata");
@@ -192,18 +192,18 @@ async function run() {
     await assertRoute(baseUrl, "/internal/workflow", 200, {
       Cookie: authCookie,
     });
-    await assertRoute(baseUrl, "/internal/workflow/jumlah-penduduk-per-kecamatan-2025/audit", [401, 307]);
-    await assertRoute(baseUrl, "/internal/workflow/jumlah-penduduk-per-kecamatan-2025/audit", 200, {
+    await assertRoute(baseUrl, "/internal/workflow/jumlah-penduduk-bulungan-2023-2025/audit", [401, 307]);
+    await assertRoute(baseUrl, "/internal/workflow/jumlah-penduduk-bulungan-2023-2025/audit", 200, {
       Cookie: authCookie,
     });
     await assertRoute(
       baseUrl,
-      "/api/internal/workflow/jumlah-penduduk-per-kecamatan-2025/audit/export?format=json",
+      "/api/internal/workflow/jumlah-penduduk-bulungan-2023-2025/audit/export?format=json",
       401,
     );
     await assertRoute(
       baseUrl,
-      "/api/internal/workflow/jumlah-penduduk-per-kecamatan-2025/audit/export?format=csv&actor=admin",
+      "/api/internal/workflow/jumlah-penduduk-bulungan-2023-2025/audit/export?format=csv&actor=admin",
       200,
       {
         Cookie: authCookie,

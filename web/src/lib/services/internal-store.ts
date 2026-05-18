@@ -590,7 +590,7 @@ function buildSettings(): PortalSettings {
     heroSubheadline: "Menyatukan dataset sektoral, metadata, dan publikasi lintas OPD dalam satu alur kerja yang terpantau.",
     footerNote: "Kelola data lebih cepat, konsisten, dan siap dipublikasikan.",
     highlightDatasetSlugs: [
-      "jumlah-penduduk-per-kecamatan-2025",
+      "jumlah-penduduk-bulungan-2023-2025",
       "peta-sebaran-fasilitas-kesehatan",
       "data-sekolah-dan-peserta-didik",
     ],

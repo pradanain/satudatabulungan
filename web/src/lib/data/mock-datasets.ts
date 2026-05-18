@@ -104,8 +104,8 @@ function buildSeed(seed: MockSeedInput): Dataset {
 export const mockDatasets: Dataset[] = [
   buildSeed({
     id: "BLG-KEP-001",
-    slug: "jumlah-penduduk-per-kecamatan-2025",
-    title: "Jumlah Penduduk per Kecamatan 2025",
+    slug: "jumlah-penduduk-bulungan-2023-2025",
+    title: "Jumlah Penduduk Bulungan 2023-2025",
     summary: "Distribusi jumlah penduduk Bulungan per kecamatan, jenis kelamin, dan kelompok umur.",
     description:
       "Dataset kependudukan resmi yang menampilkan jumlah penduduk per kecamatan di Kabupaten Bulungan tahun 2025.",
@@ -140,7 +140,7 @@ export const mockDatasets: Dataset[] = [
     popularityScore: 95,
     viewCount: 6689,
     downloadCount: 1760,
-    relatedSlugs: ["jumlah-penduduk-per-kecamatan-2025", "realisasi-umkm-dan-ekonomi-kreatif"],
+    relatedSlugs: ["jumlah-penduduk-bulungan-2023-2025", "realisasi-umkm-dan-ekonomi-kreatif"],
   }),
   buildSeed({
     id: "BLG-EKO-006",
@@ -180,7 +180,7 @@ export const mockDatasets: Dataset[] = [
     popularityScore: 88,
     viewCount: 5843,
     downloadCount: 1427,
-    relatedSlugs: ["jumlah-penduduk-per-kecamatan-2025", "realisasi-umkm-dan-ekonomi-kreatif"],
+    relatedSlugs: ["jumlah-penduduk-bulungan-2023-2025", "realisasi-umkm-dan-ekonomi-kreatif"],
   }),
   buildSeed({
     id: "BLG-INF-007",
@@ -240,7 +240,7 @@ export const mockDatasets: Dataset[] = [
     popularityScore: 77,
     viewCount: 4368,
     downloadCount: 1044,
-    relatedSlugs: ["jumlah-penduduk-per-kecamatan-2025", "peta-sebaran-fasilitas-kesehatan"],
+    relatedSlugs: ["jumlah-penduduk-bulungan-2023-2025", "peta-sebaran-fasilitas-kesehatan"],
   }),
   buildSeed({
     id: "BLG-PGN-012",
