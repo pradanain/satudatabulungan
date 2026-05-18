@@ -29,10 +29,15 @@ export function PortalHeroCard({
   rightContentClassName,
 }: PortalHeroCardProps) {
   return (
-    <Card className={cn("relative overflow-hidden rounded-[28px] border-(--color-border) bg-white p-0 shadow-[0_12px_28px_rgba(33,41,52,0.08)]", className)}>
+    <Card 
+      className={cn("relative overflow-hidden rounded-[28px] border-(--color-border) p-0 shadow-[0_12px_28px_rgba(33,41,52,0.08)]", className)}
+      style={{
+        background: "linear-gradient(96deg, #ffffff 0%, #fffefb 25%, #f9f5e9 45%, #f5efdd 55%, #f2eee4 65%, #ebedf2 75%, #e3ebf8 88%, #dce7f7 100%)"
+      }}
+    >
       <div className="grid min-h-72 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         {/* Left Content: Structured Information */}
-        <div className={cn("relative z-2 flex flex-col justify-center overflow-hidden bg-[linear-gradient(96deg,#ffffff_0%,#fffefb_44%,#f9f5e9_78%,#f5efdd_100%)] px-6 py-8 sm:px-10 sm:py-10", leftContentClassName)}>
+        <div className={cn("relative z-2 flex flex-col justify-center overflow-hidden bg-transparent px-6 py-8 sm:px-10 sm:py-10", leftContentClassName)}>
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.78)_1px,transparent_0)] [background-size:3px_3px]"
             aria-hidden="true"
@@ -55,9 +60,8 @@ export function PortalHeroCard({
         </div>
 
         {/* Right Content: Visual Decoration */}
-        <aside className={cn("relative min-h-40 overflow-hidden border-t border-(--color-border) bg-[#f7f5ef] lg:min-h-60 lg:border-t-0 lg:border-l", rightContentClassName)}>
+        <aside className={cn("relative min-h-40 overflow-hidden lg:min-h-60", rightContentClassName)}>
           <div className="absolute inset-0">
-            <div className="absolute inset-0 bg-[linear-gradient(128deg,#f6f3ea_0%,#f2eee4_26%,#ebedf2_58%,#e3ebf8_79%,#dce7f7_100%)]" />
             <div
               className="absolute inset-0 opacity-[0.06] [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.8)_1px,transparent_0)] [background-size:3px_3px]"
               aria-hidden="true"

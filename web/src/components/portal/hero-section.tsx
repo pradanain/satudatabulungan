@@ -29,9 +29,14 @@ export function HeroSection({
 }: HeroSectionProps) {
   return (
     <section>
-      <Card className="relative overflow-hidden rounded-[28px] border-[var(--color-border)] bg-white p-0 shadow-[0_12px_28px_rgba(33,41,52,0.08)]">
+      <Card 
+        className="relative overflow-hidden rounded-[28px] border-[var(--color-border)] p-0 shadow-[0_12px_28px_rgba(33,41,52,0.08)]"
+        style={{
+          background: "linear-gradient(90deg, #ffffff 0%, #ffffff 35%, #f7f5f2 45%, #e8e7e6 55%, #ece7b1 70%, #f3efc8 85%, #f0e5dc 100%)"
+        }}
+      >
         <div className="grid min-h-[250px] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
-          <div className="relative z-[2] flex flex-col justify-center bg-[linear-gradient(90deg,rgba(255,255,255,1)_0%,rgba(255,255,255,0.99)_62%,rgba(249,245,227,0.82)_86%,rgba(249,245,227,0.18)_100%)] px-5 py-5 sm:px-7 sm:py-6 lg:px-8 lg:py-7">
+          <div className="relative z-[2] flex flex-col justify-center bg-transparent px-5 py-5 sm:px-7 sm:py-6 lg:px-8 lg:py-7">
             <div className="space-y-4">
               <Badge
                 variant="outline"
@@ -73,12 +78,10 @@ export function HeroSection({
           </div>
 
           <aside
-            className="relative min-h-[220px] overflow-hidden bg-[#f7f5ef] sm:min-h-[250px]"
+            className="relative min-h-[220px] overflow-hidden bg-transparent sm:min-h-[250px]"
             aria-label="Aksen visual Bulungan"
           >
             <div className="absolute inset-0 z-0">
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,#f7f5f2_0%,#f7f5f2_12%,#e8e7e6_12%,#dbdbdb_33%,#ece7b1_33%,#f3efc8_72%,#f0e5dc_72%,#f0e5dc_100%)]" />
-              <div className="absolute inset-y-0 left-0 w-[34%] bg-[linear-gradient(90deg,rgba(248,245,236,0.96)_0%,rgba(248,245,236,0.72)_42%,rgba(248,245,236,0.2)_76%,rgba(248,245,236,0)_100%)]" />
 
               <div
                 className="absolute inset-y-0 left-[14%] w-[24%] opacity-[0.15]"

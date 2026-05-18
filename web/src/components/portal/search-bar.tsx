@@ -83,7 +83,7 @@ export function SearchBar({
   };
 
   return (
-    <div ref={containerRef} className={cn("relative z-30", className)}>
+    <div ref={containerRef} className={cn("relative z-40", className)}>
       <form
         action={action}
         method="get"
