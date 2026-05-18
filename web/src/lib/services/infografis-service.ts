@@ -1,4 +1,6 @@
 import { URL } from "node:url";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { load } from "cheerio";
 import type {
   InfografisApiResponse,
@@ -769,6 +771,65 @@ async function fetchFromCkan(): Promise<FetchResult> {
   };
 }
 
+
+type StaticInfografisRecord = {
+  title: string;
+  postUrl: string;
+  imageUrl: string;
+  date?: string;
+};
+
+function fetchFromStaticJson(): FetchResult {
+  try {
+    // infografis.json berada di root /app (standalone output menyalin public + source tidak di-bundle)
+    // Kita coba beberapa kandidat path
+    const candidates = [
+      join(/* turbopackIgnore: true */ process.cwd(), "infografis.json"),
+      join(/* turbopackIgnore: true */ process.cwd(), "public", "infografis.json"),
+    ];
+
+    let raw: string | null = null;
+    for (const candidate of candidates) {
+      try {
+        raw = readFileSync(candidate, "utf8");
+        break;
+      } catch {
+        // Try next candidate
+      }
+    }
+
+    if (!raw) {
+      return { items: [], sourceUsed: "static_json" };
+    }
+
+    const records = JSON.parse(raw) as StaticInfografisRecord[];
+    const items: InfografisItem[] = records
+      .filter((rec) => rec.title && rec.postUrl && rec.imageUrl && isAllowedImageHost(rec.imageUrl))
+      .map((rec, index) => ({
+        id: `static-${index}`,
+        source: "static_json" as const,
+        sourcePostId: undefined,
+        title: normalizeText(rec.title),
+        postUrl: rec.postUrl,
+        imageUrl: rec.imageUrl,
+        imageOriginalUrl: undefined,
+        publishedDate: rec.date ? (parseIndonesianDateText(rec.date) ?? parseDateToIso(rec.date)) : undefined,
+        publishedDateText: rec.date,
+        alt: undefined,
+        width: undefined,
+        height: undefined,
+      }))
+      .filter((item) => Boolean(item.title));
+
+    return {
+      items: deduplicateItems(items),
+      sourceUsed: "static_json",
+    };
+  } catch {
+    return { items: [], sourceUsed: "static_json" };
+  }
+}
+
 async function fetchLiveSources(): Promise<FetchResult> {
   try {
     const htmlResult = await fetchFromHtmlScrape();
@@ -779,7 +840,17 @@ async function fetchLiveSources(): Promise<FetchResult> {
     // Continue to REST fallback when HTML path fails.
   }
 
-  return fetchFromWordPressRest();
+  try {
+    const restResult = await fetchFromWordPressRest();
+    if (restResult.items.length > 0) {
+      return restResult;
+    }
+  } catch {
+    // Continue to static JSON fallback when REST path fails.
+  }
+
+  // Fallback terakhir: baca dari file JSON statis yang di-bundle bersama image Docker.
+  return fetchFromStaticJson();
 }
 
 async function fetchBySourcePreference(source: InfografisSourceQuery): Promise<FetchResult> {
@@ -791,6 +862,7 @@ async function fetchBySourcePreference(source: InfografisSourceQuery): Promise<F
     return fetchLiveSources();
   }
 
+  // source === "auto": coba CKAN → live scrape → static JSON
   try {
     const ckanResult = await fetchFromCkan();
     if (ckanResult.items.length > 0) {
@@ -800,7 +872,13 @@ async function fetchBySourcePreference(source: InfografisSourceQuery): Promise<F
     // Continue to live sources when CKAN is not reachable or has no data.
   }
 
-  return fetchLiveSources();
+  const liveResult = await fetchLiveSources();
+  if (liveResult.items.length > 0) {
+    return liveResult;
+  }
+
+  // Fallback terakhir: static JSON
+  return fetchFromStaticJson();
 }
 
 function getCacheKey(source: InfografisSourceQuery): string {

@@ -1,4 +1,4 @@
-export type InfografisSourceType = "ckan" | "wordpress_rest" | "html_scrape";
+export type InfografisSourceType = "ckan" | "wordpress_rest" | "html_scrape" | "static_json";
 
 export type InfografisItem = {
   id: string;
