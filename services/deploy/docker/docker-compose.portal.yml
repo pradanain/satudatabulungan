@@ -3,7 +3,7 @@ name: portal
 services:
   frontend:
     container_name: portal_frontend
-    image: ${WEB_IMAGE:-ghcr.io/your-github-owner/satudatabulungan-web:deploy-latest}
+    image: ${WEB_IMAGE:-ghcr.io/pradanain/satudatabulungan-web:deploy-latest}
     restart: unless-stopped
     env_file:
       - ../env/web.production.env
