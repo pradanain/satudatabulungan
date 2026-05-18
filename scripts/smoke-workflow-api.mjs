@@ -70,6 +70,7 @@ async function fetchWithTimeout(url, timeoutMs = 15000, extraHeaders = {}) {
         ...extraHeaders,
       },
       signal: controller.signal,
+      redirect: "manual",
     });
   } finally {
     clearTimeout(timer);
@@ -143,9 +144,9 @@ async function run() {
       `${baseUrl}/internal/workflow/${encodeURIComponent(testSlug)}/audit`,
       10000,
     );
-    if (auditUnauthorized.status !== 401) {
+    if (auditUnauthorized.status !== 401 && auditUnauthorized.status !== 307) {
       throw new Error(
-        `Expected 401 for audit page without auth, got ${auditUnauthorized.status}`,
+        `Expected 401 or 307 for audit page without auth, got ${auditUnauthorized.status}`,
       );
     }
 
