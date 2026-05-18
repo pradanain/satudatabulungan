@@ -11,10 +11,7 @@ const internalAuthUser = process.env.INTERNAL_BASIC_AUTH_USER ?? "admin";
 const internalAuthPassword = process.env.INTERNAL_BASIC_AUTH_PASSWORD ?? "bulungan123";
 const testPort = Number(process.env.SMOKE_WORKFLOW_API_PORT ?? 3325);
 const testSlug = process.env.SMOKE_WORKFLOW_API_SLUG ?? "jumlah-penduduk-bulungan-2023-2025";
-const basicAuthHeader = `Basic ${Buffer.from(
-  `${internalAuthUser}:${internalAuthPassword}`,
-  "utf8",
-).toString("base64")}`;
+const basicAuthHeader = ""; // Removed basic auth
 
 const transitions = {
   Draft: "Submitted",
@@ -133,6 +130,17 @@ async function run() {
     const baseUrl = `http://127.0.0.1:${testPort}`;
     await waitServerReady(baseUrl, 35000, logs);
 
+    const loginRes = await fetch(`${baseUrl}/api/internal/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: internalAuthUser, password: internalAuthPassword }),
+    });
+    if (!loginRes.ok) {
+      throw new Error(`Login failed: ${loginRes.status}`);
+    }
+    const setCookie = loginRes.headers.get("set-cookie");
+    const authCookie = setCookie ? setCookie.split(";")[0] : "";
+
     const unauthorized = await fetchWithTimeout(`${baseUrl}/api/internal/workflow/transition`, 10000, {
       "Content-Type": "application/json",
     });
@@ -175,7 +183,7 @@ async function run() {
     const transitionPost = await fetch(`${baseUrl}/api/internal/workflow/transition`, {
       method: "POST",
       headers: {
-        Authorization: basicAuthHeader,
+        Cookie: authCookie,
         "Content-Type": "application/json",
       },
       body: payload,
@@ -201,7 +209,7 @@ async function run() {
       )}`,
       15000,
       {
-        Authorization: basicAuthHeader,
+        Cookie: authCookie,
       },
     );
     if (auditAuthorized.status !== 200) {
@@ -216,7 +224,7 @@ async function run() {
       )}`,
       15000,
       {
-        Authorization: basicAuthHeader,
+        Cookie: authCookie,
       },
     );
     if (auditExportJson.status !== 200) {
@@ -234,7 +242,7 @@ async function run() {
       )}/audit/export?format=csv&actor=${encodeURIComponent(internalAuthUser)}`,
       15000,
       {
-        Authorization: basicAuthHeader,
+        Cookie: authCookie,
       },
     );
     if (auditExportCsv.status !== 200) {

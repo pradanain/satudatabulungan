@@ -13,10 +13,7 @@ const ckanBaseUrl = process.env.CKAN_BASE_URL ?? "http://localhost:5000";
 const internalAuthUser = process.env.INTERNAL_BASIC_AUTH_USER ?? "admin";
 const internalAuthPassword = process.env.INTERNAL_BASIC_AUTH_PASSWORD ?? "bulungan123";
 const skipBuild = process.argv.includes("--skip-build");
-const internalAuthHeader = `Basic ${Buffer.from(
-  `${internalAuthUser}:${internalAuthPassword}`,
-  "utf8",
-).toString("base64")}`;
+const internalAuthHeader = ""; // Removed basic auth
 
 function sleep(ms) {
   return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
@@ -121,7 +118,19 @@ async function runServer(mode, port, runChecks) {
 
   try {
     await waitUntilReady(`http://${host}:${port}`, 35000, logs);
-    await runChecks(`http://${host}:${port}`);
+
+    const loginRes = await fetch(`http://${host}:${port}/api/internal/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: internalAuthUser, password: internalAuthPassword }),
+    });
+    if (!loginRes.ok) {
+      throw new Error(`Login failed: ${loginRes.status}`);
+    }
+    const setCookie = loginRes.headers.get("set-cookie");
+    const authCookie = setCookie ? setCookie.split(";")[0] : "";
+
+    await runChecks(`http://${host}:${port}`, authCookie);
   } finally {
     killProcessTree(child);
   }
@@ -171,7 +180,7 @@ async function run() {
   }
 
   console.log("Smoke mock mode...");
-  await runServer("mock", mockPort, async (baseUrl) => {
+  await runServer("mock", mockPort, async (baseUrl, authCookie) => {
     await assertRoute(baseUrl, "/");
     await assertRoute(baseUrl, "/dataset");
     await assertRoute(baseUrl, "/dataset/jumlah-penduduk-per-kecamatan-2025");
@@ -181,11 +190,11 @@ async function run() {
     await assertRoute(baseUrl, "/api");
     await assertRoute(baseUrl, "/internal/workflow", [401, 307]);
     await assertRoute(baseUrl, "/internal/workflow", 200, {
-      Authorization: internalAuthHeader,
+      Cookie: authCookie,
     });
     await assertRoute(baseUrl, "/internal/workflow/jumlah-penduduk-per-kecamatan-2025/audit", [401, 307]);
     await assertRoute(baseUrl, "/internal/workflow/jumlah-penduduk-per-kecamatan-2025/audit", 200, {
-      Authorization: internalAuthHeader,
+      Cookie: authCookie,
     });
     await assertRoute(
       baseUrl,
@@ -197,7 +206,7 @@ async function run() {
       "/api/internal/workflow/jumlah-penduduk-per-kecamatan-2025/audit/export?format=csv&actor=admin",
       200,
       {
-        Authorization: internalAuthHeader,
+        Cookie: authCookie,
       },
     );
   });
@@ -207,12 +216,12 @@ async function run() {
   await ensureCkanOnline();
   const firstSlug = await getFirstCkanSlug();
 
-  await runServer("ckan", ckanPort, async (baseUrl) => {
+  await runServer("ckan", ckanPort, async (baseUrl, authCookie) => {
     const datasetHtml = await assertRoute(baseUrl, "/dataset");
     await assertRoute(baseUrl, "/api");
     await assertRoute(baseUrl, "/internal/workflow", [401, 307]);
     await assertRoute(baseUrl, "/internal/workflow", 200, {
-      Authorization: internalAuthHeader,
+      Cookie: authCookie,
     });
 
     if (firstSlug) {
@@ -223,7 +232,7 @@ async function run() {
         `/internal/workflow/${encodeURIComponent(firstSlug)}/audit?actor=admin`,
         200,
         {
-          Authorization: internalAuthHeader,
+          Cookie: authCookie,
         },
       );
       await assertRoute(
@@ -236,7 +245,7 @@ async function run() {
         `/api/internal/workflow/${encodeURIComponent(firstSlug)}/audit/export?format=csv&actor=admin`,
         200,
         {
-          Authorization: internalAuthHeader,
+          Cookie: authCookie,
         },
       );
     } else if (!datasetHtml.includes("Tidak ada dataset yang cocok")) {
