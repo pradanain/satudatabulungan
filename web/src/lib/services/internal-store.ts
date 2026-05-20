@@ -35,7 +35,7 @@ import { canTransition, normalizeDatasetStatus, getStatusLabel, type WorkflowIte
 import { sanitizeStoredText } from "@/lib/utils/input-sanitizer";
 import { resolveLocalStorePath } from "@/lib/utils/local-store-path";
 
-const STORE_VERSION = 4;
+const STORE_VERSION = 5;
 const defaultSort: DatasetSort = "terbaru";
 
 type WorkflowOverrideEntry = {
@@ -139,7 +139,7 @@ function buildOrganizations(): InternalOrganization[] {
     .filter((entry) => entry.name && entry.name.trim())
     .map((entry, index) => {
       const name = entry.name.trim();
-      const slug = slugify(name);
+      let slug = slugify(name);
       
       // Map legacy IDs to match existing accounts & guard checks
       let id = `opd-${slug}`;
@@ -147,12 +147,19 @@ function buildOrganizations(): InternalOrganization[] {
       let category = "Layanan Teknis";
       
       if (name.includes("Kependudukan")) {
+        slug = "disdukcapil";
         id = "opd-disdukcapil";
         shortName = "Disdukcapil";
         category = "Layanan Dasar";
       } else if (name.includes("Kesehatan")) {
+        slug = "dinkes";
         id = "opd-dinkes";
         shortName = "Dinas Kesehatan";
+        category = "Layanan Dasar";
+      } else if (name.includes("Ketahanan Pangan")) {
+        slug = "ketpang";
+        id = "opd-ketpang";
+        shortName = "Dinas Ketahanan Pangan";
         category = "Layanan Dasar";
       } else if (name.includes("Pendidikan")) {
         id = "opd-dikbud";
