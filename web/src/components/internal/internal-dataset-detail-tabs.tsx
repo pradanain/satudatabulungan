@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FileText, BarChart3, Map, MessageSquare } from "lucide-react";
+import type { InternalRole } from "@/lib/types/internal";
 
 type Tab = "form" | "quality" | "geospatial" | "notes";
 
@@ -11,9 +12,10 @@ type InternalDatasetDetailTabsProps = {
   geospatialContent: React.ReactNode | null;
   notesContent: React.ReactNode;
   metaSummaryContent: React.ReactNode;
+  role: InternalRole;
 };
 
-const tabs: { key: Tab; label: string; icon: typeof FileText }[] = [
+const allTabs: { key: Tab; label: string; icon: typeof FileText }[] = [
   { key: "form", label: "Dataset", icon: FileText },
   { key: "quality", label: "Skor Kualitas", icon: BarChart3 },
   { key: "geospatial", label: "Geospasial", icon: Map },
@@ -26,13 +28,26 @@ export function InternalDatasetDetailTabs({
   geospatialContent,
   notesContent,
   metaSummaryContent,
+  role,
 }: InternalDatasetDetailTabsProps) {
-  const [active, setActive] = useState<Tab>("form");
+  // For produsen, only show notes tab
+  const isProdusen = role === "produsen";
+
+  const [active, setActive] = useState<Tab>(isProdusen ? "notes" : "form");
+
+  let visibleTabs = isProdusen
+    ? allTabs.filter((t) => t.key === "notes")
+    : allTabs;
 
   // Filter out geospatial tab if no geospatial content
-  const visibleTabs = geospatialContent
-    ? tabs
-    : tabs.filter((t) => t.key !== "geospatial");
+  if (!geospatialContent) {
+    visibleTabs = visibleTabs.filter((t) => t.key !== "geospatial");
+  }
+
+  // For produsen with only notes tab, skip the tab bar entirely
+  if (isProdusen) {
+    return <div>{notesContent}</div>;
+  }
 
   return (
     <div className="space-y-4">

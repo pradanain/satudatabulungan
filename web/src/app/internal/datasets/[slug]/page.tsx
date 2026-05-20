@@ -160,6 +160,7 @@ export default async function InternalDatasetDetailPage({
         geospatialContent={geospatialContent}
         notesContent={notesContent}
         metaSummaryContent={metaSummaryContent}
+        role={session.role}
       />
     </InternalShell>
   );
