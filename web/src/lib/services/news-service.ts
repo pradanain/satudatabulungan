@@ -92,7 +92,6 @@ function inferNewsTopicLabel(content: string) {
 }
 
 import { loadInternalPortalStore } from "@/lib/services/internal-store";
-import { readdir, readFile } from "node:fs/promises";
 
 export async function loadKabarDataItems(limit = Number.MAX_SAFE_INTEGER): Promise<PortalNewsItem[]> {
   try {
