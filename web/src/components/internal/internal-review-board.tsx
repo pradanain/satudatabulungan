@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { FileText, Inbox, CheckCircle2, Search, SlidersHorizontal, MessageSquare, CornerDownRight } from "lucide-react";
+import { FileText, Inbox, CheckCircle2, Search, SlidersHorizontal, MessageSquare, CornerDownRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -294,11 +294,12 @@ export function InternalReviewBoard({ items, role }: InternalReviewBoardProps) {
       render: (item) => (
         <Button
           onClick={() => setSelectedItemId(item.id)}
-          variant="outline"
-          size="sm"
-          className="h-8 hover:bg-[var(--color-primary)] hover:text-white transition-colors"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-slate-500 hover:text-[var(--color-primary)] hover:bg-[var(--color-surface-soft)] transition-colors"
+          title="Review Detail"
         >
-          Review Detail
+          <Eye className="size-4" />
         </Button>
       ),
     },
