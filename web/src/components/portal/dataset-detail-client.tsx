@@ -571,11 +571,15 @@ export function DatasetDetailClient({
                 onChange={(e) => setSelectedMetric(e.target.value)}
                 className="h-8 appearance-none rounded-lg border border-[#d6ddeb] bg-white pl-3 pr-7 text-sm text-[#2f2a28] focus:border-[#4b7fe0] focus:outline-none focus:ring-2 focus:ring-[#4b7fe0]/15"
               >
-                {availableMetrics.map((m) => (
-                  <option key={m} value={m}>
-                    {formatMetricLabel(m)}
-                  </option>
-                ))}
+                {availableMetrics.map((m) => {
+                  const colInfo = preview.columns?.find(c => c.key === m);
+                  const label = colInfo ? cleanColumnLabel(colInfo.label) : formatMetricLabel(m);
+                  return (
+                    <option key={m} value={m}>
+                      {label}
+                    </option>
+                  );
+                })}
               </select>
               <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2 text-[#94a3b8]" aria-hidden />
             </div>
