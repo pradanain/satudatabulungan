@@ -182,14 +182,15 @@ export default async function DatasetDetailPage({ params }: DatasetDetailPagePro
 
   const metadataMinimum = [
     { label: "Nama Data", value: dataset.title },
-    { label: "Organisasi", value: displayOrganization },
     { label: "Definisi", value: definitionText },
-    { label: "Ukuran", value: ukuran || "Belum tersedia" },
+    { label: "Klasifikasi", value: `${dataset.topic}${dataset.metadata.tags.length ? ` • ${dataset.metadata.tags.join(", ")}` : ""}` },
+    { label: "Produsen Data", value: displayOrganization },
+    { label: "Walidata", value: dataset.metadata.walidata || "Walidata Bulungan" },
+    { label: "Cakupan Wilayah", value: dataset.metadata.coverage || "Kabupaten Bulungan" },
+    { label: "Periode Data", value: dataset.metadata.period || "-" },
+    { label: "Frekuensi Pembaruan", value: dataset.frequency },
     { label: "Satuan", value: unitLabel },
-    {
-      label: "Klasifikasi",
-      value: `${dataset.topic}${dataset.metadata.tags.length ? ` • ${dataset.metadata.tags.join(", ")}` : ""}`,
-    },
+    { label: "Ukuran", value: ukuran || "Belum tersedia" },
   ];
 
   return (
