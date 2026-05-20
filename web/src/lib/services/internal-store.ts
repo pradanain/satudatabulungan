@@ -660,6 +660,18 @@ export async function loadInternalPortalStore(): Promise<InternalPortalStore> {
   let loaded: InternalPortalStore;
   if (existing?.version === STORE_VERSION) {
     loaded = existing;
+  } else if (existing) {
+    // Migrate from older version to preserve user data (Berita, Datasets)
+    const seed = await bootstrapFromLegacyFiles(buildSeedStore());
+    loaded = {
+      ...seed,
+      publications: existing.publications ?? [],
+      auditLogs: existing.auditLogs ?? [],
+      notifications: existing.notifications ?? seed.notifications,
+      datasets: existing.datasets && existing.datasets.length > 0 ? existing.datasets : seed.datasets,
+      version: STORE_VERSION,
+    };
+    await writeJsonFile(storePath, loaded);
   } else {
     loaded = await bootstrapFromLegacyFiles(buildSeedStore());
     await writeJsonFile(storePath, loaded);
