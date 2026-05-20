@@ -1,4 +1,4 @@
-import type { DatasetFormat, DatasetFrequency, DatasetStatus } from "@/lib/types/dataset";
+import type { DatasetFormat, DatasetFrequency, DatasetStatus, DatasetPreview, DatasetResource } from "@/lib/types/dataset";
 import {
   createInternalDatasetDraft as createWorkflowDraftInStore,
   loadInternalPortalStore,
@@ -67,6 +67,8 @@ export type DraftCreateInput = {
   resourceName: string;
   resourceFormat: DatasetFormat;
   resourceUrl: string;
+  preview?: DatasetPreview;
+  resources?: DatasetResource[];
 };
 
 export type DraftCreateResult = {

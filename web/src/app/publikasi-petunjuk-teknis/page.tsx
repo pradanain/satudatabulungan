@@ -53,6 +53,27 @@ export default async function PublikasiPetunjukTeknisPage({ searchParams }: Publ
     getDataGoIdNationalRegulations().catch(() => []),
   ]);
 
+  let fromInternal: PublicationCatalogItem[] = [];
+  try {
+    const store = await (await import("@/lib/services/internal-store")).loadInternalPortalStore();
+    fromInternal = (store.publications || [])
+      .filter((pub) => pub.type === "technical_guide" && pub.status === "Published")
+      .map((pub) => ({
+        id: `internal-${pub.id}`,
+        title: pub.title,
+        summary: pub.description || "Petunjuk Teknis Satu Data Bulungan",
+        organization: pub.organizationName,
+        lastUpdated: pub.publishedAt || pub.updatedAt || "1970-01-01",
+        href: pub.fileUrl || "#",
+        hrefLabel: "Buka Dokumen",
+        downloadHref: pub.fileUrl || "#",
+        downloadLabel: "Unduh Dokumen",
+        openInNewTab: true,
+      }));
+  } catch {
+    // Ignore
+  }
+
   let allItems: PublicationCatalogItem[] = [
     ...bappedaItems.map((item) => ({
       id: `bappeda-${item.id}`,
@@ -80,6 +101,8 @@ export default async function PublikasiPetunjukTeknisPage({ searchParams }: Publ
       openInNewTab: true,
     })),
   ].filter((item) => TECHNICAL_GUIDE_PATTERN.test(`${item.title} ${item.summary}`));
+
+  allItems = [...allItems, ...fromInternal];
 
   if (allItems.length === 0) {
     const datasets = await getDatasets({ sort: "terbaru" });

@@ -23,6 +23,8 @@ type PublikasiRegulasiPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+import { loadInternalPortalStore } from "@/lib/services/internal-store";
+
 function sortPublicationItems(items: PublicationCatalogItem[], sort: "terbaru" | "terlama" | "az"): PublicationCatalogItem[] {
   return [...items].sort((left, right) => {
     if (sort === "az") {
@@ -43,7 +45,7 @@ export default async function PublikasiRegulasiPage({ searchParams }: PublikasiR
 
   const nationalRegulations = await getDataGoIdNationalRegulations().catch(() => []);
 
-  const allItems: PublicationCatalogItem[] = nationalRegulations.map((item) => ({
+  const fromNational: PublicationCatalogItem[] = nationalRegulations.map((item) => ({
     id: item.id,
     title: item.title,
     summary: item.summary,
@@ -53,6 +55,29 @@ export default async function PublikasiRegulasiPage({ searchParams }: PublikasiR
     hrefLabel: "Buka Regulasi",
     openInNewTab: true,
   }));
+
+  let fromInternal: PublicationCatalogItem[] = [];
+  try {
+    const store = await loadInternalPortalStore();
+    fromInternal = (store.publications || [])
+      .filter((pub) => pub.type === "regulation" && pub.status === "Published")
+      .map((pub) => ({
+        id: `internal-${pub.id}`,
+        title: pub.title,
+        summary: pub.description || "Regulasi Satu Data Bulungan",
+        organization: pub.organizationName,
+        lastUpdated: pub.publishedAt || pub.updatedAt || "1970-01-01",
+        href: pub.fileUrl || "#",
+        hrefLabel: "Buka Regulasi",
+        downloadHref: pub.fileUrl || "#",
+        downloadLabel: "Unduh Dokumen",
+        openInNewTab: true,
+      }));
+  } catch {
+    // Ignore
+  }
+
+  const allItems: PublicationCatalogItem[] = [...fromNational, ...fromInternal];
 
   const normalizedKeyword = searchQuery.trim().toLowerCase();
   const filteredItems = normalizedKeyword

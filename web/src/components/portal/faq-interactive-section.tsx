@@ -43,7 +43,7 @@ export function FaqInteractiveSection({ sections }: FaqInteractiveSectionProps) 
     <div className="space-y-12">
       {/* 100% Consistent Institutional Search Bar */}
       <div className="relative z-10">
-        <div className="grid items-stretch gap-2 rounded-[24px] border border-(--color-border) bg-white p-2 shadow-[0_10px_24px_rgba(33,41,52,0.08)] sm:grid-cols-[1fr_auto]">
+        <div className="grid items-stretch gap-2 rounded-[24px] border border-(--color-border) bg-white p-2 shadow-[0_10px_24px_rgba(33,41,52,0.08)] sm:grid-cols-[1fr_auto] transition-all duration-200 focus-within:border-(--color-primary) focus-within:ring-4 focus-within:ring-(--color-primary)/5">
           <div className="relative flex items-center">
             <Search className="absolute left-4 size-5 text-(--color-muted)" />
             <Input
@@ -51,7 +51,7 @@ export function FaqInteractiveSection({ sections }: FaqInteractiveSectionProps) 
               placeholder="Cari pertanyaan, panduan, atau kata kunci bantuan..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-12 border-0 bg-transparent pl-12 pr-4 text-base shadow-none focus-visible:ring-0"
+              className="h-12 border-0 bg-transparent pl-12 pr-4 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0"
             />
             {searchQuery && (
               <button

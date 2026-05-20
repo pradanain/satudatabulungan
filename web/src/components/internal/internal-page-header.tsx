@@ -17,22 +17,24 @@ export function InternalPageHeader({
   actions,
 }: InternalPageHeaderProps) {
   return (
-    <Card className="internal-surface overflow-hidden border-transparent p-4 shadow-none sm:p-5">
-      <div className="internal-ornament-band -mx-4 -mt-4 mb-3 h-5 border-b border-[var(--color-border)] sm:-mx-5 sm:-mt-5" />
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div className="max-w-3xl">
-          <p className="m-0 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[var(--color-primary)]">
+    <Card className="internal-surface overflow-hidden border-transparent p-4 shadow-sm sm:p-5">
+      <div className="internal-ornament-band -mx-4 -mt-4 mb-4 h-1.5 border-b border-[var(--color-border)] sm:-mx-5 sm:-mt-5" />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex-1 min-w-0">
+          <p className="m-0 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary)]">
             {eyebrow}
           </p>
-          <h1 className="mt-2 font-[family-name:var(--font-heading)] text-2xl font-semibold leading-tight sm:text-3xl">
-            {title}
-          </h1>
-          <p className="mb-0 mt-2.5 max-w-2xl text-sm leading-relaxed text-[var(--color-muted)] sm:text-base">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="m-0 font-[family-name:var(--font-heading)] text-xl font-bold leading-tight sm:text-2xl">
+              {title}
+            </h1>
+            {badges ? <div className="flex flex-wrap gap-2">{badges}</div> : null}
+          </div>
+          <p className="mb-0 mt-1.5 text-sm text-[var(--color-muted)] truncate sm:whitespace-normal">
             {description}
           </p>
-          {badges ? <div className="mt-3 flex flex-wrap gap-2">{badges}</div> : null}
         </div>
-        {actions ? <div className="flex flex-wrap gap-2 lg:justify-end">{actions}</div> : null}
+        {actions ? <div className="flex shrink-0 items-center gap-2 lg:justify-end">{actions}</div> : null}
       </div>
     </Card>
   );

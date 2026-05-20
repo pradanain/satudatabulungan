@@ -13,6 +13,8 @@ export function PortalPageShell({ activeMenu = "none", children, mainClassName }
   return (
     <div className="page-shell">
       <PortalHeader activeMenu={activeMenu} />
+      {/* Spacer to offset the fixed header */}
+      <div className="portal-header-spacer" />
       <main className={cn("portal-shell flex min-h-0 flex-1 flex-col gap-4 py-4 sm:gap-5 sm:py-5", mainClassName)}>
         {children}
       </main>

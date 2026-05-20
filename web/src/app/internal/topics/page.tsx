@@ -1,9 +1,16 @@
+import Link from "next/link";
+import { Eye, Info, Plus } from "lucide-react";
 import { InternalPageHeader } from "@/components/internal/internal-page-header";
 import { InternalShell } from "@/components/internal/internal-shell";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ClientDataTable, ColumnDef } from "@/components/internal/client-data-table";
 import { loadInternalPortalStore } from "@/lib/services/internal-store";
 import { requireInternalSession } from "@/lib/utils/internal-auth-server";
+import { hasPermission } from "@/lib/utils/internal-auth";
+import type { InternalTopicReference } from "@/lib/types/internal";
+import { TopicsTable } from "./topics-table";
 
 export const dynamic = "force-dynamic";
 
@@ -11,54 +18,27 @@ export default async function InternalTopicsPage() {
   const session = await requireInternalSession("topics");
   const store = await loadInternalPortalStore();
 
+  const canManage = hasPermission(session, "master_data.manage_topics");
+
   return (
     <InternalShell session={session} activeKey="topics">
       <InternalPageHeader
-        title="Topik & Kode Referensi"
-        description="Master data topik menjaga konsistensi naming, format yang direkomendasikan, dan steward organisasi pada setiap dataset."
-        badges={<Badge variant="outline">{store.topics.length} topik referensi</Badge>}
+        title="Topik Dataset"
+        description="Kelola topik, kode referensi, dan steward dataset untuk menjaga konsistensi master data."
+        badges={<Badge variant="outline">{store.topics.length} topik</Badge>}
       />
 
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card className="internal-surface overflow-hidden border-transparent shadow-none">
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-[var(--color-surface-soft)] text-left text-[var(--color-muted)]">
-                <tr>
-                  <th className="px-5 py-3 font-semibold">Topik</th>
-                  <th className="px-5 py-3 font-semibold">Kode</th>
-                  <th className="px-5 py-3 font-semibold">Format</th>
-                  <th className="px-5 py-3 font-semibold">Frekuensi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {store.topics.map((topic) => (
-                  <tr key={topic.id} className="border-t border-[var(--color-border)]">
-                    <td className="px-5 py-4">
-                      <p className="m-0 font-semibold">{topic.name}</p>
-                      <p className="mb-0 mt-1 text-xs text-[var(--color-muted)]">{topic.description}</p>
-                    </td>
-                    <td className="px-5 py-4 font-semibold">{topic.code}</td>
-                    <td className="px-5 py-4 text-[var(--color-muted)]">{topic.recommendedFormat}</td>
-                    <td className="px-5 py-4 text-[var(--color-muted)]">{topic.defaultFrequency}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <Card className="flex flex-col shadow-sm border-[var(--color-border)]">
+        {canManage && (
+          <div className="flex items-center justify-end px-4 pt-3 sm:px-5">
+            <Button size="sm" className="gap-1.5">
+              <Plus className="size-4" />
+              Tambah Topik
+            </Button>
           </div>
-        </Card>
-
-        <Card className="internal-surface border-transparent p-5 shadow-none">
-          <h2 className="m-0 text-xl font-semibold">Panduan Master Data</h2>
-          <div className="mt-4 grid gap-3 text-sm text-[var(--color-muted)]">
-            <p className="m-0">Gunakan kode topik konsisten untuk menjaga pencarian publik tetap rapi.</p>
-            <p className="m-0">Ikuti format dan frekuensi rekomendasi agar validasi metadata lebih cepat.</p>
-            <p className="m-0">Steward organisasi bertanggung jawab menjaga definisi topik lintas OPD.</p>
-          </div>
-        </Card>
-      </section>
+        )}
+        <TopicsTable topics={store.topics} organizations={store.organizations} />
+      </Card>
     </InternalShell>
   );
 }
-
-

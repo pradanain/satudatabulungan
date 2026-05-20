@@ -13,6 +13,7 @@ function mapWorkflowItems(items: ReturnType<typeof getScopedDatasets>): Workflow
       lastUpdated: dataset.lastUpdated,
       resourceCount: dataset.resources.length,
       reviewNote: dataset.reviewSummary,
+      notes: dataset.notes || [],
       auditTrail: dataset.workflowHistory.map((event) => ({
         slug: event.slug,
         actor: event.actorName,

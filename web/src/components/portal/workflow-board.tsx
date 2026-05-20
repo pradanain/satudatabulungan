@@ -20,6 +20,7 @@ import {
   canTransition,
   getNextStatuses,
   workflowLaneOrder,
+  getStatusLabel,
   type WorkflowItem,
 } from "@/lib/types/workflow";
 import { cn } from "@/lib/utils/cn";
@@ -47,12 +48,13 @@ type DraftFormState = {
 };
 
 const statusActionLabel: Record<DatasetStatus, string> = {
-  Draft: "Ajukan Review",
-  Submitted: "Kirim",
-  "Need Revision": "Ajukan Ulang",
-  Approved: "Publikasikan",
-  Published: "Arsipkan",
-  Archived: "Selesai",
+  Draft: "Draft",
+  Submitted: "Ajukan ke Walidata",
+  "Under Review": "Mulai Pemeriksaan",
+  "Need Revision": "Minta Revisi",
+  Approved: "Tandai Layak Publikasi",
+  Published: "Publikasikan",
+  Archived: "Arsipkan",
 };
 
 const laneTone: Record<DatasetStatus, { badgeClass: string; surfaceClass: string }> = {
@@ -63,6 +65,10 @@ const laneTone: Record<DatasetStatus, { badgeClass: string; surfaceClass: string
   Submitted: {
     badgeClass: "border-[#cce0ff] bg-[#eff6ff] text-[#1e4f95]",
     surfaceClass: "bg-[#fafdff]",
+  },
+  "Under Review": {
+    badgeClass: "border-amber-200 bg-amber-50 text-amber-700",
+    surfaceClass: "bg-[#fffdf7]",
   },
   "Need Revision": {
     badgeClass: "border-[#f6c9c9] bg-[#fff4f4] text-[#9d2b2b]",
@@ -81,6 +87,12 @@ const laneTone: Record<DatasetStatus, { badgeClass: string; surfaceClass: string
     surfaceClass: "bg-[#fcfcfd]",
   },
 };
+
+function getActionLabel(from: DatasetStatus, to: DatasetStatus): string {
+  if (from === "Need Revision" && to === "Submitted") return "Ajukan Ulang ke Walidata";
+  if (from === "Archived" && to === "Published") return "Pulihkan Publikasi";
+  return statusActionLabel[to] || to;
+}
 
 const frequencyOptions: DatasetFrequency[] = [
   "Harian",
@@ -229,7 +241,7 @@ export function WorkflowBoard({ initialItems }: WorkflowBoardProps) {
       }
 
       setItems((prev) => moveStatus(prev, item.id, nextStatus, data.result?.updatedAt));
-      setSuccessMessage(`Status '${item.title}' berhasil diubah ke ${nextStatus}.`);
+      setSuccessMessage(`Status '${item.title}' berhasil diubah ke ${getStatusLabel(nextStatus)}.`);
       router.refresh();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Gagal menyimpan transisi workflow.");
@@ -416,7 +428,7 @@ export function WorkflowBoard({ initialItems }: WorkflowBoardProps) {
           <Card key={lane.status} className={cn("overflow-hidden", laneTone[lane.status].surfaceClass)}>
             <header className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
               <Badge variant="outline" className={cn("rounded-full font-semibold", laneTone[lane.status].badgeClass)}>
-                {lane.status}
+                {getStatusLabel(lane.status)}
               </Badge>
               <span className="inline-flex size-7 items-center justify-center rounded-full border border-[var(--color-border)] bg-white text-xs font-semibold">
                 {lane.items.length}
@@ -440,7 +452,7 @@ export function WorkflowBoard({ initialItems }: WorkflowBoardProps) {
                       </small>
                       {latestAudit ? (
                         <p className="m-0 rounded-lg border border-[#d4e4ff] bg-[#f5f9ff] px-2.5 py-2 text-xs text-[#29508a]">
-                          Audit terakhir: {latestAudit.fromStatus} {"->"} {latestAudit.toStatus} oleh{" "}
+                          Audit terakhir: {getStatusLabel(latestAudit.fromStatus as any)} {"->"} {getStatusLabel(latestAudit.toStatus)} oleh{" "}
                           {latestAudit.actor} ({formatIndonesianDate(latestAudit.at)})
                         </p>
                       ) : null}
@@ -465,7 +477,7 @@ export function WorkflowBoard({ initialItems }: WorkflowBoardProps) {
                               disabled={pendingItemId === item.id}
                               onClick={() => handleTransition(item, nextStatus)}
                             >
-                              {pendingItemId === item.id ? "Menyimpan..." : statusActionLabel[nextStatus]}
+                              {pendingItemId === item.id ? "Menyimpan..." : getActionLabel(item.status, nextStatus)}
                             </Button>
                           ))
                         )}

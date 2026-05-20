@@ -21,6 +21,8 @@ type DraftPayload = {
   resourceName?: string;
   resourceFormat?: string;
   resourceUrl?: string;
+  preview?: any;
+  resources?: any;
 };
 
 const allowedFrequencies: DatasetFrequency[] = [
@@ -29,6 +31,9 @@ const allowedFrequencies: DatasetFrequency[] = [
   "Triwulanan",
   "Semesteran",
   "Tahunan",
+  "Series",
+  "Multi-tahunan",
+  "Lainnya",
 ];
 
 const allowedFormats: DatasetFormat[] = ["CSV", "XLSX", "PDF", "API", "JSON"];
@@ -105,6 +110,8 @@ export async function POST(request: Request) {
         resourceName,
         resourceFormat: resourceFormatRaw as DatasetFormat,
         resourceUrl,
+        preview: payload.preview,
+        resources: payload.resources,
       },
       actor,
       session,

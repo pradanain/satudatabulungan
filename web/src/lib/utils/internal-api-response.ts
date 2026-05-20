@@ -8,7 +8,7 @@ const validationPatterns = [
   "harus berupa url",
   "hostname",
 ];
-const forbiddenPatterns = ["tidak memiliki akses", "tidak memiliki izin", "hanya admin", "hanya boleh"];
+const forbiddenPatterns = ["tidak memiliki akses", "tidak memiliki izin", "hanya walidata", "hanya boleh"];
 const notFoundPatterns = ["tidak ditemukan"];
 
 export function inferInternalApiErrorStatus(message: string): number {

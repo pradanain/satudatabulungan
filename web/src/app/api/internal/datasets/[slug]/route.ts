@@ -21,6 +21,8 @@ type DatasetUpdatePayload = {
   resourceUrl?: string;
   tags?: string[];
   reviewSummary?: string;
+  preview?: any;
+  resources?: any;
 };
 
 const allowedFrequencies: DatasetFrequency[] = [
@@ -29,6 +31,9 @@ const allowedFrequencies: DatasetFrequency[] = [
   "Triwulanan",
   "Semesteran",
   "Tahunan",
+  "Series",
+  "Multi-tahunan",
+  "Lainnya",
 ];
 
 const allowedFormats: DatasetFormat[] = ["CSV", "XLSX", "PDF", "API", "JSON"];
@@ -103,6 +108,8 @@ export async function PATCH(
             ?.map((item) => sanitizeStoredText(item))
             .filter((item): item is string => Boolean(item && item.trim().length > 0)) ?? [],
         reviewSummary: sanitizeStoredText(payload.reviewSummary?.trim() ?? "") || undefined,
+        preview: payload.preview,
+        resources: payload.resources,
       },
       session,
     );

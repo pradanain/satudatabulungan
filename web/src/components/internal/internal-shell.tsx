@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { type ReactNode, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -7,20 +9,25 @@ import {
   Bell,
   Building2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleHelp,
   ClipboardCheck,
   Database,
   History,
   LayoutDashboard,
+  Menu,
   PlugZap,
   Settings,
   Tags,
   UserCircle2,
   Users,
+  X,
+  ExternalLink,
+  Newspaper,
 } from "lucide-react";
 import { InternalLogoutButton } from "@/components/internal/internal-logout-button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { InternalNavKey, InternalSession } from "@/lib/types/internal";
 import {
@@ -28,8 +35,15 @@ import {
   getVisibleNavKeys,
   internalNavLabels,
   internalRoleLabels,
+  getDisplayOrganizationName,
 } from "@/lib/utils/internal-auth";
 import { cn } from "@/lib/utils/cn";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const iconByKey: Record<InternalNavKey, typeof LayoutDashboard> = {
   dashboard: LayoutDashboard,
@@ -46,6 +60,7 @@ const iconByKey: Record<InternalNavKey, typeof LayoutDashboard> = {
   profile: UserCircle2,
   help: CircleHelp,
   integrations: PlugZap,
+  publications: Newspaper,
 };
 
 type InternalShellProps = {
@@ -64,7 +79,7 @@ const navGroups: NavGroup[] = [
   {
     id: "operasional",
     label: "Operasional",
-    keys: ["dashboard", "datasets", "review", "monitoring", "notifications", "workflowHistory", "archive"],
+    keys: ["dashboard", "datasets", "review", "monitoring", "publications"],
   },
   {
     id: "masterData",
@@ -74,46 +89,50 @@ const navGroups: NavGroup[] = [
   {
     id: "akunSistem",
     label: "Akun & Sistem",
-    keys: ["profile", "settings", "integrations", "help"],
+    keys: ["integrations"],
   },
 ];
 
 function getHref(key: InternalNavKey): string {
   switch (key) {
-    case "dashboard":
-      return "/internal/dashboard";
-    case "datasets":
-      return "/internal/datasets";
-    case "review":
-      return "/internal/workflow";
-    case "monitoring":
-      return "/internal/monitoring";
-    case "users":
-      return "/internal/users";
-    case "archive":
-      return "/internal/archive";
-    case "organizations":
-      return "/internal/organizations";
-    case "topics":
-      return "/internal/topics";
-    case "notifications":
-      return "/internal/notifications";
-    case "workflowHistory":
-      return "/internal/workflow-history";
-    case "settings":
-      return "/internal/settings";
-    case "profile":
-      return "/internal/profile";
-    case "help":
-      return "/internal/help";
-    case "integrations":
-      return "/internal/integrations";
-    default:
-      return "/internal/dashboard";
+    case "dashboard": return "/internal/dashboard";
+    case "datasets": return "/internal/datasets";
+    case "review": return "/internal/workflow";
+    case "monitoring": return "/internal/monitoring";
+    case "users": return "/internal/users";
+    case "archive": return "/internal/archive";
+    case "organizations": return "/internal/organizations";
+    case "topics": return "/internal/topics";
+    case "notifications": return "/internal/notifications";
+    case "workflowHistory": return "/internal/workflow-history";
+    case "settings": return "/internal/settings";
+    case "profile": return "/internal/profile";
+    case "help": return "/internal/help";
+    case "integrations": return "/internal/integrations";
+    case "publications": return "/internal/publications";
+    default: return "/internal/dashboard";
   }
 }
 
 export function InternalShell({ session, activeKey, children }: InternalShellProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const savedState = localStorage.getItem("internal-sidebar-collapsed");
+    if (savedState !== null) {
+      setIsCollapsed(savedState === "true");
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    localStorage.setItem("internal-sidebar-collapsed", String(newState));
+  };
+
   const navKeys = getVisibleNavKeys(session.role);
   const visibleNavSet = new Set(navKeys);
   const groupedNav = navGroups
@@ -123,179 +142,229 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
     }))
     .filter((group) => group.keys.length > 0);
 
-  return (
-    <div className="internal-page-bg">
-      <div className="internal-shell py-4 sm:py-6">
-        <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="hidden xl:block">
-            <Card className="sticky top-4 overflow-hidden border-transparent bg-white/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl">
-              <div className="internal-ornament-band border-b border-[var(--color-border)] px-4 py-3">
-                <div className="flex items-center justify-between gap-2">
-                  <Image
-                    src="/assets/brand/logos/bulungan-bisa-logo.png"
-                    alt="Bulungan Bisa"
-                    width={140}
-                    height={36}
-                    className="h-auto w-auto max-h-9"
-                  />
-                  <Badge className="border-[var(--color-border)] bg-white text-[var(--color-text)]" variant="outline">
-                    {internalRoleLabels[session.role]}
-                  </Badge>
-                </div>
-                <p className="mb-0 mt-2 text-xs leading-relaxed text-[var(--color-muted)]">
-                  Navigasi kerja internal untuk operasional data, review, dan monitoring.
-                </p>
-              </div>
+  // Prevent hydration mismatch on initial render for layout styles
+  if (!mounted) {
+    return null;
+  }
 
-              <div className="px-3 pb-3 pt-3">
-                <div className="rounded-xl border border-[var(--color-border)] bg-gradient-to-br from-white to-[var(--color-surface-soft)] p-3 shadow-sm">
-                  <p className="m-0 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-primary)]/80">
-                    Akun Aktif
-                  </p>
-                  <p className="mb-0 mt-1 text-base font-semibold text-[var(--color-text)]">{session.name}</p>
-                  <p className="mb-0 mt-0.5 text-sm text-[var(--color-muted)]">{session.organizationName}</p>
-                </div>
+  const SidebarContent = () => (
+    <div className="flex h-full flex-col bg-white">
+      {/* Sidebar Header */}
+      <div className={cn("internal-ornament-band flex h-16 shrink-0 items-center border-b border-[var(--color-border)] px-4", isCollapsed ? "justify-center" : "justify-between")}>
+        {!isCollapsed && (
+          <Image
+            src="/assets/brand/logos/bulungan-bisa-logo.png"
+            alt="Bulungan Bisa"
+            width={120}
+            height={30}
+            className="h-auto w-auto max-h-8"
+          />
+        )}
+        {isCollapsed && (
+          <Image
+            src="/assets/brand/logos/lambang-bulungan.png"
+            alt="Lambang Bulungan"
+            width={32}
+            height={32}
+            className="size-8"
+          />
+        )}
+      </div>
 
-                <nav aria-label="Navigasi internal" className="mt-3 grid gap-2">
-                  <div className="max-h-[calc(100dvh-420px)] overflow-y-auto pr-1">
-                    <div className="grid gap-2">
-                      {groupedNav.map((group) => (
-                        <details
-                          key={group.id}
-                          open={group.keys.includes(activeKey)}
-                          className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white [&_summary::-webkit-details-marker]:hidden"
-                        >
-                          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5">
-                            <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--color-primary)]">
-                              {group.label}
-                            </span>
-                            <div className="flex items-center gap-2 text-[var(--color-muted)]">
-                              <span className="rounded-full border border-[var(--color-border)] px-1.5 py-0.5 text-[11px] font-semibold">
-                                {group.keys.length}
-                              </span>
-                              <ChevronDown className="size-4" />
-                            </div>
-                          </summary>
-                          <div className="grid gap-1 border-t border-[var(--color-border)] p-2">
-                            {group.keys.map((key) => {
-                              const Icon = iconByKey[key];
-                              return (
-                                <Link
-                                  key={key}
-                                  href={getHref(key)}
-                                  className={cn(
-                                    "group flex items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-sm font-semibold text-[var(--color-muted)] transition-all duration-200 hover:border-[var(--color-border)] hover:bg-white hover:text-[var(--color-primary)] hover:shadow-sm",
-                                    activeKey === key &&
-                                      "border-[var(--color-border)] bg-white text-[var(--color-primary)] shadow-sm",
-                                  )}
-                                >
-                                  <Icon className={cn("size-4 transition-transform group-hover:scale-110", activeKey === key && "text-[var(--color-primary)]")} />
-                                  <span>{internalNavLabels[key]}</span>
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        </details>
-                      ))}
-                    </div>
-                  </div>
-                </nav>
-              </div>
+      {/* Sidebar User Info removed from here and moved to topbar */}
 
-              <div className="border-t border-[var(--color-border)] px-4 py-3">
-                <InternalLogoutButton />
-              </div>
-            </Card>
-          </aside>
-
-          <div className="min-w-0">
-            <Card className="overflow-hidden border-transparent bg-white/70 p-3.5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl sm:p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Image
-                    src="/assets/brand/logos/lambang-bulungan.png"
-                    alt="Lambang Bulungan"
-                    width={40}
-                    height={40}
-                    className="size-10 rounded-xl border border-[var(--color-border)] bg-white p-1.5"
-                  />
-                  <div>
-                    <p className="m-0 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-primary)]">
-                      Ruang Kerja Internal
-                    </p>
-                    <p className="m-0 mt-1 text-sm font-semibold text-[var(--color-text)]">
-                      {session.name} - {internalRoleLabels[session.role]} - {session.organizationName}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">{internalNavLabels[activeKey]}</Badge>
-                  {canAccessNav(session.role, "notifications") ? (
-                    <Button asChild variant="secondary" size="sm" className="rounded-full">
-                      <Link href="/internal/notifications">Notifikasi</Link>
-                    </Button>
-                  ) : null}
-                  <Button asChild variant="secondary" size="sm" className="rounded-full">
-                    <Link href="/dataset">Portal Publik</Link>
-                  </Button>
-                  <div className="xl:hidden">
-                    <InternalLogoutButton />
-                  </div>
-                </div>
-              </div>
-
-              <nav aria-label="Navigasi internal mobile" className="mt-3 grid gap-2 xl:hidden">
-                <details className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white [&_summary::-webkit-details-marker]:hidden">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2">
-                    <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-primary)]">
-                      Semua Menu
+      {/* Navigation */}
+      <div className={cn("flex-1 overflow-y-auto px-3", isCollapsed ? "pt-4" : "py-4")}>
+        <TooltipProvider delayDuration={0}>
+          <nav aria-label="Navigasi internal" className="grid gap-4">
+            {groupedNav.map((group) => (
+              <div key={group.id} className="grid gap-1">
+                {!isCollapsed && (
+                  <div className="mb-1 px-3">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[var(--color-muted)]">
+                      {group.label}
                     </span>
-                    <ChevronDown className="size-4 text-[var(--color-muted)]" />
-                  </summary>
-                  <div className="grid gap-2 border-t border-[var(--color-border)] p-2">
-                    {groupedNav.map((group) => (
-                      <details
-                        key={`mobile-${group.id}`}
-                        open={group.keys.includes(activeKey)}
-                        className="overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-soft)] [&_summary::-webkit-details-marker]:hidden"
-                      >
-                        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2">
-                          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-primary)]">
-                            {group.label}
-                          </span>
-                          <span className="rounded-full border border-[var(--color-border)] bg-white px-1.5 py-0.5 text-[11px] font-semibold text-[var(--color-muted)]">
-                            {group.keys.length}
-                          </span>
-                        </summary>
-                        <div className="grid gap-1 border-t border-[var(--color-border)] p-2">
-                          {group.keys.map((key) => {
-                            const Icon = iconByKey[key];
-                            return (
-                              <Link
-                                key={`mobile-${key}`}
-                                href={getHref(key)}
-                                className={cn(
-                                  "flex items-center gap-2 rounded-lg border border-transparent bg-white px-3 py-2 text-sm font-semibold text-[var(--color-muted)] transition hover:border-[var(--color-border)] hover:bg-[var(--color-surface-soft)] hover:text-[var(--color-primary)]",
-                                  activeKey === key &&
-                                    "border-[var(--color-primary)] bg-[var(--color-surface-soft)] text-[var(--color-primary)]",
-                                )}
-                              >
-                                <Icon className="size-4" />
-                                {internalNavLabels[key]}
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      </details>
-                    ))}
                   </div>
-                </details>
-              </nav>
-            </Card>
+                )}
+                {group.keys.map((key) => {
+                  const Icon = iconByKey[key];
+                  const isActive = activeKey === key;
+                  
+                  const navItem = (
+                    <Link
+                      href={getHref(key)}
+                      onClick={() => setIsMobileOpen(false)}
+                      className={cn(
+                        "group flex items-center rounded-lg border border-transparent transition-all duration-200 hover:bg-[var(--color-surface-soft)] hover:text-[var(--color-primary)]",
+                        isCollapsed ? "justify-center py-2.5" : "gap-3 px-3 py-2",
+                        isActive
+                          ? "bg-[var(--color-surface-soft)] text-[var(--color-primary)] font-semibold shadow-sm"
+                          : "text-[var(--color-muted)] font-medium"
+                      )}
+                    >
+                      <Icon className={cn(
+                        "shrink-0 transition-transform group-hover:scale-110",
+                        isCollapsed ? "size-5" : "size-4",
+                        isActive && "text-[var(--color-primary)]"
+                      )} />
+                      {!isCollapsed && <span className="truncate">{internalNavLabels[key]}</span>}
+                      {/* Optional active indicator for collapsed state */}
+                      {isCollapsed && isActive && (
+                        <div className="absolute left-0 top-1/2 h-1/2 w-1 -translate-y-1/2 rounded-r-md bg-[var(--color-primary)]" />
+                      )}
+                    </Link>
+                  );
 
-            <div className="mt-4 grid gap-4">{children}</div>
+                  return isCollapsed ? (
+                    <Tooltip key={key}>
+                      <TooltipTrigger asChild>
+                        {navItem}
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="font-semibold">
+                        {internalNavLabels[key]}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <div key={key}>{navItem}</div>
+                  );
+                })}
+              </div>
+            ))}
+          </nav>
+        </TooltipProvider>
+      </div>
+
+      {/* Footer / Logout */}
+      <div className="shrink-0 border-t border-[var(--color-border)] p-4">
+        {isCollapsed ? (
+           <TooltipProvider delayDuration={0}>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <div className="flex justify-center">
+                    <InternalLogoutButton variant="ghost" className="h-10 w-10 text-red-600 hover:bg-red-50 hover:text-red-700" iconOnly />
+                 </div>
+               </TooltipTrigger>
+               <TooltipContent side="right" className="font-semibold text-red-600">Keluar</TooltipContent>
+             </Tooltip>
+           </TooltipProvider>
+        ) : (
+          <InternalLogoutButton variant="destructive" className="w-full justify-center" />
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="internal-page-bg flex min-h-screen">
+      {/* Desktop Sidebar */}
+      <aside
+        className={cn(
+          "hidden border-r border-[var(--color-border)] bg-white transition-all duration-300 xl:block sticky top-0 h-screen",
+          isCollapsed ? "w-[72px]" : "w-[280px]"
+        )}
+      >
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile Drawer Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm xl:hidden transition-opacity" 
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-[280px] -translate-x-full border-r border-[var(--color-border)] bg-white transition-transform duration-300 xl:hidden",
+          isMobileOpen && "translate-x-0"
+        )}
+      >
+        <SidebarContent />
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col min-w-0">
+        {/* Topbar */}
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-white/80 px-4 shadow-sm backdrop-blur-md sm:px-6">
+          <div className="flex items-center gap-3">
+            {/* Mobile menu toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="xl:hidden -ml-2 text-[var(--color-muted)] hover:text-[var(--color-text)]"
+              onClick={() => setIsMobileOpen(true)}
+              aria-label="Toggle Menu"
+            >
+              <Menu className="size-5" />
+            </Button>
+            
+            {/* Desktop sidebar toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden xl:flex -ml-2 text-[var(--color-muted)] hover:text-[var(--color-text)]"
+              onClick={toggleSidebar}
+              aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              <Menu className="size-5" />
+            </Button>
+            
+            <div className="hidden sm:block">
+              <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-muted)]">
+                <span>Portal Internal</span>
+                <ChevronRight className="size-3.5 opacity-50" />
+                <span className="text-[var(--color-primary)]">{internalNavLabels[activeKey]}</span>
+              </div>
+            </div>
           </div>
-        </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            {canAccessNav(session.role, "help") && (
+              <Button asChild variant="ghost" size="icon" className="text-[var(--color-muted)] hover:text-[var(--color-text)] relative">
+                <Link href="/internal/help" aria-label="Bantuan & FAQ">
+                  <CircleHelp className="size-5" />
+                </Link>
+              </Button>
+            )}
+            {canAccessNav(session.role, "notifications") && (
+              <Button asChild variant="ghost" size="icon" className="text-[var(--color-muted)] hover:text-[var(--color-text)] relative">
+                <Link href="/internal/notifications" aria-label="Notifikasi">
+                  <Bell className="size-5" />
+                  {/* Fake badge for demonstration */}
+                  <span className="absolute right-2 top-2 flex size-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+                </Link>
+              </Button>
+            )}
+            <Button asChild variant="outline" size="sm" className="hidden sm:flex rounded-full gap-1.5 border-[var(--color-border)]">
+              <Link href="/dataset">
+                <ExternalLink className="size-3.5" />
+                <span>Portal Publik</span>
+              </Link>
+            </Button>
+            {/* Mobile portal link */}
+            <Button asChild variant="ghost" size="icon" className="sm:hidden text-[var(--color-muted)]">
+               <Link href="/dataset" aria-label="Portal Publik">
+                <ExternalLink className="size-5" />
+              </Link>
+            </Button>
+            <Link href="/internal/profile" className="ml-1 flex items-center gap-2.5 rounded-full p-1 pr-3 hover:bg-[var(--color-surface-soft)] transition-colors">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+                <UserCircle2 className="size-5" />
+              </div>
+              <div className="hidden flex-col items-start sm:flex text-left max-w-[150px] lg:max-w-[200px]">
+                <span className="text-sm font-semibold text-[var(--color-text)] truncate w-full">{getDisplayOrganizationName(session)}</span>
+                <span className="text-[11px] text-[var(--color-muted)] font-medium truncate w-full">{internalRoleLabels[session.role]}</span>
+              </div>
+            </Link>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl flex flex-col gap-6">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

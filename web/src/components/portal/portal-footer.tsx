@@ -4,7 +4,7 @@ import { Globe, Mail, MapPin } from "lucide-react";
 
 const bappedaContact = {
   address:
-    "Jalan Jelarai Raya, Tanjung Selor Hilir, Kecamatan Tanjung Selor, Kabupaten Bulungan, Kalimantan Utara",
+    "Jalan Jelarai Raya, Tanjung Selor Hilir, Kecamatan Tanjung Selor, Kabupaten Bulungan",
   email: "bappeda@bulungan.go.id",
   website: "https://bappeda.bulungan.go.id/",
   facebook: "https://www.facebook.com/bappeda.litbang.kab.bulungan?mibextid=ZbWKwL",
@@ -106,11 +106,8 @@ const relatedLinks: RelatedLogoLink[] = [
 
 export function PortalFooter() {
   return (
-    <footer
-      className="portal-shell-bleed mt-auto shrink-0 bg-(--color-footer-bg)"
-      style={{ width: "100vw", marginInline: "calc(50% - 50vw)" }}
-    >
-      <div className="relative overflow-hidden rounded-[28px] border border-[#3c3a3a] bg-[radial-gradient(circle_at_top,#142752_0%,#0d1733_44%,#0a132b_100%)]">
+    <footer className="portal-shell-bleed mt-auto shrink-0 border-t border-[#3c3a3a] bg-[radial-gradient(circle_at_top,#142752_0%,#0d1733_44%,#0a132b_100%)]">
+      <div className="relative overflow-hidden">
         {/* Motif Watermarks */}
         <div
           className="pointer-events-none absolute inset-y-0 left-0 z-0 hidden w-[4%] opacity-[0.15] md:block"
@@ -153,8 +150,8 @@ export function PortalFooter() {
                 </div>
               </div>
 
-              <p className="text-sm leading-relaxed text-white/70 max-w-md">
-                Satu Data Kabupaten Bulungan adalah portal terintegrasi untuk pengelolaan, penyajian, dan berbagi pakai data statistik sektoral dan geospasial di lingkungan Pemerintah Kabupaten Bulungan guna mendukung perencanaan pembangunan yang akurat dan terukur.
+              <p className="text-sm leading-relaxed text-white/70">
+                Satu Data Kabupaten Bulungan adalah portal terintegrasi untuk pengelolaan, penyajian, dan berbagi pakai data statistik sektoral dan geospasial di lingkungan Pemerintah Kabupaten Bulungan guna mendukung perencanaan pembangunan yang akurat dan berbasis data.
               </p>
 
               <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-5 backdrop-blur-[2px]">
@@ -163,7 +160,6 @@ export function PortalFooter() {
                     <MapPin className="size-5" />
                   </div>
                   <div>
-                    <h3 className="text-xs font-bold text-white uppercase tracking-wider opacity-60">Alamat</h3>
                     <p className="mt-2 text-sm leading-relaxed text-white/60 font-medium">
                       {bappedaContact.address}
                     </p>

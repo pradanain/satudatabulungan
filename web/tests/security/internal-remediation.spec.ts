@@ -1,4 +1,4 @@
-﻿import { expect, test, type APIRequestContext } from "@playwright/test";
+import { expect, test, type APIRequestContext } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { InternalPortalStore } from "@/lib/types/internal";
@@ -220,6 +220,7 @@ test.describe("Security and Remediation Regression", () => {
         ownerOrgSlug: "dinas-kesehatan",
       },
     });
+    console.log("[DEBUG PLAYWRIGHT DRAFT CREATE BODY]:", await draftCreate.text());
     expect(draftCreate.status()).toBe(200);
 
     const toSubmitted = await request.post("/api/internal/workflow/transition", {

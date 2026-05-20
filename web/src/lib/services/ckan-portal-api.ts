@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { InternalRole, InternalSession } from "@/lib/types/internal";
+import { hasPermission, normalizeInternalRole, getRolePermissions } from "@/lib/utils/internal-auth";
 import {
   fetchWithTimeout,
   isUpstreamNetworkError,
@@ -149,36 +150,26 @@ const DEFAULT_CKAN_UNAVAILABLE_COOLDOWN_MS = 30_000;
 
 let ckanUnavailableUntil = 0;
 
-const rolePermissions: Record<InternalRole, string[]> = {
-  admin: [
-    "manage_all_organizations",
-    "manage_all_datasets",
-    "manage_all_accounts",
-    "validate_dataset",
-    "curate_dataset",
-    "publish_dataset",
-    "upload_dataset",
-    "upload_infografis",
-    "upload_buku",
-  ],
-  pembina: [
-    "validate_dataset",
-    "curate_dataset",
-    "publish_dataset",
-    "upload_dataset",
-    "upload_infografis",
-    "upload_buku",
-  ],
-  walidata: [
-    "validate_dataset",
-    "curate_dataset",
-    "publish_dataset",
-    "upload_dataset",
-    "upload_infografis",
-    "upload_buku",
-  ],
-  operator: ["manage_own_dataset", "upload_dataset", "upload_infografis", "upload_buku"],
-};
+/** Get the CKAN-facing permission list for a role (derived from central permission map) */
+function getCkanPermissions(role: InternalRole): string[] {
+  const perms = getRolePermissions(role);
+  const ckanPerms: string[] = [];
+
+  if (perms.includes("dataset.view_all")) ckanPerms.push("view_all_datasets");
+  if (perms.includes("master_data.manage_organizations")) ckanPerms.push("manage_all_organizations");
+  if (perms.includes("dataset.edit_metadata") && perms.includes("dataset.view_all")) ckanPerms.push("manage_all_datasets");
+  if (perms.includes("portal.manage_users")) ckanPerms.push("manage_all_accounts");
+  if (perms.includes("dataset.review")) ckanPerms.push("validate_dataset");
+  if (perms.includes("dataset.review") || perms.includes("dataset.add_review_note")) ckanPerms.push("curate_dataset");
+  if (perms.includes("dataset.publish")) ckanPerms.push("publish_dataset");
+  if (perms.includes("dataset.upload_file") || perms.includes("dataset.create_own_opd")) {
+    ckanPerms.push("upload_dataset", "upload_infografis", "upload_buku");
+  }
+  if (perms.includes("dataset.edit_draft_own_opd") && !perms.includes("dataset.view_all")) ckanPerms.push("manage_own_dataset");
+  if (perms.includes("monitoring.view_all") || perms.includes("audit.view_all")) ckanPerms.push("monitor_audit");
+
+  return [...new Set(ckanPerms)];
+}
 
 function getBaseUrl(): string {
   return (
@@ -367,14 +358,10 @@ function mapDataset(raw: CkanPackageRaw): PortalDataset {
   };
 }
 
-function getRolePermissions(role: InternalRole): string[] {
-  return rolePermissions[role] ?? [];
-}
 
 function mapAccountRow(row: Record<string, unknown>, organizationsById: Map<string, PortalOrganization>): PortalAccount {
-  const roleRaw = `${row.role ?? "operator"}` as InternalRole;
-  const role: InternalRole =
-    roleRaw === "admin" || roleRaw === "pembina" || roleRaw === "walidata" ? roleRaw : "operator";
+  const roleRaw = `${row.role ?? "produsen"}`;
+  const role: InternalRole = normalizeInternalRole(roleRaw);
   const orgId = `${row.organizationId ?? ""}`;
   const org = organizationsById.get(orgId);
 
@@ -554,15 +541,16 @@ export async function getCurrentUser(session: InternalSession): Promise<PortalAc
 }
 
 export function checkPermission(role: InternalRole, permission: string): boolean {
-  return getRolePermissions(role).includes(permission);
+  return hasPermission(role, permission as any);
 }
 
 export async function getDashboard(session: InternalSession): Promise<PortalDashboard> {
-  const datasets = await getDatasets();
+  const allPackages = await getDatasets();
+  const datasetsOnly = allPackages.filter((item) => item.contentType === "dataset");
   const scoped =
-    session.role === "admin" || session.role === "walidata"
-      ? datasets
-      : datasets.filter((item) => item.organizationId === session.organizationId);
+    hasPermission(session, "dataset.view_all")
+      ? datasetsOnly
+      : datasetsOnly.filter((item) => item.organizationId === session.organizationId);
 
   const visibleDatasetCount = scoped.length;
   const publishedCount = scoped.filter((item) => item.status.toLowerCase() === "published").length;
@@ -575,11 +563,11 @@ export async function getDashboard(session: InternalSession): Promise<PortalDash
     visibleDatasetCount,
     publishedCount,
     reviewQueueCount,
-    organizationCount: new Set(datasets.map((item) => item.organizationId)).size,
+    organizationCount: new Set(allPackages.map((item) => item.organizationId)).size,
     contentCounts: {
-      dataset: datasets.filter((item) => item.contentType === "dataset").length,
-      infografis: datasets.filter((item) => item.contentType === "infografis").length,
-      publikasi: datasets.filter((item) => item.contentType === "publikasi").length,
+      dataset: datasetsOnly.length,
+      infografis: allPackages.filter((item) => item.contentType === "infografis").length,
+      publikasi: allPackages.filter((item) => item.contentType === "publikasi").length,
     },
   };
 }

@@ -53,7 +53,7 @@ const sdiRoles = [
   {
     title: "Pembina",
     institution: "BPS Kabupaten Bulungan",
-    description: "Bertanggung jawab memberikan arahan teknis, metodologi, dan standar data agar sesuai dengan norma nasional.",
+    description: "Bertanggung jawab memberikan arahan teknis, metodologi, dan standar data agar sesuai dengan standar nasional.",
     icon: CheckCircle2
   },
   {
@@ -69,7 +69,7 @@ const sdiRoles = [
     icon: Users2
   },
   {
-    title: "Produsen Data / Operator",
+    title: "Produsen Data",
     institution: "Organisasi Perangkat Daerah (OPD)",
     description: "Menghasilkan data sektoral berdasarkan tugas pokok dan fungsi instansi masing-masing secara akurat.",
     icon: BookOpen

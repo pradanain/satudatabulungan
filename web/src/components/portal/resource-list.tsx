@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/components/portal/section-heading";
 import { hasUsableResourceUrl } from "@/lib/utils/resource-links";
+import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
 
 interface ResourceListProps {
   resources: DatasetResource[];
@@ -33,6 +34,7 @@ function isDownloadableResource(resource: DatasetResource): boolean {
 
 export function ResourceList({ resources }: ResourceListProps) {
   const [copiedResourceId, setCopiedResourceId] = useState<string | null>(null);
+  const [downloadResource, setDownloadResource] = useState<DatasetResource | null>(null);
 
   async function copyApiLink(resource: DatasetResource) {
     if (!hasUsableResourceUrl(resource.url)) {
@@ -68,94 +70,121 @@ export function ResourceList({ resources }: ResourceListProps) {
             return (
               <article
                 key={resource.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d7ddeb] bg-white p-3.5 shadow-[0_8px_20px_rgba(36,52,82,0.05)]"
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-[#d7ddeb] bg-white p-3.5 sm:p-4 shadow-[0_8px_20px_rgba(36,52,82,0.05)]"
               >
-                <div className="flex min-w-0 items-start gap-3">
+                <div className="flex min-w-0 items-center gap-3 w-full sm:w-auto">
                   <Badge
                     variant="outline"
-                    className={`min-w-15.5 justify-center px-2 py-1 text-xs font-semibold ${getFormatBadgeClass(resource.format)}`}
+                    className={`min-w-15.5 shrink-0 justify-center px-2 py-1 text-xs font-semibold ${getFormatBadgeClass(resource.format)}`}
                   >
                     {resource.format}
                   </Badge>
-                  <div>
-                    <h3 className="m-0 text-base font-semibold text-(--color-text)">{resource.name}</h3>
-                    <p className="m-0 mt-1 text-sm text-(--color-muted)">{resource.description}</p>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="m-0 text-base font-semibold text-(--color-text) break-words">{resource.name}</h3>
+                    <p className="m-0 mt-1 text-sm text-(--color-muted) break-words">{resource.description}</p>
                   </div>
                 </div>
 
-                <div className="ml-auto flex flex-wrap items-center gap-2 text-sm text-[#605a58]">
-                  <span className="rounded-full border border-[#dde5f1] bg-[#f8fbff] px-2.5 py-1 text-xs font-medium">
-                    {resource.sizeLabel}
-                  </span>
-                  {resource.lastUpdated ? (
+                <div className="flex flex-wrap items-center gap-2 text-sm text-[#605a58] sm:ml-auto w-full sm:w-auto justify-between sm:justify-end border-t border-[#f0f2f5] pt-3 sm:border-0 sm:pt-0">
+                  <div className="flex flex-wrap gap-2">
                     <span className="rounded-full border border-[#dde5f1] bg-[#f8fbff] px-2.5 py-1 text-xs font-medium">
-                      {formatIndonesianDate(resource.lastUpdated)}
+                      {resource.sizeLabel}
                     </span>
-                  ) : null}
+                    {resource.lastUpdated ? (
+                      <span className="rounded-full border border-[#dde5f1] bg-[#f8fbff] px-2.5 py-1 text-xs font-medium">
+                        {formatIndonesianDate(resource.lastUpdated)}
+                      </span>
+                    ) : null}
+                  </div>
 
-                  {hasUrl && isApi ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="h-9 w-9 rounded-lg p-0"
-                      title={isCopied ? "Link API tersalin" : "Salin link API"}
-                      aria-label={isCopied ? "Link API tersalin" : "Salin link API"}
-                      onClick={() => {
-                        void copyApiLink(resource);
-                      }}
-                    >
-                      {isCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                    </Button>
-                  ) : null}
+                  <div className="flex items-center gap-2">
+                    {hasUrl && isApi ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="h-9 w-9 rounded-lg p-0"
+                        title={isCopied ? "Link API tersalin" : "Salin link API"}
+                        aria-label={isCopied ? "Link API tersalin" : "Salin link API"}
+                        onClick={() => {
+                          void copyApiLink(resource);
+                        }}
+                      >
+                        {isCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                      </Button>
+                    ) : null}
 
-                  {hasUrl && isDownloadable ? (
-                    <Button asChild variant="secondary" size="sm" className="h-9 w-9 rounded-lg p-0">
-                      <a
-                        href={resource.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        download
+                    {hasUrl && isDownloadable ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="h-9 w-9 rounded-lg p-0"
                         title="Unduh berkas"
                         aria-label="Unduh berkas"
+                        onClick={() => setDownloadResource(resource)}
                       >
                         <Download className="size-4" />
-                      </a>
-                    </Button>
-                  ) : null}
+                      </Button>
+                    ) : null}
 
-                  {hasUrl && !isApi && !isDownloadable ? (
-                    <Button asChild variant="secondary" size="sm" className="h-9 w-9 rounded-lg p-0">
-                      <a
-                        href={resource.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Buka tautan"
-                        aria-label="Buka tautan"
+                    {hasUrl && !isApi && !isDownloadable ? (
+                      <Button asChild variant="secondary" size="sm" className="h-9 w-9 rounded-lg p-0">
+                        <a
+                          href={resource.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Buka tautan"
+                          aria-label="Buka tautan"
+                        >
+                          <ExternalLink className="size-4" />
+                        </a>
+                      </Button>
+                    ) : null}
+
+                    {!hasUrl ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-9 w-9 rounded-lg p-0"
+                        title="Tautan belum tersedia"
+                        aria-label="Tautan belum tersedia"
+                        disabled
                       >
-                        <ExternalLink className="size-4" />
-                      </a>
-                    </Button>
-                  ) : null}
-
-                  {!hasUrl ? (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="h-9 w-9 rounded-lg p-0"
-                      title="Tautan belum tersedia"
-                      aria-label="Tautan belum tersedia"
-                      disabled
-                    >
-                      <CircleOff className="size-4" />
-                    </Button>
-                  ) : null}
+                        <CircleOff className="size-4" />
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
               </article>
             );
           })}
         </div>
       </Card>
+
+      <ConfirmationDialog
+        open={!!downloadResource}
+        onOpenChange={(open) => {
+          if (!open) setDownloadResource(null);
+        }}
+        title="Unduh Berkas?"
+        description={`Anda akan mengunduh berkas "${downloadResource?.name}" (${downloadResource?.sizeLabel || ""}) dalam format ${downloadResource?.format || ""}. Apakah Anda yakin ingin melanjutkan?`}
+        confirmLabel="Unduh"
+        cancelLabel="Batal"
+        onConfirm={() => {
+          if (downloadResource) {
+            const link = document.createElement("a");
+            link.href = downloadResource.url;
+            link.setAttribute("download", "");
+            link.setAttribute("target", "_blank");
+            link.setAttribute("rel", "noreferrer");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setDownloadResource(null);
+          }
+        }}
+      />
     </section>
   );
 }

@@ -212,15 +212,8 @@ export default async function OrganisasiPage({ searchParams }: OrganisasiPagePro
             </>
           }
           description="Direktori perangkat daerah Kabupaten Bulungan berisi profil OPD, situs resmi, kontak, dan akses cepat menuju dataset tiap organisasi."
-          actions={
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary" className="bg-white/50 backdrop-blur-sm border-slate-200">{organizations.length} OPD</Badge>
-              <Badge variant="secondary" className="bg-white/50 backdrop-blur-sm border-slate-200">{withWebsiteCount} punya website</Badge>
-              <Badge variant="secondary" className="bg-white/50 backdrop-blur-sm border-slate-200">{withContactCount} ada kontak dasar</Badge>
-            </div>
-          }
           decoration={
-            <div className="absolute bottom-[clamp(0.5rem,1.5vw,2rem)] right-[clamp(1rem,5vw,4rem)] z-2 flex items-center gap-4 rounded-3xl border border-white/40 bg-white/30 p-5 backdrop-blur-md shadow-2xl">
+            <div className="absolute top-1/2 -translate-y-1/2 right-[clamp(1rem,5vw,4rem)] z-2 flex items-center gap-4 rounded-3xl border border-white/40 bg-white/30 p-5 backdrop-blur-md shadow-2xl">
               <Image
                 src="/assets/brand/logos/lambang-bulungan.png"
                 alt="Lambang Pemerintah Kabupaten Bulungan"

@@ -163,12 +163,33 @@ export function normalizePositiveInteger(
 }
 
 export async function getDatasets(filters?: DatasetFilters): Promise<Dataset[]> {
-  const datasets = await withFallback((adapter) => adapter.listDatasets(filters));
+  let datasets = await withFallback((adapter) => adapter.listDatasets(filters));
+
+  if (config.dataSourceMode === "ckan") {
+    try {
+      const mockDatasets = await mockAdapter.listDatasets(filters);
+      const existingSlugs = new Set(datasets.map((d) => d.slug));
+      const newLocal = mockDatasets.filter((d) => !existingSlugs.has(d.slug));
+      datasets = [...datasets, ...newLocal];
+    } catch (err) {
+      console.warn("[dataset-service] Gagal menggabungkan dataset lokal dari internal-store:", err);
+    }
+  }
+
   return datasets.map(normalizeDatasetOrganization);
 }
 
 export async function getDatasetBySlug(slug: string): Promise<Dataset | null> {
-  const dataset = await withFallback((adapter) => adapter.getDatasetBySlug(slug));
+  let dataset = await withFallback((adapter) => adapter.getDatasetBySlug(slug)).catch(() => null);
+
+  if (!dataset && config.dataSourceMode === "ckan") {
+    try {
+      dataset = await mockAdapter.getDatasetBySlug(slug);
+    } catch (err) {
+      console.warn(`[dataset-service] Gagal memuat fallback data lokal untuk slug: ${slug}`, err);
+    }
+  }
+
   return dataset ? normalizeDatasetOrganization(dataset) : null;
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown, Menu } from "lucide-react";
@@ -77,9 +77,25 @@ const menuItems: readonly MenuItem[] = [
 ];
 
 export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
+  const headerRef = useRef<HTMLElement>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openMobileDropdownKey, setOpenMobileDropdownKey] = useState<Exclude<ActiveMenu, "none"> | null>(null);
   const [openDesktopDropdownKey, setOpenDesktopDropdownKey] = useState<Exclude<ActiveMenu, "none"> | null>(null);
+
+  const syncHeight = useCallback(() => {
+    if (headerRef.current) {
+      document.documentElement.style.setProperty(
+        "--portal-header-h",
+        `${headerRef.current.offsetHeight}px`,
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    syncHeight();
+    window.addEventListener("resize", syncHeight);
+    return () => window.removeEventListener("resize", syncHeight);
+  }, [syncHeight]);
 
   const handleMobileMenuChange = (nextOpen: boolean) => {
     setIsMobileMenuOpen(nextOpen);
@@ -98,12 +114,9 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-100 w-full bg-(--color-bg)">
-      <div
-        className="portal-shell-bleed overflow-visible border border-t-0 border-(--color-border) bg-white"
-        style={{ width: "100vw", marginInline: "calc(50% - 50vw)" }}
-      >
-        <div className="flex flex-wrap items-center gap-4 px-6 py-3 sm:px-8 sm:py-4 lg:px-10 lg:py-5">
+    <header ref={headerRef} className="fixed top-0 left-0 z-[9999] w-full bg-(--color-bg)">
+      <div className="portal-shell-bleed overflow-visible border border-t-0 border-(--color-border) bg-white">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 px-4 py-3 sm:px-8 sm:py-4 lg:px-10 lg:py-5">
           <div className="order-1 flex items-center gap-2">
             <Sheet open={isMobileMenuOpen} onOpenChange={handleMobileMenuChange}>
               <SheetTrigger
@@ -212,7 +225,7 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
                 width={180}
                 height={46}
                 sizes="(max-width: 768px) 140px, 220px"
-                className="h-auto w-auto max-h-9 sm:max-h-10 md:max-h-11 lg:max-h-12"
+                className="h-auto w-auto max-h-8 sm:max-h-10 md:max-h-11 lg:max-h-12"
                 priority
               />
             </Link>
@@ -289,7 +302,7 @@ export function PortalHeader({ activeMenu = "none" }: PortalHeaderProps) {
           </nav>
 
           <div className="order-2 ml-auto flex items-center md:order-3 md:ml-0 lg:mr-2 xl:mr-3">
-            <Button asChild className="rounded-full px-6 font-bold">
+            <Button asChild className="rounded-full px-4 sm:px-6 font-bold">
               <Link href="/internal">Login</Link>
             </Button>
           </div>

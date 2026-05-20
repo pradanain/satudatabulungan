@@ -5,11 +5,15 @@ export type DatasetFrequency =
   | "Bulanan"
   | "Triwulanan"
   | "Semesteran"
-  | "Tahunan";
+  | "Tahunan"
+  | "Series"
+  | "Multi-tahunan"
+  | "Lainnya";
 
 export type DatasetStatus =
   | "Draft"
   | "Submitted"
+  | "Under Review"
   | "Need Revision"
   | "Approved"
   | "Published"

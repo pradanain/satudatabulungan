@@ -1,29 +1,58 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
+import { cn } from "@/lib/utils/cn";
 
-export function InternalLogoutButton() {
+export interface InternalLogoutButtonProps {
+  className?: string;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost";
+  iconOnly?: boolean;
+}
+
+export function InternalLogoutButton({ className, variant = "secondary", iconOnly = false }: InternalLogoutButtonProps = {}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [showConfirmLogout, setShowConfirmLogout] = useState(false);
 
   async function handleLogout() {
+    setShowConfirmLogout(false);
     await fetch("/api/internal/auth/logout", {
       method: "POST",
     });
 
-    startTransition(() => {
-      router.push("/internal");
-      router.refresh();
-    });
+    window.location.href = "/internal";
   }
 
   return (
-    <Button type="button" variant="secondary" size="sm" className="rounded-full" onClick={handleLogout} disabled={isPending}>
-      <LogOut className="mr-2 size-4" />
-      {isPending ? "Keluar..." : "Logout"}
-    </Button>
+    <>
+      <Button
+        type="button"
+        variant={variant}
+        size={iconOnly ? "icon" : "sm"}
+        className={cn(iconOnly ? "rounded-lg" : "rounded-full", className)}
+        onClick={() => setShowConfirmLogout(true)}
+        disabled={isPending}
+        aria-label="Logout"
+      >
+        <LogOut className={cn("size-4", !iconOnly && "mr-2")} />
+        {!iconOnly && (isPending ? "Keluar..." : "Logout")}
+      </Button>
+
+      <ConfirmationDialog
+        open={showConfirmLogout}
+        onOpenChange={setShowConfirmLogout}
+        title="Logout dari Dashboard?"
+        description="Apakah Anda yakin ingin keluar dari dashboard internal Satu Data Bulungan?"
+        confirmLabel="Keluar"
+        cancelLabel="Batal"
+        variant="destructive"
+        onConfirm={handleLogout}
+      />
+    </>
   );
 }

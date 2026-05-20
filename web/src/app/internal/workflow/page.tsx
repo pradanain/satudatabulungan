@@ -14,12 +14,11 @@ export default async function InternalWorkflowPage() {
   return (
     <InternalShell session={session} activeKey="review">
       <InternalPageHeader
-        title="Review & Approval"
-        description="Kelola antrian verifikasi, approval, publikasi, dan arsip dataset pada satu board workflow yang stabil untuk dev lokal."
+        title="Verifikasi Data"
+        description="Validasi dan verifikasi dataset yang diajukan OPD sebelum dipublikasikan."
         badges={
           <>
-            <Badge variant="outline">{items.length} dataset termonitor</Badge>
-            <Badge variant="outline">Shared sync ke halaman publik</Badge>
+            <Badge variant="outline">{items.length} dataset antrean</Badge>
           </>
         }
       />

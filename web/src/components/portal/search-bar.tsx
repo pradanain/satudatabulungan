@@ -97,7 +97,8 @@ export function SearchBar({
 
         <div className={cn(
           "relative flex items-center h-12 lg:h-14 px-2",
-          "rounded-[24px] border border-[var(--color-border)] bg-white shadow-[0_10px_24px_rgba(33,41,52,0.06)]"
+          "rounded-[24px] border border-[var(--color-border)] bg-white shadow-[0_10px_24px_rgba(33,41,52,0.06)]",
+          "transition-all duration-200 focus-within:border-(--color-primary) focus-within:ring-4 focus-within:ring-(--color-primary)/5"
         )}>
           <Search className="absolute left-5 size-5 text-[var(--color-muted)]" />
           <Input
@@ -109,9 +110,40 @@ export function SearchBar({
             placeholder={placeholder}
             aria-label={srLabel ?? placeholder}
             autoComplete="off"
-            className="h-full border-0 bg-transparent pl-12 pr-4 text-base shadow-none focus-visible:ring-0"
+            className="h-full border-0 bg-transparent pl-12 pr-4 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0"
           />
           {isLoading && <Loader2 className="absolute right-5 size-5 animate-spin text-[var(--color-primary)]" />}
+
+          {/* Dropdown Suggestions */}
+          {isOpen && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full z-[100] mt-2 max-h-[400px] overflow-y-auto rounded-3xl border border-[var(--color-border)] bg-white/95 p-2 shadow-[0_20px_40px_rgba(33,41,52,0.15)] backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
+              <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-muted)]">
+                Saran Dataset
+              </div>
+              {suggestions.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleSelect(item.slug)}
+                  className="flex w-full flex-col gap-1 rounded-2xl p-3 text-left transition-colors hover:bg-[var(--color-surface-soft)]"
+                >
+                  <div className="flex items-center gap-2">
+                    <Database className="size-4 text-[var(--color-primary)]" />
+                    <span className="text-sm font-bold text-(--color-text)">{item.title}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-3 pl-6">
+                    <div className="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
+                      <Building2 className="size-3" />
+                      {item.organization}
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
+                      <Tag className="size-3" />
+                      {item.topic}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <Button 
@@ -124,37 +156,6 @@ export function SearchBar({
           {submitLabel}
         </Button>
       </form>
-
-      {/* Dropdown Suggestions */}
-      {isOpen && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 mt-2 max-h-[400px] overflow-y-auto rounded-3xl border border-[var(--color-border)] bg-white/95 p-2 shadow-[0_20px_40px_rgba(33,41,52,0.15)] backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
-          <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-muted)]">
-            Saran Dataset
-          </div>
-          {suggestions.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleSelect(item.slug)}
-              className="flex w-full flex-col gap-1 rounded-2xl p-3 text-left transition-colors hover:bg-[var(--color-surface-soft)]"
-            >
-              <div className="flex items-center gap-2">
-                <Database className="size-4 text-[var(--color-primary)]" />
-                <span className="text-sm font-bold text-(--color-text)">{item.title}</span>
-              </div>
-              <div className="flex flex-wrap gap-3 pl-6">
-                <div className="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
-                  <Building2 className="size-3" />
-                  {item.organization}
-                </div>
-                <div className="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
-                  <Tag className="size-3" />
-                  {item.topic}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

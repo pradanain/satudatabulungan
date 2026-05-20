@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -16,6 +19,7 @@ import {
 import { SectionHeading } from "@/components/portal/section-heading";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
 import { Badge } from "@/components/ui/badge";
 import { PortalHeroCard } from "@/components/portal/portal-hero-card";
 import { NewsDisplayControls } from "@/components/portal/news-display-controls";
@@ -174,6 +178,7 @@ function PublicationNewsCard({ item }: { item: PortalNewsItem }) {
 }
 
 function PublicationCatalogCard({ item, view }: { item: PublicationCatalogItem; view: PublicationView }) {
+  const [showConfirm, setShowConfirm] = useState(false);
   const isInfografis = view === "infografis";
   const isBukuDigital = view === "buku-digital";
   const isRegulasi = view === "regulasi";
@@ -258,18 +263,38 @@ function PublicationCatalogCard({ item, view }: { item: PublicationCatalogItem; 
                 </Link>
               </Button>
               {item.downloadHref && !isInfografis ? (
-                <Button asChild variant="secondary" size="sm" className="h-9 w-9 rounded-lg p-0">
-                  <Link
-                    href={item.downloadHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    download
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="h-9 w-9 rounded-lg p-0"
+                    onClick={() => setShowConfirm(true)}
                     aria-label={downloadLabel}
                     title={downloadLabel}
                   >
                     <Download className="size-4" />
-                  </Link>
-                </Button>
+                  </Button>
+                  <ConfirmationDialog
+                    open={showConfirm}
+                    onOpenChange={setShowConfirm}
+                    title="Unduh Dokumen?"
+                    description={`Anda akan mengunduh dokumen "${item.title}". Apakah Anda yakin ingin melanjutkan?`}
+                    confirmLabel="Unduh"
+                    cancelLabel="Batal"
+                    onConfirm={() => {
+                      const link = document.createElement("a");
+                      link.href = item.downloadHref!;
+                      link.setAttribute("download", "");
+                      link.setAttribute("target", "_blank");
+                      link.setAttribute("rel", "noreferrer");
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      setShowConfirm(false);
+                    }}
+                  />
+                </>
               ) : null}
             </div>
           ) : (

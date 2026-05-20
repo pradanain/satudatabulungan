@@ -1,101 +1,338 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import dynamic from "next/dynamic";
-import "leaflet/dist/leaflet.css";
-import bulunganDistricts from "@/lib/data/bulungan-districts.json";
+/**
+ * ChoroplethMap — Peta Choropleth Kabupaten Bulungan
+ *
+ * - Menggunakan GeoJSON polygon asli dari /geo/bulungan-kecamatan.geojson
+ * - TIDAK menggunakan rectangle, grid, atau kotak
+ * - Join dataset ke GeoJSON berdasarkan kode atau nama wilayah
+ * - Warna berdasarkan nilai data (skala biru)
+ */
 
-// Import Leaflet secara dinamis karena butuh akses window/DOM
-const MapContainer = dynamic(() => import("react-leaflet").then((mod) => mod.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import("react-leaflet").then((mod) => mod.TileLayer), { ssr: false });
-const GeoJSON = dynamic(() => import("react-leaflet").then((mod) => mod.GeoJSON), { ssr: false });
+import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  normalizeRegionName,
+  getGeoRegionCode,
+  getGeoRegionName,
+  getChoroplethColor,
+  formatNumber,
+  formatMetricLabel,
+} from "@/lib/utils/dataset-schema";
 
-type ChoroplethMapProps = {
-  data: any[]; // Array of objects from CSV/JSON
-  valueKey?: string; // Kolom yang ingin divisualisasikan (misal: "jumlah_penduduk")
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface RegionValue {
+  value: number;
+  regionName: string;
+}
+
+export interface ChoroplethMapProps {
+  /** Map dari regionKey → { value, regionName } */
+  valuesByRegion: Map<string, RegionValue>;
+  /** Label indikator aktif */
+  metricLabel?: string;
+  /** Label periode aktif */
+  periodLabel?: string;
+  /** Label satuan */
+  unitLabel?: string;
   className?: string;
-};
+}
 
-export default function ChoroplethMap({ data, valueKey, className }: ChoroplethMapProps) {
-  const [isMounted, setIsMounted] = useState(false);
+// ─── GeoJSON Feature type (minimal) ──────────────────────────────────────────
+
+interface GeoFeature {
+  type: "Feature";
+  properties: Record<string, unknown>;
+  geometry: {
+    type: string;
+    coordinates: unknown;
+  };
+}
+
+interface GeoFeatureCollection {
+  type: "FeatureCollection";
+  features: GeoFeature[];
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export default function ChoroplethMap({
+  valuesByRegion,
+  metricLabel,
+  periodLabel,
+  unitLabel,
+  className,
+}: ChoroplethMapProps) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const leafletMapRef = useRef<L.Map | null>(null);
+  const geoLayerRef = useRef<L.GeoJSON | null>(null);
+
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // Hitung skala nilai untuk warna
+  const allValues = [...valuesByRegion.values()].map((d) => d.value);
+  const minVal = allValues.length > 0 ? Math.min(...allValues) : 0;
+  const maxVal = allValues.length > 0 ? Math.max(...allValues) : 1;
+
+  // ── Helper join: cocokkan GeoJSON feature ke dataset ─────────────────────
+
+  const getMatchedValue = useCallback(
+    (feature: GeoFeature): RegionValue | null => {
+      // 1. Coba kode wilayah
+      const geoCode = getGeoRegionCode(feature);
+      if (geoCode) {
+        const hit = valuesByRegion.get(String(geoCode));
+        if (hit) return hit;
+      }
+
+      // 2. Coba nama wilayah (normalized)
+      const geoName = getGeoRegionName(feature);
+      if (geoName) {
+        const normGeo = normalizeRegionName(geoName);
+        for (const [key, val] of valuesByRegion) {
+          if (normalizeRegionName(key) === normGeo) return val;
+          if (normalizeRegionName(val.regionName) === normGeo) return val;
+        }
+      }
+
+      return null;
+    },
+    [valuesByRegion],
+  );
+
+  // ── Inisialisasi Leaflet ──────────────────────────────────────────────────
 
   useEffect(() => {
-    setIsMounted(true);
+    if (!mapRef.current || typeof window === "undefined") return;
+
+    let cancelled = false;
+
+    async function init() {
+      const L = (await import("leaflet")).default;
+      await import("leaflet/dist/leaflet.css");
+
+      if (cancelled || !mapRef.current) return;
+
+      // Buat map jika belum ada
+      if (!leafletMapRef.current) {
+        const map = L.map(mapRef.current, {
+          zoomControl: true,
+          attributionControl: true,
+          scrollWheelZoom: false,
+        });
+
+        L.tileLayer(
+          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          {
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18,
+          },
+        ).addTo(map);
+
+        leafletMapRef.current = map;
+      }
+
+      // Fetch GeoJSON dari public URL
+      let geojson: GeoFeatureCollection;
+      try {
+        const res = await fetch("/geo/bulungan-kecamatan.geojson");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        geojson = await res.json();
+      } catch (err) {
+        if (!cancelled) {
+          setStatus("error");
+          setErrorMsg("Data batas wilayah belum tersedia.");
+        }
+        return;
+      }
+
+      if (cancelled) return;
+
+      // Debug log
+      const matchCount = geojson.features.filter((f) => getMatchedValue(f) !== null).length;
+      const totalGeo = geojson.features.length;
+      console.debug(
+        `[ChoroplethMap] GeoJSON: ${totalGeo} fitur | Dataset join: ${matchCount} match | ${totalGeo - matchCount} unmatch`,
+      );
+
+      // Hapus layer lama
+      if (geoLayerRef.current) {
+        geoLayerRef.current.remove();
+      }
+
+      const map = leafletMapRef.current!;
+
+      // Buat layer GeoJSON baru
+      const geoLayer = L.geoJSON(geojson as unknown as GeoJSON.GeoJsonObject, {
+        style(feature) {
+          if (!feature) return {};
+          const matched = getMatchedValue(feature as GeoFeature);
+          const fillColor = matched
+            ? getChoroplethColor(matched.value, minVal, maxVal)
+            : "#e2e8f0";
+
+          return {
+            fillColor,
+            weight: 1.5,
+            opacity: 1,
+            color: "#ffffff",
+            fillOpacity: matched ? 0.65 : 0.35,
+          };
+        },
+        onEachFeature(feature, layer) {
+          if (!feature) return;
+          const matched = getMatchedValue(feature as GeoFeature);
+          const geoName =
+            getGeoRegionName(feature as GeoFeature) ?? "Wilayah";
+
+          const tooltip = matched
+            ? `<div style="font-family:system-ui,sans-serif;min-width:160px">
+                <p style="margin:0 0 4px;font-weight:700;font-size:13px">${geoName}</p>
+                ${metricLabel ? `<p style="margin:0 0 2px;font-size:11px;color:#6b7280">Indikator: ${metricLabel}</p>` : ""}
+                ${periodLabel ? `<p style="margin:0 0 2px;font-size:11px;color:#6b7280">Periode: ${periodLabel}</p>` : ""}
+                <p style="margin:0;font-size:13px;font-weight:600;color:#1d4ed8">
+                  ${formatNumber(matched.value)}${unitLabel ? " " + unitLabel : ""}
+                </p>
+              </div>`
+            : `<div style="font-family:system-ui,sans-serif">
+                <p style="margin:0 0 4px;font-weight:700;font-size:13px">${geoName}</p>
+                <p style="margin:0;font-size:11px;color:#9ca3af">Data tidak tersedia.</p>
+              </div>`;
+
+          layer.bindTooltip(tooltip, {
+            sticky: true,
+            opacity: 0.97,
+          });
+
+          // Hover effect
+          layer.on("mouseover", function (this: L.Layer & { setStyle?: (s: object) => void }) {
+            this.setStyle?.({
+              weight: 2.5,
+              color: "#1d4ed8",
+              fillOpacity: matched ? 0.8 : 0.5,
+            });
+          });
+          layer.on("mouseout", function (this: L.Layer & { setStyle?: (s: object) => void; options?: { style?: () => object }; feature?: GeoFeature }) {
+            geoLayer.resetStyle(layer as L.Path);
+          });
+        },
+      }).addTo(map);
+
+      geoLayerRef.current = geoLayer;
+
+      // fitBounds ke seluruh wilayah Bulungan
+      const bounds = geoLayer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [20, 20] });
+      }
+
+      // Pastikan ukuran map dihitung ulang (karena bisa muncul di tab tersembunyi)
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+
+      setStatus("ready");
+    }
+
+    init();
+
+    return () => {
+      cancelled = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Memetakan data dari dataset ke GeoJSON
-  const mapData = useMemo(() => {
-    if (!data || data.length === 0) return {};
-    
-    const lookup: Record<string, number> = {};
-    const targetKey = valueKey || Object.keys(data[0]).find(k => k.toLowerCase().includes("total") || k.toLowerCase().includes("jumlah") || typeof data[0][k] === "number");
+  // Update layer warna saat data berubah (tanpa reinisialisasi map)
+  useEffect(() => {
+    const layer = geoLayerRef.current;
+    if (!layer || status !== "ready") return;
 
-    if (!targetKey) return {};
-
-    data.forEach(row => {
-      // Cari nama kecamatan di kolom mana pun
-      const districtName = row.kecamatan || row.Kecamatan || row.wilayah || row.Wilayah || row.area || row.Area;
-      if (districtName) {
-        lookup[districtName.toLowerCase()] = Number(row[targetKey] || row.total || row.Total || 0);
-      }
+    layer.setStyle((feature) => {
+      if (!feature) return {};
+      const matched = getMatchedValue(feature as GeoFeature);
+      return {
+        fillColor: matched
+          ? getChoroplethColor(matched.value, minVal, maxVal)
+          : "#e2e8f0",
+        weight: 1.5,
+        opacity: 1,
+        color: "#ffffff",
+        fillOpacity: matched ? 0.65 : 0.35,
+      };
     });
 
-    return { lookup, targetKey };
-  }, [data, valueKey]);
+    // Update tooltip
+    layer.eachLayer((l) => {
+      const path = l as L.Path & { feature?: GeoFeature };
+      if (!path.feature) return;
+      const matched = getMatchedValue(path.feature);
+      const geoName = getGeoRegionName(path.feature) ?? "Wilayah";
 
-  if (!isMounted) return <div className="h-[400px] w-full bg-slate-100 animate-pulse rounded-xl" />;
+      const tooltip = matched
+        ? `<div style="font-family:system-ui,sans-serif;min-width:160px">
+            <p style="margin:0 0 4px;font-weight:700;font-size:13px">${geoName}</p>
+            ${metricLabel ? `<p style="margin:0 0 2px;font-size:11px;color:#6b7280">Indikator: ${metricLabel}</p>` : ""}
+            ${periodLabel ? `<p style="margin:0 0 2px;font-size:11px;color:#6b7280">Periode: ${periodLabel}</p>` : ""}
+            <p style="margin:0;font-size:13px;font-weight:600;color:#1d4ed8">
+              ${formatNumber(matched.value)}${unitLabel ? " " + unitLabel : ""}
+            </p>
+          </div>`
+        : `<div style="font-family:system-ui,sans-serif">
+            <p style="margin:0 0 4px;font-weight:700;font-size:13px">${geoName}</p>
+            <p style="margin:0;font-size:11px;color:#9ca3af">Data tidak tersedia.</p>
+          </div>`;
 
-  const onEachFeature = (feature: any, layer: any) => {
-    const name = feature.properties.name;
-    const value = mapData.lookup?.[name.toLowerCase()];
-    
-    layer.bindTooltip(
-      `<strong>${name}</strong><br/>${mapData.targetKey}: ${value?.toLocaleString() || "Data tidak tersedia"}`,
-      { sticky: true }
-    );
-  };
+      (l as L.Layer & { bindTooltip?: (content: string, opts?: object) => void }).bindTooltip?.(tooltip, { sticky: true, opacity: 0.97 });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valuesByRegion, minVal, maxVal, metricLabel, periodLabel, unitLabel, status]);
 
-  const style = (feature: any) => {
-    const name = feature.properties.name;
-    const value = mapData.lookup?.[name.toLowerCase()];
-    
-    // Logika warna (Choropleth)
-    const getColor = (v?: number) => {
-      if (!v) return "#cbd5e1"; // gray
-      if (v > 50000) return "#15803d"; // dark green
-      if (v > 20000) return "#22c55e"; // green
-      if (v > 10000) return "#86efac"; // light green
-      return "#dcfce7"; // very light green
+  // Invalidate size saat komponen visible
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      leafletMapRef.current?.invalidateSize();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+      }
     };
-
-    return {
-      fillColor: getColor(value),
-      weight: 2,
-      opacity: 1,
-      color: "white",
-      dashArray: "3",
-      fillOpacity: 0.7,
-    };
-  };
+  }, []);
 
   return (
     <div className={className}>
-      <MapContainer
-        center={[2.9, 117.3]} // Center Bulungan
-        zoom={9}
-        className="h-full w-full rounded-xl z-0"
-        scrollWheelZoom={false}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <GeoJSON 
-          data={bulunganDistricts as any} 
-          style={style} 
-          onEachFeature={onEachFeature}
-        />
-      </MapContainer>
+      {/* Peta */}
+      <div
+        ref={mapRef}
+        className="h-full w-full"
+        style={{ minHeight: "340px" }}
+        aria-label="Peta choropleth Kabupaten Bulungan"
+      />
+
+      {/* Loading overlay */}
+      {status === "loading" && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-slate-100/80 backdrop-blur-sm">
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-500" />
+            Memuat peta…
+          </div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {status === "error" && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-slate-50">
+          <p className="text-sm text-slate-500">{errorMsg}</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
 import { Loader2, Send } from "lucide-react";
 import { dataFormatOptions, requestPurposeOptions } from "@/lib/data/layanan-data";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ export function DataRequestForm({ }: DataRequestFormProps) {
   const [form, setForm] = useState<FormState>(initialState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionState, setSubmissionState] = useState<SubmissionState | null>(null);
+  const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
 
   const handleAgeChange = (value: string) => {
     // Only allow digits
@@ -87,8 +89,17 @@ export function DataRequestForm({ }: DataRequestFormProps) {
     setForm((current) => ({ ...current, requesterPhone: sanitizedValue }));
   };
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (event.currentTarget.checkValidity()) {
+      setShowConfirmSubmit(true);
+    } else {
+      event.currentTarget.reportValidity();
+    }
+  }
+
+  async function handleConfirmSubmit() {
+    setShowConfirmSubmit(false);
     setIsSubmitting(true);
     setSubmissionState(null);
 
@@ -144,7 +155,8 @@ export function DataRequestForm({ }: DataRequestFormProps) {
   );
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4" noValidate={false}>
+    <>
+      <form onSubmit={handleSubmit} className="grid gap-4" noValidate={false}>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1.5 text-sm font-semibold text-[#47413f]">
           <RequiredLabel>Nama Lengkap</RequiredLabel>
@@ -462,7 +474,18 @@ export function DataRequestForm({ }: DataRequestFormProps) {
           ) : null}
         </div>
       ) : null}
-    </form>
+      </form>
+
+      <ConfirmationDialog
+        open={showConfirmSubmit}
+        onOpenChange={setShowConfirmSubmit}
+        title="Kirim Permintaan Data?"
+        description="Apakah Anda yakin data yang Anda masukkan sudah benar? Permintaan akan langsung diteruskan ke Bappedalitbang/Walidata untuk diverifikasi."
+        confirmLabel="Ya, Kirim"
+        cancelLabel="Batal"
+        onConfirm={handleConfirmSubmit}
+      />
+    </>
   );
 }
 

@@ -125,6 +125,7 @@ function normalizeStatus(value?: string): DatasetStatus {
   const normalized = (value ?? "").trim().toLowerCase();
   if (normalized === "draft") return "Draft";
   if (normalized.includes("submit")) return "Submitted";
+  if (normalized.includes("review") || normalized.includes("pemeriksaan")) return "Under Review";
   if (normalized.includes("revision") || normalized.includes("revisi")) return "Need Revision";
   if (normalized.includes("approve") || normalized.includes("disetujui")) return "Approved";
   if (normalized.includes("archive")) return "Archived";

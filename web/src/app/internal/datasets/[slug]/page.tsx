@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getInternalDatasetBySlug, loadInternalPortalStore } from "@/lib/services/internal-store";
 import { requireInternalSession } from "@/lib/utils/internal-auth-server";
+import { hasPermission } from "@/lib/utils/internal-auth";
 import { formatIndonesianDate } from "@/lib/utils/formatters";
 import { InternalQualityScoreCard } from "@/components/internal/internal-quality-score-card";
 import { validateDatasetQuality } from "@/lib/utils/data-validator";
 import type { PortalDataset } from "@/lib/services/ckan-portal-api";
 import ChoroplethMap from "@/components/shared/choropleth-map";
+import { DatasetNotesSection } from "@/components/internal/dataset-notes-section";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +33,7 @@ export default async function InternalDatasetDetailPage({
     notFound();
   }
 
-  const canEdit = session.role === "admin" || session.role === "operator";
+  const canEdit = hasPermission(session, "dataset.edit_metadata") || hasPermission(session, "dataset.edit_draft_own_opd");
 
   return (
     <InternalShell session={session} activeKey="datasets">
@@ -100,6 +102,12 @@ export default async function InternalDatasetDetailPage({
               </div>
             </Card>
           )}
+          <DatasetNotesSection
+            slug={dataset.slug}
+            notes={dataset.notes || []}
+            session={session}
+            organizationId={dataset.organizationId}
+          />
         </div>
         
         <div className="space-y-4">
@@ -108,7 +116,7 @@ export default async function InternalDatasetDetailPage({
           <Card className="internal-surface border-transparent p-5 shadow-none">
             <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-muted)]">Pratinjau Geospasial</h3>
             <div className="mt-4 h-[300px] overflow-hidden rounded-xl border border-white/60 bg-slate-50">
-              <ChoroplethMap data={dataset.preview.rows || []} className="h-full w-full" />
+              <ChoroplethMap valuesByRegion={new Map()} className="h-full w-full" />
             </div>
             <p className="mt-3 text-[10px] leading-tight text-[var(--color-muted)]">
               Visualisasi otomatis berdasarkan kolom wilayah yang terdeteksi dalam dataset.

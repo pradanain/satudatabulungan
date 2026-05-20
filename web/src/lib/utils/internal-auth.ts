@@ -1,4 +1,227 @@
-import type { InternalNavKey, InternalRole, InternalSession } from "@/lib/types/internal";
+import type { InternalNavKey, InternalPermission, InternalRole, InternalSession } from "@/lib/types/internal";
+
+type LegacyRole = "admin" | "operator" | "operator_opd";
+
+export function normalizeInternalRole(role: string): InternalRole {
+  switch (role) {
+    case "admin":
+      return "sekretariat";
+    case "operator":
+    case "operator_opd":
+      return "produsen";
+    case "sekretariat":
+    case "pembina":
+    case "walidata":
+    case "produsen":
+      return role;
+    default:
+      return "produsen";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Action-based permission system
+// ---------------------------------------------------------------------------
+
+export const internalRolePermissions: Record<InternalRole, InternalPermission[]> = {
+  sekretariat: [
+    "dataset.view_all",
+    "dataset.view_own_opd",
+    "monitoring.view_all",
+    "monitoring.create_evaluation_note",
+    "monitoring.create_issue_note",
+    "monitoring.assign_follow_up",
+    "priority_data.view",
+    "priority_data.manage",
+    "forum.view",
+    "forum.manage",
+    "standard_data.view",
+    "master_data.view_topics",
+    "master_data.view_organizations",
+    "audit.view_all",
+    "notifications.view",
+    "profile.view",
+    "help.view",
+    "content.view_all",
+    "news.view",
+    "regulation.view",
+    "technical_guide.view",
+    "infographic.view_all",
+    "digital_publication.view_all",
+  ],
+  pembina: [
+    "dataset.view_all",
+    "dataset.view_own_opd",
+    "dataset.review",
+    "dataset.add_review_note",
+    "standard_data.view",
+    "standard_data.manage",
+    "standard_data.recommend",
+    "monitoring.view_all",
+    "monitoring.create_evaluation_note",
+    "monitoring.create_issue_note",
+    "priority_data.view",
+    "forum.view",
+    "master_data.view_topics",
+    "master_data.view_organizations",
+    "audit.view_all",
+    "notifications.view",
+    "profile.view",
+    "help.view",
+    "content.view_all",
+    "news.view",
+    "regulation.view",
+    "technical_guide.view",
+    "infographic.view_all",
+    "digital_publication.view_all",
+  ],
+  walidata: [
+    "dataset.view_all",
+    "dataset.view_own_opd",
+    "dataset.create_own_opd",
+    "dataset.edit_draft_own_opd",
+    "dataset.upload_file",
+    "dataset.edit_metadata",
+    "dataset.submit",
+    "dataset.review",
+    "dataset.add_review_note",
+    "dataset.request_revision",
+    "dataset.approve",
+    "dataset.publish",
+    "dataset.unpublish",
+    "dataset.archive",
+    "dataset.restore_from_archive",
+    "monitoring.view_all",
+    "monitoring.create_evaluation_note",
+    "monitoring.create_issue_note",
+    "monitoring.assign_follow_up",
+    "priority_data.view",
+    "priority_data.manage",
+    "forum.view",
+    "standard_data.view",
+    "master_data.view_topics",
+    "master_data.manage_topics",
+    "master_data.view_organizations",
+    "master_data.manage_organizations",
+    "portal.manage_settings",
+    "portal.manage_integrations",
+    "portal.manage_users",
+    "audit.view_all",
+    "notifications.view",
+    "profile.view",
+    "help.view",
+    "content.view_all",
+    "content.create_own_opd",
+    "content.edit_own_draft",
+    "content.upload_file",
+    "content.submit",
+    "content.review",
+    "content.approve",
+    "content.publish",
+    "content.unpublish",
+    "content.archive",
+    "content.manage_all",
+    "news.view",
+    "news.manage",
+    "regulation.view",
+    "regulation.manage",
+    "technical_guide.view",
+    "technical_guide.manage",
+    "infographic.view_all",
+    "infographic.view_own_opd",
+    "infographic.create_own_opd",
+    "infographic.manage_all",
+    "digital_publication.view_all",
+    "digital_publication.view_own_opd",
+    "digital_publication.create_own_opd",
+    "digital_publication.manage_all",
+  ],
+  produsen: [
+    "dataset.view_own_opd",
+    "dataset.create_own_opd",
+    "dataset.edit_draft_own_opd",
+    "dataset.upload_file",
+    "dataset.edit_metadata",
+    "dataset.submit",
+    "monitoring.view_own_opd",
+    "priority_data.view",
+    "priority_data.propose",
+    "forum.view",
+    "standard_data.view",
+    "audit.view_own",
+    "notifications.view",
+    "profile.view",
+    "help.view",
+    "content.view_own_opd",
+    "content.create_own_opd",
+    "content.edit_own_draft",
+    "content.upload_file",
+    "content.submit",
+    "infographic.view_own_opd",
+    "infographic.create_own_opd",
+    "digital_publication.view_own_opd",
+    "digital_publication.create_own_opd",
+  ],
+};
+
+const _permissionCache = new Map<InternalRole, ReadonlySet<InternalPermission>>();
+
+function getPermissionSet(role: InternalRole): ReadonlySet<InternalPermission> {
+  let cached = _permissionCache.get(role);
+  if (!cached) {
+    cached = new Set(internalRolePermissions[role]);
+    _permissionCache.set(role, cached);
+  }
+  return cached;
+}
+
+/** Check if a role has a specific permission */
+export function hasPermission(
+  sessionOrRole: InternalSession | InternalRole,
+  permission: InternalPermission,
+): boolean {
+  const role = typeof sessionOrRole === "string" ? sessionOrRole : sessionOrRole.role;
+  return getPermissionSet(role).has(permission);
+}
+
+/** Get the full permission list for a role */
+export function getRolePermissions(role: InternalRole): InternalPermission[] {
+  return [...internalRolePermissions[role]];
+}
+
+/** Get the effective permissions for a session (role-based) */
+export function getUserEffectivePermissions(session: InternalSession): InternalPermission[] {
+  return getRolePermissions(session.role);
+}
+
+/** Legacy permission string → new permission mapping for backward compatibility */
+export function normalizeLegacyPermission(legacy: string): InternalPermission[] {
+  switch (legacy) {
+    case "full_access":
+      return [];
+    case "manage_users":
+      return ["portal.manage_users"];
+    case "manage_settings":
+      return ["portal.manage_settings"];
+    case "publish_dataset":
+      return ["dataset.publish"];
+    case "review_dataset":
+      return ["dataset.review"];
+    case "monitor_audit":
+      return ["audit.view_all", "monitoring.view_all"];
+    case "manage_own_dataset":
+      return ["dataset.create_own_opd", "dataset.edit_draft_own_opd", "dataset.upload_file", "dataset.edit_metadata"];
+    case "submit_review":
+      return ["dataset.submit"];
+    case "coordinate":
+      return ["monitoring.create_evaluation_note", "monitoring.assign_follow_up"];
+    case "view_all_datasets":
+      return ["dataset.view_all"];
+    default:
+      return [];
+  }
+}
+
 
 export const INTERNAL_SESSION_COOKIE = "satudata_internal_session";
 const INTERNAL_SESSION_TOKEN_VERSION = "v1";
@@ -7,42 +230,52 @@ const DEFAULT_DEV_INTERNAL_SESSION_SECRET = "satudata-dev-internal-session-secre
 export const internalNavLabels: Record<InternalNavKey, string> = {
   dashboard: "Dashboard",
   datasets: "Dataset Internal",
-  review: "Review & Approval",
-  monitoring: "Monitoring & Audit",
-  users: "Users & Roles",
+  review: "Verifikasi Data",
+  monitoring: "Monitoring",
+  users: "Users",
   archive: "Arsip Dataset",
-  organizations: "Organisasi / OPD",
-  topics: "Topik & Referensi",
+  organizations: "OPD",
+  topics: "Topik Dataset",
   notifications: "Notifikasi & Aktivitas",
   workflowHistory: "Riwayat Workflow",
   settings: "Pengaturan Portal",
   profile: "Profil",
   help: "Bantuan / FAQ",
-  integrations: "Integrasi",
+  integrations: "Integrasi & API",
+  publications: "Publikasi & Konten",
 };
 
 export const internalRoleLabels: Record<InternalRole, string> = {
-  admin: "Admin (Bappedalitbang / Sekretariat)",
-  pembina: "Pembina Data (BPS)",
-  walidata: "Walidata (DKIP)",
-  operator: "Operator (OPD)",
+  sekretariat: "Sekretariat",
+  pembina: "Pembina",
+  walidata: "Walidata",
+  produsen: "Produsen",
 };
 
+export function getDisplayOrganizationName(session: InternalSession): string {
+  if (session.role === "sekretariat") return "Bappeda Litbang";
+  if (session.role === "walidata") return "DKIP";
+  if (session.role === "pembina") return "BPS Bulungan";
+  // For produsen, it should be the Perangkat Daerah name
+  return session.organizationName || "Perangkat Daerah";
+}
+
 export const internalNavAccess: Record<InternalNavKey, InternalRole[]> = {
-  dashboard: ["admin", "pembina", "walidata", "operator"],
-  datasets: ["admin", "pembina", "walidata", "operator"],
-  review: ["admin", "pembina", "walidata", "operator"],
-  monitoring: ["admin", "pembina", "walidata"],
-  users: ["admin"],
-  archive: ["admin", "pembina", "walidata"],
-  organizations: ["admin", "pembina", "walidata"],
-  topics: ["admin", "pembina", "walidata"],
-  notifications: ["admin", "pembina", "walidata", "operator"],
-  workflowHistory: ["admin", "pembina", "walidata"],
-  settings: ["admin"],
-  profile: ["admin", "pembina", "walidata", "operator"],
-  help: ["admin", "pembina", "walidata", "operator"],
-  integrations: ["admin", "walidata"],
+  dashboard: ["sekretariat", "pembina", "walidata", "produsen"],
+  datasets: ["sekretariat", "pembina", "walidata", "produsen"],
+  review: ["sekretariat", "pembina", "walidata", "produsen"],
+  monitoring: ["sekretariat", "pembina", "walidata"],
+  users: ["walidata"],
+  archive: ["sekretariat", "pembina", "walidata"],
+  organizations: ["sekretariat", "pembina", "walidata"],
+  topics: ["sekretariat", "pembina", "walidata", "produsen"],
+  notifications: ["sekretariat", "pembina", "walidata", "produsen"],
+  workflowHistory: ["sekretariat", "pembina", "walidata"],
+  settings: ["walidata"],
+  profile: ["sekretariat", "pembina", "walidata", "produsen"],
+  help: ["sekretariat", "pembina", "walidata", "produsen"],
+  integrations: ["walidata"],
+  publications: ["sekretariat", "pembina", "walidata", "produsen"],
 };
 
 const pathMapping: Array<{ prefix: string; navKey: InternalNavKey }> = [
@@ -60,6 +293,7 @@ const pathMapping: Array<{ prefix: string; navKey: InternalNavKey }> = [
   { prefix: "/internal/profile", navKey: "profile" },
   { prefix: "/internal/help", navKey: "help" },
   { prefix: "/internal/integrations", navKey: "integrations" },
+  { prefix: "/internal/publications", navKey: "publications" },
 ];
 
 const apiPathMapping: Array<{ prefix: string; navKey: InternalNavKey }> = [
@@ -197,10 +431,12 @@ export async function decodeInternalSession(value: string | null | undefined): P
       return null;
     }
 
-    const parsed = JSON.parse(bytesToString(fromBase64UrlToBytes(payload))) as unknown;
+    const parsed = JSON.parse(bytesToString(fromBase64UrlToBytes(payload))) as any;
     if (!isValidInternalSessionCandidate(parsed)) {
       return null;
     }
+
+    parsed.role = normalizeInternalRole(parsed.role as string);
 
     return parsed;
   } catch {

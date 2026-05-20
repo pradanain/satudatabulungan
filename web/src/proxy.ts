@@ -43,6 +43,8 @@ export async function proxy(request: NextRequest) {
   }
 
   const session = await decodeInternalSession(request.cookies.get(INTERNAL_SESSION_COOKIE)?.value);
+  const navKey = resolveInternalNavKey(pathname);
+
   if (!session) {
     if (isInternalApi) {
       return buildApiAuthError(401);
@@ -51,7 +53,6 @@ export async function proxy(request: NextRequest) {
     return redirectToLogin(request);
   }
 
-  const navKey = resolveInternalNavKey(pathname);
   if (navKey && !canAccessNav(session.role, navKey)) {
     if (isInternalApi) {
       return buildApiAuthError(403);

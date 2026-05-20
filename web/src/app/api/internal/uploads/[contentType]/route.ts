@@ -3,6 +3,7 @@ import { getOrganizationById, uploadBook, uploadDataset, uploadInfographic } fro
 import { inferInternalApiErrorStatus } from "@/lib/utils/internal-api-response";
 import { sanitizeStoredText } from "@/lib/utils/input-sanitizer";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
+import { hasPermission } from "@/lib/utils/internal-auth";
 
 type UploadType = "dataset" | "infografis" | "publikasi";
 
@@ -37,12 +38,7 @@ function ensure(value: unknown, key: string): string {
 }
 
 function checkUploadPermission(uploadType: UploadType, role: string): boolean {
-  if (role === "admin") return true;
-  if (role === "walidata") return true;
-  if (role === "operator") {
-    return uploadType === "dataset" || uploadType === "infografis" || uploadType === "publikasi";
-  }
-
+  if (hasPermission(role as any, "dataset.upload_file")) return true;
   return false;
 }
 
@@ -77,9 +73,9 @@ export async function POST(
     const payload = (await request.json()) as UploadPayload;
 
     const ownerOrgId = ensure(payload.ownerOrgId, "ownerOrgId");
-    if (session.role === "operator" && session.organizationId !== ownerOrgId) {
+    if (!hasPermission(session, "dataset.view_all") && session.organizationId !== ownerOrgId) {
       return NextResponse.json(
-        { success: false, error: "Operator hanya boleh upload untuk organisasi sendiri." },
+        { success: false, error: "Anda hanya boleh upload untuk organisasi sendiri." },
         { status: 403 },
       );
     }

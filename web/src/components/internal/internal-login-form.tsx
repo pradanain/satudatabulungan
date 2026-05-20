@@ -10,22 +10,22 @@ import { Eye, EyeOff } from "lucide-react";
 
 const demoAccounts = [
   {
-    label: "Admin",
-    username: "admin",
-    password: "bulungan123",
-    note: "Akses penuh ke seluruh modul, users, settings, dan monitoring.",
+    label: "Sekretariat",
+    username: "sekretariat.bappeda",
+    password: "bulunganbisa",
+    note: "Koordinasi, monitoring, dan evaluasi data lintas OPD.",
   },
   {
     label: "Walidata",
-    username: "walidata",
-    password: "walidata123",
-    note: "Fokus review metadata, approval, publikasi, dan monitoring kualitas.",
+    username: "walidata.dkip",
+    password: "bulunganbisa",
+    note: "Validasi, approval, publikasi, kelola users, settings, dan integrasi.",
   },
   {
-    label: "Operator",
+    label: "Produsen",
     username: "operator.dinkes",
-    password: "operator123",
-    note: "Fokus draft, edit, submit ulang, dan melihat notifikasi OPD.",
+    password: "bulunganbisa",
+    note: "Input data OPD, draft dataset, submit review, dan kelola resource.",
   },
 ];
 
@@ -33,8 +33,8 @@ export function InternalLoginForm() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [form, setForm] = useState({
-    username: "admin@bulungan.go.id",
-    password: "AdminBulungan#2026",
+    username: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -61,10 +61,7 @@ export function InternalLoginForm() {
       return;
     }
 
-    startTransition(() => {
-      router.push("/internal/dashboard");
-      router.refresh();
-    });
+    window.location.href = "/internal/dashboard";
   }
 
   return (

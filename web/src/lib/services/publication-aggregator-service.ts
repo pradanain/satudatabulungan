@@ -95,11 +95,10 @@ function formatInfografisTitle(title: string): string {
   return formatted.trim();
 }
 
+import { loadInternalPortalStore } from "@/lib/services/internal-store";
+
 export async function getCombinedBukuDigitalPublications(): Promise<PublicationCatalogItem[]> {
-  const [bappedaItems, ckanBooks] = await Promise.all([
-    getBappedaDigitalPublications().catch(() => []),
-    getBooks().catch(() => []),
-  ]);
+  const bappedaItems = await getBappedaDigitalPublications().catch(() => []);
 
   const fromBappeda: PublicationCatalogItem[] = bappedaItems.map((item) => ({
     id: `bappeda-${item.id}`,
@@ -112,66 +111,62 @@ export async function getCombinedBukuDigitalPublications(): Promise<PublicationC
     lastUpdated: item.publishedDate,
     href: item.viewUrl,
     hrefLabel: "Lihat Dokumen",
-    downloadHref: item.viewUrl, // Gunakan link langsung (viewUrl) karena count-download diblokir Turnstile
+    downloadHref: item.viewUrl,
     downloadLabel: "Unduh Dokumen",
     openInNewTab: true,
     imageSrc: undefined,
   }));
 
-  const fromCkan: PublicationCatalogItem[] = ckanBooks
-    .filter((item) => item.status.trim().toLowerCase() === "published")
-    .filter((item) => {
-      // Filter out mock seed data that uses dummy 'ckan-file-' resources
-      const resourceUrl = item.resources[0]?.url || "";
-      return !resourceUrl.includes("ckan-file-");
-    })
-    .map((item) => ({
-      id: `ckan-${item.id}`,
-      title: item.title,
-      summary:
-        item.summary || item.description || "Konten publikasi tambahan dari upload operator internal (CKAN).",
-      organization: normalizeOrganizationName(item.organizationName),
-      lastUpdated: item.metadataModified.slice(0, 10),
-      href: `/dataset/${item.slug}`,
-      hrefLabel: "Lihat Dokumen",
-      downloadHref:
-        item.resources.find((resource) => resource.format.toUpperCase().includes("PDF"))?.url ||
-        item.resources[0]?.url,
-      downloadLabel: "Unduh Dokumen",
-      openInNewTab: false,
-      imageSrc: undefined,
-    }));
+  let fromInternal: PublicationCatalogItem[] = [];
+  try {
+    const store = await loadInternalPortalStore();
+    fromInternal = (store.publications || [])
+      .filter((pub) => pub.type === "digital_publication" && pub.status === "Published")
+      .map((pub) => ({
+        id: `internal-${pub.id}`,
+        title: pub.title,
+        summary: pub.description || "Publikasi Digital Satu Data Bulungan",
+        organization: pub.organizationName,
+        lastUpdated: pub.publishedAt || pub.updatedAt || "1970-01-01",
+        href: pub.fileUrl || "#",
+        hrefLabel: "Lihat Dokumen",
+        downloadHref: pub.fileUrl || "#",
+        downloadLabel: "Unduh Dokumen",
+        openInNewTab: true,
+        imageSrc: pub.imageUrl || undefined,
+      }));
+  } catch {
+    // Ignore
+  }
 
-  return dedupeByTitle([...fromBappeda, ...fromCkan]);
+  return dedupeByTitle([...fromBappeda, ...fromInternal]);
 }
 
+
 export async function getCombinedInfografisPublications(): Promise<PublicationCatalogItem[]> {
-  const [liveInfografis, ckanInfografis] = await Promise.all([
-    getInfografisApiPayload({
+  const liveInfografis = await getInfografisApiPayload({
+    page: 1,
+    limit: 500,
+    source: "live",
+  }).catch(() => ({
+    success: true as const,
+    data: [],
+    meta: {
       page: 1,
       limit: 500,
-      source: "live",
-    }).catch(() => ({
-      success: true as const,
-      data: [],
-      meta: {
-        page: 1,
-        limit: 500,
-        total: 0,
-        hasNextPage: false,
-        sourceUsed: "html_scrape" as const,
-        externalSource: "https://diskominfo.bulungan.go.id/wp/infografis/",
-      },
-    })),
-    getInfographics().catch(() => []),
-  ]);
+      total: 0,
+      hasNextPage: false,
+      sourceUsed: "html_scrape" as const,
+      externalSource: "https://diskominfo.bulungan.go.id/wp/infografis/",
+    },
+  }));
 
   const fromDkipLive: PublicationCatalogItem[] = liveInfografis.data
     .filter((item) => !String(item.id).startsWith("mock-"))
     .map((item) => ({
     id: `dkip-live-${item.id}`,
     title: formatInfografisTitle(item.title),
-    summary: "Sumber DKIP Bulungan (live).",
+    summary: "",
     organization: DKIP_ORGANIZATION_NAME,
     lastUpdated: item.publishedDate?.slice(0, 10) ?? "1970-01-01",
     href: item.postUrl,
@@ -183,46 +178,35 @@ export async function getCombinedInfografisPublications(): Promise<PublicationCa
     ),
   }));
 
-  const fromCkan: PublicationCatalogItem[] = ckanInfografis
-    .filter((item) => item.status.trim().toLowerCase() === "published")
-    .filter((item) => {
-      // Filter out mock seed data that uses invalid dummy image URLs
-      const imgCandidate = item.extras?.thumbnail_url || item.extras?.imageUrl || "";
-      return !String(imgCandidate).includes("uploads/infografis-");
-    })
-    .map((item) => {
-      const resources = item.resources.map((resource) => ({
-        url: resource.url,
-        format: resource.format,
-      }));
-      const imageCandidate = pickInfographicImageFromCkanResources(resources) || item.extras.thumbnail_url || item.extras.imageUrl;
-      const firstResourceUrl = resources[0]?.url;
-      const href = item.extras.post_url || firstResourceUrl || `/dataset/${item.slug}`;
-      const rawSummary = item.summary || item.description || "Konten infografis tambahan dari upload operator internal (CKAN).";
+  let fromInternal: PublicationCatalogItem[] = [];
+  try {
+    const store = await loadInternalPortalStore();
+    fromInternal = (store.publications || [])
+      .filter((pub) => pub.type === "infographic" && pub.status === "Published")
+      .map((pub) => {
+        const rawSummary = pub.description || "Infografis Satu Data Bulungan.";
+        const formattedTitle = formatInfografisTitle(pub.title);
 
-      const formattedTitle = formatInfografisTitle(item.title);
-      let cleanSummary = rawSummary.replace(/\n*\s*Sumber:[\s\S]*$/i, "").trim();
-      if (item.title) {
-        cleanSummary = cleanSummary.replace(item.title, formattedTitle);
-      }
+        return {
+          id: `internal-infografis-${pub.id}`,
+          title: formattedTitle,
+          summary: rawSummary,
+          organization: pub.organizationName,
+          lastUpdated: pub.publishedAt || pub.updatedAt || "1970-01-01",
+          href: pub.fileUrl || pub.imageUrl || "#",
+          hrefLabel: "Buka Sumber",
+          openInNewTab: true,
+          imageSrc: normalizePublicationImageSrc(
+            pub.imageUrl || "",
+            DEFAULT_PUBLICATION_IMAGE_SRC,
+          ),
+        } satisfies PublicationCatalogItem;
+      });
+  } catch {
+    // Ignore
+  }
 
-      return {
-        id: `ckan-infografis-${item.id}`,
-        title: formattedTitle,
-        summary: cleanSummary,
-        organization: normalizeOrganizationName(item.organizationName),
-        lastUpdated: item.extras.published_date_text || item.metadataModified.slice(0, 10),
-        href,
-        hrefLabel: "Buka Sumber",
-        openInNewTab: isAbsoluteHttpUrl(href),
-        imageSrc: normalizePublicationImageSrc(
-          imageCandidate,
-          DEFAULT_PUBLICATION_IMAGE_SRC,
-        ),
-      } satisfies PublicationCatalogItem;
-    });
-
-  return dedupeByTitle([...fromDkipLive, ...fromCkan]).sort((a, b) => {
+  return dedupeByTitle([...fromDkipLive, ...fromInternal]).sort((a, b) => {
     return parseIndonesianDateText(b.lastUpdated) - parseIndonesianDateText(a.lastUpdated);
   });
 }

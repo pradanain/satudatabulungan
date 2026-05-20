@@ -44,7 +44,8 @@ export async function PATCH(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Gagal menyimpan pengaturan portal.";
-    const status = message.includes("Hanya admin") ? 403 : 500;
+    const isPermissionDenied = message.toLowerCase().includes("hanya walidata") || message.toLowerCase().includes("tidak memiliki");
+    const status = isPermissionDenied ? 403 : 500;
     return NextResponse.json(
       {
         success: false,

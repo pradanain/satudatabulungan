@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Activity, ClipboardCheck, Database, Zap } from "lucide-react";
+import { Activity, AlertTriangle, ArrowRight, CheckCircle2, ClipboardCheck, Database, FileText, Inbox } from "lucide-react";
 import { InternalPageHeader } from "@/components/internal/internal-page-header";
 import { InternalShell } from "@/components/internal/internal-shell";
 import { InternalStatusBadge } from "@/components/internal/internal-status-badge";
@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getDashboard, getDatasets } from "@/lib/services/ckan-portal-api";
 import { requireInternalSession } from "@/lib/utils/internal-auth-server";
-import { formatCompactNumber, formatIndonesianDate } from "@/lib/utils/formatters";
-import { validateDatasetQuality } from "@/lib/utils/data-validator";
+import { hasPermission } from "@/lib/utils/internal-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -23,144 +22,189 @@ export default async function InternalDashboardPage() {
       organizationCount: 0,
       contentCounts: { dataset: 0, infografis: 0, publikasi: 0 },
     })),
-    getDatasets().catch(() => []),
+    getDatasets({ contentType: "dataset" }).catch(() => []),
   ]);
 
   const scopedDatasets =
-    session.role === "admin" || session.role === "walidata"
+    hasPermission(session, "dataset.view_all")
       ? datasets
       : datasets.filter((item) => item.organizationId === session.organizationId);
 
-  // Kalkulasi Skor Kualitas Riil
-  const qualityScores = scopedDatasets.map(ds => validateDatasetQuality(ds).score);
-  const avgQuality = qualityScores.length 
-    ? Math.round(qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length) 
-    : 0;
+  const needRevisionDatasets = scopedDatasets.filter(ds => ds.status === "Need Revision");
+  const submittedDatasets = scopedDatasets.filter(ds => ds.status === "Submitted");
+  const underReviewDatasets = scopedDatasets.filter(ds => ds.status === "Under Review");
+  const approvedDatasets = scopedDatasets.filter(ds => ds.status === "Approved");
+  const publishedDatasets = scopedDatasets.filter(ds => ds.status.toLowerCase() === "published");
+
+  const hasData = scopedDatasets.length > 0;
+
+  // Tugas Prioritas
+  let prioritasDatasets: Array<typeof scopedDatasets[number] & { alasan: string; cta: string; href: string }> = [];
+  if (hasPermission(session, "dataset.review")) {
+    const reviewQueue = [...submittedDatasets, ...underReviewDatasets];
+    prioritasDatasets = reviewQueue.slice(0, 5).map(ds => ({
+      ...ds,
+      alasan: ds.status === "Submitted" ? "Menunggu pemeriksaan Anda" : "Sedang dalam pemeriksaan",
+      cta: ds.status === "Submitted" ? "Mulai Pemeriksaan" : "Lanjutkan Pemeriksaan",
+      href: `/internal/workflow`
+    }));
+  } else {
+    prioritasDatasets = (needRevisionDatasets as typeof scopedDatasets).slice(0, 5).map(ds => ({
+      ...ds,
+      alasan: "Dikembalikan dengan catatan",
+      cta: "Perbaiki Dataset",
+      href: `/internal/datasets/${ds.slug}`
+    }));
+  }
 
   return (
     <InternalShell session={session} activeKey="dashboard">
       <InternalPageHeader
-        title={
-          session.role === "admin"
-            ? "Dashboard Admin"
-            : session.role === "walidata"
-              ? "Dashboard Walidata"
-              : "Dashboard Operator OPD"
-        }
-        description={
-          session.role === "admin"
-            ? "Pantau operasional portal, publikasi konten, serta akun dan role lintas organisasi dari backend CKAN."
-            : session.role === "walidata"
-              ? "Fokus pada validasi, kurasi, dan publikasi lintas OPD sesuai peran Walidata."
-              : "Kelola dataset organisasi sendiri dan pantau progres publikasi dari backend CKAN."
-        }
-        badges={
-          <>
-            <Badge variant="outline">{formatCompactNumber(dashboard.visibleDatasetCount)} dataset terlihat</Badge>
-            <Badge variant="outline">{dashboard.contentCounts.infografis} infografis</Badge>
-            <Badge variant="outline">{dashboard.contentCounts.publikasi} publikasi</Badge>
-          </>
-        }
-        actions={
-          <>
-            <Button asChild className="rounded-full px-5">
-              <Link href="/internal/datasets/new">Tambah Draft Dataset</Link>
-            </Button>
-            <Button asChild variant="secondary" className="rounded-full px-5">
-              <Link href="/internal/workflow">Buka Review Workflow</Link>
-            </Button>
-            <Button asChild variant="secondary" className="rounded-full px-5">
-              <Link href="/internal/uploads">Upload Konten</Link>
-            </Button>
-          </>
-        }
+        title="Dashboard"
+        description="Ringkasan status dataset dan aktivitas portal internal Satu Data Kabupaten Bulungan."
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="group relative overflow-hidden border-transparent bg-gradient-to-br from-white to-[#f5f8ff] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_8px_30px_rgba(58,110,190,0.08)]">
-          <div className="absolute -right-2 -top-2 size-20 text-[#3a6ebe]/5 transition-transform group-hover:scale-110">
-            <Database className="size-full" />
-          </div>
-          <p className="m-0 text-sm font-bold uppercase tracking-wider text-[#3a6ebe]/70">Dataset Terkelola</p>
-          <p className="mb-0 mt-2 text-4xl font-extrabold tracking-tight text-[var(--color-text)]">{formatCompactNumber(dashboard.visibleDatasetCount)}</p>
-        </Card>
-
-        <Card className="group relative overflow-hidden border-transparent bg-gradient-to-br from-white to-[#fff9f2] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_8px_30px_rgba(213,133,45,0.08)]">
-          <div className="absolute -right-2 -top-2 size-20 text-[#d5852d]/5 transition-transform group-hover:scale-110">
-            <ClipboardCheck className="size-full" />
-          </div>
-          <p className="m-0 text-sm font-bold uppercase tracking-wider text-[#d5852d]/70">Perlu Review</p>
-          <p className="mb-0 mt-2 text-4xl font-extrabold tracking-tight text-[var(--color-text)]">{formatCompactNumber(dashboard.reviewQueueCount)}</p>
-        </Card>
-
-        <Card className="group relative overflow-hidden border-transparent bg-gradient-to-br from-white to-[#f3fbf7] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_8px_30px_rgba(49,148,106,0.08)]">
-          <div className="absolute -right-2 -top-2 size-20 text-[#31946a]/5 transition-transform group-hover:scale-110">
-            <Zap className="size-full" />
-          </div>
-          <p className="m-0 text-sm font-bold uppercase tracking-wider text-[#31946a]/70">Sudah Publish</p>
-          <p className="mb-0 mt-2 text-4xl font-extrabold tracking-tight text-[var(--color-text)]">{formatCompactNumber(dashboard.publishedCount)}</p>
-        </Card>
-
-        {session.role !== "operator" && (
-          <Card className="group relative overflow-hidden border-transparent bg-gradient-to-br from-white to-[#f8f5ff] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all hover:shadow-[0_8px_30px_rgba(117,85,173,0.08)]">
-            <div className="absolute -right-2 -top-2 size-20 text-[#7555ad]/5 transition-transform group-hover:scale-110">
-              <Activity className="size-full" />
+      {/* KPI Summary Cards */}
+      {hasData ? (
+        <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <Card className="p-4 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <Database className="size-4" />
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Total Dataset</p>
             </div>
-            <p className="m-0 text-sm font-bold uppercase tracking-wider text-[#7555ad]/70">Quality Score</p>
-            <p className="mb-0 mt-2 text-4xl font-extrabold tracking-tight text-[var(--color-text)]">{avgQuality}%</p>
+            <p className="text-3xl font-extrabold text-[var(--color-text)]">{scopedDatasets.length}</p>
+            <p className="text-xs text-[var(--color-muted)] mt-1">Dataset dalam cakupan Anda</p>
           </Card>
-        )}
-      </section>
-
-      <section>
-        <Card className="overflow-hidden border-transparent bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-          <div className="flex items-center justify-between border-b border-[var(--color-border)] bg-gradient-to-r from-white to-[var(--color-surface-soft)]/30 px-5 py-5">
-            <div>
-              <h2 className="m-0 text-xl font-bold tracking-tight">Prioritas Dataset</h2>
-              <p className="mb-0 mt-1 text-sm text-[var(--color-muted)]">
-                Daftar singkat dataset backend CKAN yang paling baru diperbarui.
-              </p>
+          
+          <Card className="p-4 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <ClipboardCheck className="size-4" />
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Menunggu Verifikasi</p>
             </div>
-            <Button asChild variant="secondary" size="sm" className="rounded-full bg-white shadow-sm hover:shadow-md">
-              <Link href="/internal/datasets">Lihat Semua</Link>
-            </Button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-[var(--color-surface-soft)]/50 text-left text-[var(--color-muted)]">
-                <tr>
-                  <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px]">Dataset</th>
-                  <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px]">Status</th>
-                  <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px]">Tipe</th>
-                  <th className="px-6 py-4 font-bold uppercase tracking-wider text-[11px]">Terakhir Update</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--color-border)]">
-                {scopedDatasets.slice(0, 8).map((dataset) => (
-                  <tr key={dataset.slug} className="group transition-colors hover:bg-[var(--color-surface-soft)]/30">
-                    <td className="px-6 py-4">
-                      <Link href={`/internal/datasets/${dataset.slug}`} className="font-bold text-[var(--color-text)] transition-colors group-hover:text-[var(--color-primary)]">
-                        {dataset.title}
-                      </Link>
-                      <p className="mb-0 mt-1 text-xs font-medium text-[var(--color-muted)]">{dataset.organizationName}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <InternalStatusBadge status={dataset.status as any} />
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center rounded-md bg-[var(--color-surface-soft)] px-2 py-1 text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">
-                        {dataset.contentType}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-[var(--color-muted)]">{formatIndonesianDate(dataset.metadataModified)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <p className="text-3xl font-extrabold text-[var(--color-text)]">{submittedDatasets.length + underReviewDatasets.length}</p>
+            <p className="text-xs text-[var(--color-muted)] mt-1">Diajukan + sedang diperiksa</p>
+          </Card>
+
+          <Card className="p-4 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                <AlertTriangle className="size-4" />
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Perlu Revisi</p>
+            </div>
+            <p className="text-3xl font-extrabold text-[var(--color-text)]">{needRevisionDatasets.length}</p>
+            <p className="text-xs text-[var(--color-muted)] mt-1">Dikembalikan untuk perbaikan</p>
+          </Card>
+
+          <Card className="p-4 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <CheckCircle2 className="size-4" />
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">Dipublikasikan</p>
+            </div>
+            <p className="text-3xl font-extrabold text-[var(--color-text)]">{publishedDatasets.length}</p>
+            <p className="text-xs text-[var(--color-muted)] mt-1">Tersedia di portal publik</p>
+          </Card>
+        </section>
+      ) : (
+        <Card className="p-8 shadow-sm text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <Inbox className="size-7" />
+            </div>
+            <h3 className="text-lg font-bold text-[var(--color-text)]">Belum Ada Dataset</h3>
+            <p className="text-sm text-[var(--color-muted)] max-w-md">
+              Data statistik akan muncul setelah dataset mulai dikelola melalui portal internal. Mulai dengan menambahkan dataset pertama Anda.
+            </p>
           </div>
         </Card>
-      </section>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        {/* Tugas Prioritas Hari Ini */}
+        <section>
+          <Card className="flex h-full flex-col overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
+              <h2 className="text-lg font-bold">Tugas Prioritas</h2>
+              <Badge variant="secondary" className="font-semibold">{prioritasDatasets.length} Tugas</Badge>
+            </div>
+            <div className="flex-1 divide-y divide-[var(--color-border)] overflow-y-auto">
+              {prioritasDatasets.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-40 text-center px-4">
+                  <CheckCircle2 className="size-8 text-emerald-400 mb-2" />
+                  <p className="text-sm font-medium text-[var(--color-text)]">Tidak ada tugas prioritas</p>
+                  <p className="text-xs text-[var(--color-muted)] mt-1">Semua tugas sudah ditangani saat ini.</p>
+                </div>
+              ) : (
+                prioritasDatasets.map((ds) => (
+                  <div key={ds.slug} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between hover:bg-[var(--color-surface-soft)]/50 transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/internal/datasets/${ds.slug}`} className="font-bold text-[var(--color-text)] hover:text-[var(--color-primary)] truncate block">
+                        {ds.title}
+                      </Link>
+                      <div className="mt-1 flex items-center gap-2 text-xs">
+                        <span className="font-medium text-[var(--color-muted)]">{ds.organizationName}</span>
+                        <span className="h-1 w-1 rounded-full bg-[var(--color-border)]"></span>
+                        <span className="text-orange-600 font-semibold">{ds.alasan}</span>
+                      </div>
+                    </div>
+                    <Button asChild size="sm" variant="outline" className="shrink-0 gap-1.5 h-8">
+                      <Link href={ds.href}>
+                        {ds.cta} <ArrowRight className="size-3" />
+                      </Link>
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+        </section>
+
+        {/* Ringkasan Status */}
+        <section>
+          <Card className="flex h-full flex-col overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
+              <h2 className="text-lg font-bold">Ringkasan Status</h2>
+              <Button variant="ghost" size="sm" className="h-8 text-xs font-semibold" asChild>
+                <Link href="/internal/datasets">Lihat Semua</Link>
+              </Button>
+            </div>
+            <div className="flex-1 p-5 space-y-4">
+              {hasData ? (
+                <>
+                  {[
+                    { label: "Siap Publish", count: approvedDatasets.length, color: "bg-emerald-500", desc: "Sudah disetujui, menunggu publikasi" },
+                    { label: "Sedang Diperiksa", count: underReviewDatasets.length, color: "bg-blue-500", desc: "Sedang diperiksa oleh Walidata" },
+                    { label: "Diajukan", count: submittedDatasets.length, color: "bg-amber-500", desc: "Diajukan dan menunggu pemeriksaan" },
+                    { label: "Perlu Revisi", count: needRevisionDatasets.length, color: "bg-orange-500", desc: "Dikembalikan untuk perbaikan" },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center gap-4">
+                      <div className={`h-2 w-2 rounded-full shrink-0 ${item.color}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-[var(--color-text)]">{item.label}</span>
+                          <span className="text-lg font-extrabold text-[var(--color-text)]">{item.count}</span>
+                        </div>
+                        <p className="text-xs text-[var(--color-muted)]">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <FileText className="size-8 text-slate-300 mb-2" />
+                  <p className="text-sm text-[var(--color-muted)]">Data status akan tampil setelah dataset tersedia.</p>
+                </div>
+              )}
+            </div>
+          </Card>
+        </section>
+      </div>
     </InternalShell>
   );
 }
-

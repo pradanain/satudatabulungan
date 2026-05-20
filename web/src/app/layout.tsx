@@ -49,7 +49,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className={`${plusJakartaSans.variable} ${sora.variable}`}>
-      <body className="overflow-x-hidden antialiased" style={{ margin: 0, padding: 0 }}>
+      <body className="antialiased" style={{ margin: 0, padding: 0 }}>
         {children}
       </body>
     </html>

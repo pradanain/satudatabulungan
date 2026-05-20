@@ -4,8 +4,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Database, FileText, Megaphone } from "lucide-react";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
-import { PreviewPanel } from "@/components/portal/preview-panel";
 import { ResourceList } from "@/components/portal/resource-list";
+import { DatasetDetailClient } from "@/components/portal/dataset-detail-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,7 +15,6 @@ import type { Dataset } from "@/lib/types/dataset";
 import { getPrimaryDatasetDescription } from "@/lib/utils/dataset-description";
 import { formatIndonesianDate } from "@/lib/utils/formatters";
 import { buildPageMetadata } from "@/lib/utils/metadata";
-import ChoroplethMap from "@/components/shared/choropleth-map";
 
 type DatasetDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -213,10 +212,10 @@ export default async function DatasetDetailPage({ params }: DatasetDetailPagePro
               <Badge variant="blue" className="mt-3">
                 {dataset.topic}
               </Badge>
-              <h1 className="mb-0 mt-3 font-(family-name:--font-heading) text-3xl font-semibold leading-[1.12] tracking-tight sm:text-4xl lg:text-5xl">
+              <h1 className="mb-0 mt-3 font-(family-name:--font-heading) text-xl sm:text-2xl lg:text-3xl font-semibold leading-snug tracking-tight text-[var(--color-text)]">
                 {dataset.title}
               </h1>
-              <p className="mb-0 mt-3 text-sm leading-relaxed text-[#625c5a] sm:text-lg">{definitionText}</p>
+              <p className="mb-0 mt-3 text-xs sm:text-sm md:text-base leading-relaxed text-[#625c5a]">{definitionText}</p>
 
             </div>
 
@@ -269,26 +268,18 @@ export default async function DatasetDetailPage({ params }: DatasetDetailPagePro
             <TabsTrigger value="similar" className="rounded-xl py-2.5 text-sm font-bold">Data Serupa</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="resource" className="grid gap-4 pt-1">
+          <TabsContent value="resource" className="flex flex-col gap-4 pt-1">
+            {/* 1. Dataset — daftar resource/file */}
             <ResourceList resources={dataset.resources} />
-            
-            {dataset.preview.rows.length > 0 && (
-              <Card className="overflow-hidden border-[#d6ddeb] bg-white p-0">
-                <div className="border-b border-[#f0f2f5] bg-[#f8faff] px-5 py-3">
-                  <h3 className="m-0 text-sm font-bold uppercase tracking-wider text-[#4b5563]">Visualisasi Geospasial</h3>
-                </div>
-                <div className="h-[450px] w-full">
-                  <ChoroplethMap data={dataset.preview.rows} className="h-full w-full" />
-                </div>
-                <div className="bg-[#fcfdfe] px-5 py-3 border-t border-[#f0f2f5]">
-                  <p className="m-0 text-[11px] text-[#6b7280]">
-                    Peta interaktif sebaran data di 10 Kecamatan Kabupaten Bulungan. Warna lebih gelap menunjukkan nilai yang lebih tinggi.
-                  </p>
-                </div>
-              </Card>
-            )}
 
-            <PreviewPanel preview={dataset.preview} />
+            {/* 2. Tabel, 3. Eksplorasi, 4. Peta — semua dinamis & sinkron */}
+            <DatasetDetailClient
+              preview={dataset.preview}
+              title={dataset.title}
+              organization={dataset.organization}
+              topic={dataset.topic}
+              lastUpdated={dataset.lastUpdated}
+            />
           </TabsContent>
 
           <TabsContent value="metadata">

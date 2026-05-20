@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { InternalSession } from "@/lib/types/internal";
+import { hasPermission } from "@/lib/utils/internal-auth";
 import { Button } from "@/components/ui/button";
+import { ToastNotification } from "@/components/ui/toast-popup";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -72,7 +74,7 @@ function slugFileName(title: string, fallback: string, extension: string): strin
 
 export function InternalContentUploadForm({ session, organizations }: Props) {
   const selectableOrganizations = useMemo(() => {
-    if (session.role === "operator") {
+    if (!hasPermission(session, "dataset.view_all")) {
       return organizations.filter((item) => item.id === session.organizationId);
     }
 
@@ -195,7 +197,7 @@ export function InternalContentUploadForm({ session, organizations }: Props) {
             <Select
               value={form.ownerOrgId}
               onValueChange={(value) => setForm((current) => ({ ...current, ownerOrgId: value }))}
-              disabled={session.role === "operator"}
+              disabled={!hasPermission(session, "dataset.view_all")}
             >
               <SelectTrigger className="h-11 border-(--color-border)">
                 <SelectValue placeholder="Pilih organisasi" />
@@ -286,8 +288,8 @@ export function InternalContentUploadForm({ session, organizations }: Props) {
         </div>
       </Card>
 
-      {errorMessage ? <p className="internal-alert-error">{errorMessage}</p> : null}
-      {successMessage ? <p className="internal-alert-success">{successMessage}</p> : null}
+      <ToastNotification message={errorMessage} type="error" onClose={() => setErrorMessage(null)} />
+      <ToastNotification message={successMessage} type="success" onClose={() => setSuccessMessage(null)} />
 
       <div className="flex flex-wrap gap-2">
         <Button type="submit" className="rounded-full px-5" disabled={pending}>
