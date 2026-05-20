@@ -727,7 +727,7 @@ export function InternalDatasetForm({
   };
 
   return (
-    <form className="space-y-6 max-w-5xl mx-auto" onSubmit={handleSubmit}>
+    <form className="space-y-6 w-full" onSubmit={handleSubmit}>
       
       {/* ─── BAGIAN 1: METADATA UTAMA ────────────────────────────────────────── */}
       <Card className="p-6 border border-gray-200/80 rounded-3xl shadow-xs bg-white space-y-5">
