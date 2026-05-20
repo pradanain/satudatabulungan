@@ -480,6 +480,7 @@ export function InternalDatasetForm({
     resourceFormat: dataset?.resources[0]?.format ?? "CSV",
     resourceUrl: dataset?.resources[0]?.url ?? "",
     tags: dataset?.metadata.tags.join(", ") ?? "",
+    unit: dataset?.metadata.unit ?? "",
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -864,31 +865,46 @@ export function InternalDatasetForm({
           </div>
         </div>
 
-        {/* ─── ROW 3: Produsen Data / OPD (admin only) ──────────────────── */}
-        {hasPermission(session.role, "dataset.view_all") ? (
+        {/* ─── ROW 3: Produsen Data & Satuan ──────────────────── */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          {hasPermission(session.role, "dataset.view_all") ? (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                Produsen Data / OPD <span className="text-red-500">*</span>
+              </label>
+              <SearchableSelect
+                value={form.organizationId}
+                onValueChange={(val) => {
+                  setForm((current) => ({ ...current, organizationId: val }));
+                  validateField("organizationId", val);
+                }}
+                options={opdOptions}
+                placeholder="Pilih OPD Produsen Data"
+                className={validationErrors.organizationId ? "border-red-500" : ""}
+              />
+              {validationErrors.organizationId && (
+                <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
+                  <AlertCircle className="size-3" /> {validationErrors.organizationId}
+                </span>
+              )}
+            </div>
+          ) : (
+            <input type="hidden" value={form.organizationId} />
+          )}
+
+          {/* Satuan */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-              Produsen Data / OPD <span className="text-red-500">*</span>
+            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+              Satuan
             </label>
-            <SearchableSelect
-              value={form.organizationId}
-              onValueChange={(val) => {
-                setForm((current) => ({ ...current, organizationId: val }));
-                validateField("organizationId", val);
-              }}
-              options={opdOptions}
-              placeholder="Pilih OPD Produsen Data"
-              className={validationErrors.organizationId ? "border-red-500" : ""}
+            <Input
+              value={form.unit}
+              onChange={(event) => setForm((current) => ({ ...current, unit: event.target.value }))}
+              placeholder="Contoh: ribu jiwa, km², unit, %"
+              className="h-11 rounded-xl border-gray-200"
             />
-            {validationErrors.organizationId && (
-              <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
-                <AlertCircle className="size-3" /> {validationErrors.organizationId}
-              </span>
-            )}
           </div>
-        ) : (
-          <input type="hidden" value={form.organizationId} />
-        )}
+        </div>
 
         {/* Hidden fields */}
         <input type="hidden" value={form.walidata} />

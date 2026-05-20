@@ -1260,6 +1260,7 @@ export async function createInternalDatasetDraft(
         frequency: input.frequency,
         lastUpdated: now,
         tags,
+        unit: input.unit ? sanitizeStoredText(input.unit) : undefined,
       },
       resources: input.resources ?? buildDatasetResource(input.slug, safeResourceName, input.resourceFormat, input.resourceUrl, now),
       preview: input.preview ?? {
@@ -1383,6 +1384,7 @@ export async function updateInternalDataset(
         frequency: input.frequency,
         lastUpdated: updatedAt,
         tags: safeTags,
+        unit: input.unit !== undefined ? (sanitizeStoredText(input.unit) || undefined) : current.metadata.unit,
       },
       reviewSummary: sanitizeStoredText(input.reviewSummary?.trim() || "") || current.reviewSummary,
       completionScore: Math.max(75, Math.min(100, current.completionScore + 2)),

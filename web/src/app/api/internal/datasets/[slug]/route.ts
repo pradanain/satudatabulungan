@@ -23,6 +23,7 @@ type DatasetUpdatePayload = {
   reviewSummary?: string;
   preview?: any;
   resources?: any;
+  unit?: string;
 };
 
 const allowedFrequencies: DatasetFrequency[] = [
@@ -107,6 +108,7 @@ export async function PATCH(
         reviewSummary: sanitizeStoredText(payload.reviewSummary?.trim() ?? "") || undefined,
         preview: payload.preview,
         resources: payload.resources,
+        unit: sanitizeStoredText(payload.unit?.trim() ?? "") || undefined,
       },
       session,
     );

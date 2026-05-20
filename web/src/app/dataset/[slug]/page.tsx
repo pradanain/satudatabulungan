@@ -178,12 +178,12 @@ export default async function DatasetDetailPage({ params }: DatasetDetailPagePro
   const ukuran = [...new Set(dataset.resources.map((resource) => resource.sizeLabel).filter(Boolean))].join(" | ");
   const displayOrganization = dataset.organization;
   const definitionText = getPrimaryDatasetDescription(dataset.description);
-  const unitLabel = inferDatasetUnit(dataset);
+  const unitLabel = dataset.metadata.unit || inferDatasetUnit(dataset);
 
   const metadataMinimum = [
     { label: "Nama Data", value: dataset.title },
     { label: "Definisi", value: definitionText },
-    { label: "Klasifikasi", value: `${dataset.topic}${dataset.metadata.tags.length ? ` • ${dataset.metadata.tags.join(", ")}` : ""}` },
+    { label: "Klasifikasi", value: dataset.topic },
     { label: "Produsen Data", value: displayOrganization },
     { label: "Periode Data", value: dataset.metadata.period || "-" },
     { label: "Frekuensi Pembaruan", value: dataset.frequency },

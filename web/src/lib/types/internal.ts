@@ -334,6 +334,7 @@ export interface DatasetDraftInput {
   resourceUrl: string;
   preview?: DatasetPreview;
   resources?: DatasetResource[];
+  unit?: string;
 }
 
 export interface DatasetUpdateInput {
@@ -353,4 +354,5 @@ export interface DatasetUpdateInput {
   reviewSummary?: string;
   preview?: DatasetPreview;
   resources?: DatasetResource[];
+  unit?: string;
 }

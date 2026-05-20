@@ -39,6 +39,7 @@ export interface DatasetMetadata {
   frequency: DatasetFrequency;
   lastUpdated: string;
   tags: string[];
+  unit?: string;
 }
 
 export interface DatasetPreviewPoint {

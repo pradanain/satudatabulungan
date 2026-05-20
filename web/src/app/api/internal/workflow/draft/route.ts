@@ -23,6 +23,7 @@ type DraftPayload = {
   resourceUrl?: string;
   preview?: any;
   resources?: any;
+  unit?: string;
 };
 
 const allowedFrequencies: DatasetFrequency[] = [
@@ -104,6 +105,7 @@ export async function POST(request: Request) {
         period,
         walidata,
         coverage: sanitizeStoredText(payload.coverage?.trim() || "") || undefined,
+        unit: sanitizeStoredText(payload.unit?.trim() || "") || undefined,
         resourceName,
         resourceFormat: resourceFormatRaw as DatasetFormat,
         resourceUrl,
