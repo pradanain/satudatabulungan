@@ -102,6 +102,7 @@ export function InternalDatasetDetailTabs({
                 organizations={organizations}
                 topics={topics}
                 onCancel={() => setShowCancelConfirm(true)}
+                onSuccess={() => setIsEditing(false)}
               />
             ) : (
               <>

@@ -142,6 +142,7 @@ type InternalDatasetFormProps = {
   topics: InternalTopicReference[];
   dataset?: InternalDataset;
   onCancel?: () => void;
+  onSuccess?: () => void;
 };
 
 const updatedFrequencies = [
@@ -434,6 +435,8 @@ export function InternalDatasetForm({
   organizations,
   topics,
   dataset,
+  onCancel,
+  onSuccess,
 }: InternalDatasetFormProps) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
@@ -691,6 +694,10 @@ export function InternalDatasetForm({
 
       const nextSlug = data.result?.slug ?? payload.slug;
       setSuccessMessage(isCreate ? "Draft dataset berhasil dibuat." : "Dataset berhasil diperbarui.");
+
+      if (onSuccess) {
+        onSuccess();
+      }
 
       startTransition(() => {
         router.push(`/internal/datasets/${nextSlug}`);
