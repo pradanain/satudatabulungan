@@ -316,7 +316,9 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
               <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-muted)]">
                 <span>Portal Internal</span>
                 <ChevronRight className="size-3.5 opacity-50" />
-                <span className="text-[var(--color-primary)]">{internalNavLabels[activeKey]}</span>
+                <span className="text-[var(--color-primary)]">
+                  {activeKey === "review" && session.role === "produsen" ? "Pengajuan Dataset" : internalNavLabels[activeKey]}
+                </span>
               </div>
             </div>
           </div>

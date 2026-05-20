@@ -14,8 +14,8 @@ export default async function InternalWorkflowPage() {
   return (
     <InternalShell session={session} activeKey="review">
       <InternalPageHeader
-        title="Verifikasi Data"
-        description="Validasi dan verifikasi dataset yang diajukan OPD sebelum dipublikasikan."
+        title={session.role === "produsen" ? "Pengajuan Dataset" : "Verifikasi Data"}
+        description={session.role === "produsen" ? "Pantau dan tindak lanjuti status pengajuan dataset sebelum dipublikasikan." : "Validasi dan verifikasi dataset yang diajukan OPD sebelum dipublikasikan."}
         badges={
           <>
             <Badge variant="outline">{items.length} dataset antrean</Badge>
