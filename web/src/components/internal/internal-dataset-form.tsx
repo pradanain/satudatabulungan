@@ -730,53 +730,44 @@ export function InternalDatasetForm({
   return (
     <form className="space-y-6 w-full" onSubmit={handleSubmit}>
 
-      {/* ─── BAGIAN 1: METADATA UTAMA ────────────────────────────────────────── */}
-      <Card className="p-6 border border-gray-200/80 rounded-3xl shadow-xs bg-white space-y-5">
-        <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
-          <div className="p-2 rounded-xl bg-blue-50 text-blue-600 shrink-0">
-            <Database className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-[#1e2f52] leading-tight">1. Informasi Utama Dataset</h3>
-            <p className="text-xs text-gray-500">Judul, deskripsi dan topik utama dataset yang akan ditayangkan ke publik.</p>
-          </div>
+      <Card className="p-6 border border-gray-200/80 rounded-3xl shadow-xs bg-white space-y-6">
+
+        {/* ─── ROW 1: Judul Dataset (full width) ──────────────────── */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+            Judul Dataset <span className="text-red-500">*</span>
+          </label>
+          <Input
+            value={form.title}
+            onChange={(event) => {
+              const val = event.target.value;
+              setForm((current) => ({ ...current, title: val }));
+              validateField("title", val);
+            }}
+            required
+            placeholder="Contoh: Jumlah Penduduk Berdasarkan Jenis Kelamin"
+            className={`h-11 rounded-xl ${validationErrors.title ? "border-red-500 focus-visible:ring-red-500" : "border-gray-200"}`}
+          />
+          {validationErrors.title ? (
+            <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
+              <AlertCircle className="size-3" /> {validationErrors.title}
+            </span>
+          ) : (
+            <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mt-0.5">
+              <Info className="size-3 text-blue-400 shrink-0" />
+              Contoh: <strong>Jumlah Kunjungan Wisatawan Mancanegara Menurut Kecamatan</strong>
+            </span>
+          )}
         </div>
+        <input type="hidden" value={form.slug} />
 
-        <div className="grid gap-5 md:grid-cols-2">
+        {/* ─── ROW 2: Topik + Tags + Periode + Frekuensi (4 kolom) ──────────────────── */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-          {/* Judul Dataset */}
-          <div className="md:col-span-2 flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-              Judul Dataset <span className="text-red-500">*</span>
-            </label>
-            <Input
-              value={form.title}
-              onChange={(event) => {
-                const val = event.target.value;
-                setForm((current) => ({ ...current, title: val }));
-                validateField("title", val);
-              }}
-              required
-              placeholder="Contoh: Jumlah Penduduk Berdasarkan Jenis Kelamin"
-              className={`h-11 rounded-xl ${validationErrors.title ? "border-red-500 focus-visible:ring-red-500" : "border-gray-200"}`}
-            />
-            {validationErrors.title ? (
-              <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
-                <AlertCircle className="size-3" /> {validationErrors.title}
-              </span>
-            ) : (
-              <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mt-0.5">
-                <Info className="size-3 text-blue-400 shrink-0" />
-                Contoh: <strong>Jumlah Kunjungan Wisatawan Mancanegara Menurut Kecamatan</strong>
-              </span>
-            )}
-          </div>
-          <input type="hidden" value={form.slug} />
-
-          {/* Topik (Searchable Select - Synchronized with homepage) */}
+          {/* Topik Klasifikasi */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-              Topik Klasifikasi <span className="text-red-500">*</span>
+              Topik <span className="text-red-500">*</span>
             </label>
             <SearchableSelect
               value={form.topic}
@@ -785,16 +776,12 @@ export function InternalDatasetForm({
                 validateField("topic", val);
               }}
               options={topicOptions}
-              placeholder="Pilih topik data"
+              placeholder="Pilih topik"
               className={validationErrors.topic ? "border-red-500" : ""}
             />
-            {validationErrors.topic ? (
+            {validationErrors.topic && (
               <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
                 <AlertCircle className="size-3" /> {validationErrors.topic}
-              </span>
-            ) : (
-              <span className="text-[10px] text-gray-400 font-medium mt-0.5">
-                Pilih bidang klasifikasi untuk mempermudah pencarian publik.
               </span>
             )}
           </div>
@@ -807,216 +794,15 @@ export function InternalDatasetForm({
             <Input
               value={form.tags}
               onChange={(event) => setForm((current) => ({ ...current, tags: event.target.value }))}
-              placeholder="wisata, turis, mancanegara"
+              placeholder="wisata, turis, dsb"
               className="h-11 rounded-xl border-gray-200"
             />
-            <span className="text-[10px] text-gray-400 font-medium mt-0.5">
-              Contoh: <strong>wisata, demografi, kependudukan</strong> (pisahkan dengan koma).
-            </span>
           </div>
 
-          {/* Deskripsi Dataset */}
-          <div className="md:col-span-2 flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-              Deskripsi Detail Dataset <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              rows={4}
-              value={form.description}
-              onChange={(event) => {
-                const val = event.target.value;
-                setForm((current) => ({ ...current, description: val }));
-                validateField("description", val);
-              }}
-              className={`w-full rounded-xl border p-3 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#4b7fe0] focus:border-[#4b7fe0] ${validationErrors.description ? "border-red-500" : "border-gray-200"
-                }`}
-              placeholder="Tuliskan keterangan detail mengenai data yang disajikan..."
-              required
-            />
-            {validationErrors.description ? (
-              <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
-                <AlertCircle className="size-3" /> {validationErrors.description}
-              </span>
-            ) : (
-              <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mt-0.5">
-                <Info className="size-3 text-blue-400 shrink-0" />
-                Contoh: <strong>Dataset ini memuat data statistik jumlah kunjungan wisatawan asing ke Bulungan yang dihimpun per bulan.</strong>
-              </span>
-            )}
-          </div>
-
-        </div>
-      </Card>
-
-      {/* ─── BAGIAN 2: BERKAS & DOKUMEN DATASET ─────────────────────────────────── */}
-      <Card className="p-6 border border-gray-200/80 rounded-3xl shadow-xs bg-white space-y-5">
-        <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
-          <div className="p-2 rounded-xl bg-green-50 text-green-600 shrink-0">
-            <FileUp className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-[#1e2f52] leading-tight">2. Berkas & Dokumen Dataset</h3>
-            <p className="text-xs text-gray-500">Unggah berkas data mentah (CSV, Excel, PDF) yang bisa diunduh dan dipratinjau publik.</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
+          {/* Periode Data */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-              Unggah File Dataset <span className="text-red-500">*</span>
-            </label>
-            <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#d6ddeb] bg-gray-50/50 p-6 text-center transition hover:bg-gray-50">
-              <input
-                type="file"
-                accept=".xlsx,.xls,.csv,.json,.pdf"
-                onChange={handleFileChange}
-                multiple
-                className="block max-w-max text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#4b7fe0] hover:file:bg-blue-100 cursor-pointer"
-              />
-              <span className="text-[10px] text-gray-500 font-normal">Mendukung multi-file & berbagai format (.xlsx, .csv, .json, .pdf)</span>
-            </div>
-          </div>
-
-          {/* List of uploaded files */}
-          {formFiles.length > 0 && (
-            <div className="space-y-2 pt-2">
-              <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Berkas Terpilih ({formFiles.length}):</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {formFiles.map((f, index) => (
-                  <div key={index} className="flex items-center justify-between gap-3 rounded-xl border border-gray-150 bg-white p-3 shadow-xs animate-in slide-in-from-bottom-2 duration-150">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {getFileIcon(f.format)}
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-gray-800 truncate" title={f.name}>{f.name}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className={`inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white ${f.format === "XLSX" ? "bg-green-600" :
-                            f.format === "CSV" ? "bg-emerald-500" :
-                              f.format === "PDF" ? "bg-red-500" : "bg-[#4b7fe0]"
-                            }`}>{f.format}</span>
-                          <span className="text-[10px] text-gray-400 font-medium">{f.sizeLabel}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFileToRemoveIndex(index);
-                        setShowConfirmRemoveFile(true);
-                      }}
-                      className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                      title="Hapus file"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Data Visual Table Preview inside the Form! */}
-          {parsedPreview && parsedPreview.rows.length > 0 && (
-            <div className="mt-3 rounded-2xl border border-blue-100 bg-[#f7faff] p-5 shadow-xs animate-in fade-in duration-200">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#1e2f52] mb-3 flex items-center gap-2">
-                <span className="size-2 rounded-full bg-green-500 animate-pulse shrink-0" />
-                Pratinjau Data Terunggah ({parsedPreview.rows.length} baris terdeteksi)
-              </h4>
-              <div className="overflow-x-auto rounded-xl border border-gray-150 bg-white">
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-gray-50 text-[#5f7398] uppercase text-[10px] font-bold tracking-wider border-b border-gray-150">
-                      {parsedPreview.columns && parsedPreview.columns.length > 0 ? (
-                        parsedPreview.columns.map((col) => (
-                          <th
-                            key={col.key}
-                            className={`px-4 py-2.5 font-semibold ${col.isNumeric ? "text-right" : "text-left"}`}
-                          >
-                            {col.label}
-                          </th>
-                        ))
-                      ) : (
-                        <>
-                          <th className="px-4 py-2.5 text-left font-semibold">Wilayah / Kecamatan</th>
-                          {parsedPreview.rows[0].male !== undefined && <th className="px-4 py-2.5 text-right font-semibold">Laki-laki</th>}
-                          {parsedPreview.rows[0].female !== undefined && <th className="px-4 py-2.5 text-right font-semibold">Perempuan</th>}
-                          <th className="px-4 py-2.5 text-right font-semibold">Total</th>
-                          {parsedPreview.rows[0].values && Object.keys(parsedPreview.rows[0].values).slice(0, 3).map(k => (
-                            <th key={k} className="px-4 py-2.5 text-left font-semibold">{k}</th>
-                          ))}
-                        </>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parsedPreview.rows.slice(0, 5).map((row, i) => (
-                      <tr key={i} className="border-b border-gray-100 last:border-0 hover:bg-[#f5f8ff] transition-colors">
-                        {parsedPreview.columns && parsedPreview.columns.length > 0 ? (
-                          parsedPreview.columns.map((col) => {
-                            if (col.key === "area") {
-                              return <td key={col.key} className="px-4 py-2.5 font-medium text-gray-800">{row.area}</td>;
-                            }
-                            if (col.key === "male") {
-                              return <td key={col.key} className="px-4 py-2.5 text-right tabular-nums text-gray-600">{(row.male ?? 0).toLocaleString('id-ID')}</td>;
-                            }
-                            if (col.key === "female") {
-                              return <td key={col.key} className="px-4 py-2.5 text-right tabular-nums text-gray-600">{(row.female ?? 0).toLocaleString('id-ID')}</td>;
-                            }
-                            if (col.key === "total") {
-                              return <td key={col.key} className="px-4 py-2.5 text-right font-semibold tabular-nums text-gray-800">{(row.total ?? 0).toLocaleString('id-ID')}</td>;
-                            }
-                            const cellValue = row.values?.[col.key] ?? "";
-                            const isNum = typeof cellValue === "number";
-                            return (
-                              <td
-                                key={col.key}
-                                className={`px-4 py-2.5 text-gray-600 ${isNum ? "text-right font-medium tabular-nums" : "text-left"}`}
-                              >
-                                {isNum ? cellValue.toLocaleString('id-ID') : String(cellValue)}
-                              </td>
-                            );
-                          })
-                        ) : (
-                          <>
-                            <td className="px-4 py-2.5 font-medium text-gray-800">{row.area}</td>
-                            {row.male !== undefined && <td className="px-4 py-2.5 text-right tabular-nums text-gray-600">{row.male.toLocaleString('id-ID')}</td>}
-                            {row.female !== undefined && <td className="px-4 py-2.5 text-right tabular-nums text-gray-600">{row.female.toLocaleString('id-ID')}</td>}
-                            <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-gray-800">{row.total.toLocaleString('id-ID')}</td>
-                            {row.values && Object.entries(row.values).slice(0, 3).map(([k, v]) => (
-                              <td key={k} className="px-4 py-2.5 text-gray-600">{String(v)}</td>
-                            ))}
-                          </>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {parsedPreview.rows.length > 5 && (
-                <p className="text-[10px] text-gray-500 mt-2 italic">Menampilkan 5 baris pertama untuk validasi visual sebelum disimpan.</p>
-              )}
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* ─── BAGIAN 3: METADATA & PERIODE DATA ─────────────────────────────────── */}
-      <Card className="p-6 border border-gray-200/80 rounded-3xl shadow-xs bg-white space-y-5">
-        <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
-          <div className="p-2 rounded-xl bg-orange-50 text-orange-600 shrink-0">
-            <CalendarDays className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-[#1e2f52] leading-tight">3. Detail Teknis & Produsen Data</h3>
-            <p className="text-xs text-gray-500">Masa cakupan data, siklus pembaruan berkas, serta OPD penghasil data.</p>
-          </div>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-
-          {/* Periode Data / Series */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-              Periode / Series Data <span className="text-red-500">*</span>
+              Periode Data <span className="text-red-500">*</span>
             </label>
             <Input
               value={form.period}
@@ -1029,14 +815,9 @@ export function InternalDatasetForm({
               placeholder="2026 atau 2020-2025"
               className={`h-11 rounded-xl ${validationErrors.period ? "border-red-500 focus-visible:ring-red-500" : "border-gray-200"}`}
             />
-            {validationErrors.period ? (
+            {validationErrors.period && (
               <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
                 <AlertCircle className="size-3" /> {validationErrors.period}
-              </span>
-            ) : (
-              <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mt-0.5">
-                <Info className="size-3 text-blue-400 shrink-0" />
-                Contoh: <strong>2026</strong>, <strong>2020-2025 (Series)</strong>, atau <strong>Triwulan I 2026</strong>
               </span>
             )}
           </div>
@@ -1044,7 +825,7 @@ export function InternalDatasetForm({
           {/* Frekuensi Pembaruan */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-              Frekuensi Pembaruan <span className="text-red-500">*</span>
+              Frekuensi <span className="text-red-500">*</span>
             </label>
             <SearchableSelect
               value={form.frequency}
@@ -1053,60 +834,211 @@ export function InternalDatasetForm({
                 validateField("frequency", val);
               }}
               options={updatedFrequencies.map(f => ({ label: f, value: f }))}
-              placeholder="Pilih frekuensi pembaruan"
+              placeholder="Pilih frekuensi"
               className={validationErrors.frequency ? "border-red-500" : ""}
-              alignDirection="up"
             />
-            {validationErrors.frequency ? (
+            {validationErrors.frequency && (
               <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
                 <AlertCircle className="size-3" /> {validationErrors.frequency}
               </span>
-            ) : (
-              <span className="text-[10px] text-gray-400 font-medium mt-0.5">
-                Seberapa sering data ini di-update oleh produsen data.
+            )}
+          </div>
+        </div>
+
+        {/* ─── ROW 3: Produsen Data / OPD (admin only) ──────────────────── */}
+        {hasPermission(session.role, "dataset.view_all") ? (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+              Produsen Data / OPD <span className="text-red-500">*</span>
+            </label>
+            <SearchableSelect
+              value={form.organizationId}
+              onValueChange={(val) => {
+                setForm((current) => ({ ...current, organizationId: val }));
+                validateField("organizationId", val);
+              }}
+              options={opdOptions}
+              placeholder="Pilih OPD Produsen Data"
+              className={validationErrors.organizationId ? "border-red-500" : ""}
+            />
+            {validationErrors.organizationId && (
+              <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
+                <AlertCircle className="size-3" /> {validationErrors.organizationId}
               </span>
             )}
           </div>
+        ) : (
+          <input type="hidden" value={form.organizationId} />
+        )}
 
-          {/* Produsen Data / OPD (Searchable Select if Admin) */}
-          {hasPermission(session.role, "dataset.view_all") ? (
-            <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-                Produsen Data / OPD <span className="text-red-500">*</span>
-              </label>
-              <SearchableSelect
-                value={form.organizationId}
-                onValueChange={(val) => {
-                  setForm((current) => ({ ...current, organizationId: val }));
-                  validateField("organizationId", val);
-                }}
-                options={opdOptions}
-                placeholder="Pilih OPD Produsen Data"
-                className={validationErrors.organizationId ? "border-red-500" : ""}
-              />
-              {validationErrors.organizationId ? (
-                <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
-                  <AlertCircle className="size-3" /> {validationErrors.organizationId}
-                </span>
-              ) : (
-                <span className="text-[10px] text-gray-400 font-medium mt-0.5">
-                  Nama Satuan Kerja Perangkat Daerah penanggung jawab data.
-                </span>
-              )}
-            </div>
-          ) : (
-            <input type="hidden" value={form.organizationId} />
+        {/* Hidden fields */}
+        <input type="hidden" value={form.walidata} />
+        <input type="hidden" value={form.coverage} />
+
+        {/* ─── ROW 4: Deskripsi Dataset ──────────────────── */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+            Deskripsi Dataset <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            rows={3}
+            value={form.description}
+            onChange={(event) => {
+              const val = event.target.value;
+              setForm((current) => ({ ...current, description: val }));
+              validateField("description", val);
+            }}
+            className={`w-full rounded-xl border p-3 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#4b7fe0] focus:border-[#4b7fe0] ${validationErrors.description ? "border-red-500" : "border-gray-200"}`}
+            placeholder="Tuliskan keterangan detail mengenai data yang disajikan..."
+            required
+          />
+          {validationErrors.description && (
+            <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
+              <AlertCircle className="size-3" /> {validationErrors.description}
+            </span>
           )}
-
-          {/* Walidata (Hidden because it is always Walidata Bulungan) */}
-          <input type="hidden" value={form.walidata} />
-
-          {/* Cakupan Wilayah (Hidden because it is usually Kabupaten Bulungan) */}
-          <input type="hidden" value={form.coverage} />
-
-
-
         </div>
+
+        {/* ─── DIVIDER ──────────────────── */}
+        <div className="border-t border-dashed border-gray-200" />
+
+        {/* ─── ROW 5: Upload File ──────────────────── */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+            <FileUp className="size-3.5 text-green-600" /> Unggah File Dataset <span className="text-red-500">*</span>
+          </label>
+          <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#d6ddeb] bg-gray-50/50 p-5 text-center transition hover:bg-gray-50">
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv,.json,.pdf"
+              onChange={handleFileChange}
+              multiple
+              className="block max-w-max text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#4b7fe0] hover:file:bg-blue-100 cursor-pointer"
+            />
+            <span className="text-[10px] text-gray-400">Mendukung multi-file (.xlsx, .csv, .json, .pdf)</span>
+          </div>
+        </div>
+
+        {/* List of uploaded files */}
+        {formFiles.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Berkas Terpilih ({formFiles.length}):</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {formFiles.map((f, index) => (
+                <div key={index} className="flex items-center justify-between gap-3 rounded-xl border border-gray-150 bg-white p-3 shadow-xs animate-in slide-in-from-bottom-2 duration-150">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {getFileIcon(f.format)}
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gray-800 truncate" title={f.name}>{f.name}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white ${f.format === "XLSX" ? "bg-green-600" :
+                          f.format === "CSV" ? "bg-emerald-500" :
+                            f.format === "PDF" ? "bg-red-500" : "bg-[#4b7fe0]"
+                          }`}>{f.format}</span>
+                        <span className="text-[10px] text-gray-400 font-medium">{f.sizeLabel}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFileToRemoveIndex(index);
+                      setShowConfirmRemoveFile(true);
+                    }}
+                    className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    title="Hapus file"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Data Visual Table Preview */}
+        {parsedPreview && parsedPreview.rows.length > 0 && (
+          <div className="rounded-2xl border border-blue-100 bg-[#f7faff] p-4 shadow-xs animate-in fade-in duration-200">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1e2f52] mb-3 flex items-center gap-2">
+              <span className="size-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+              Pratinjau Data ({parsedPreview.rows.length} baris)
+            </h4>
+            <div className="overflow-x-auto rounded-xl border border-gray-150 bg-white">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr className="bg-gray-50 text-[#5f7398] uppercase text-[10px] font-bold tracking-wider border-b border-gray-150">
+                    {parsedPreview.columns && parsedPreview.columns.length > 0 ? (
+                      parsedPreview.columns.map((col) => (
+                        <th
+                          key={col.key}
+                          className={`px-4 py-2.5 font-semibold ${col.isNumeric ? "text-right" : "text-left"}`}
+                        >
+                          {col.label}
+                        </th>
+                      ))
+                    ) : (
+                      <>
+                        <th className="px-4 py-2.5 text-left font-semibold">Wilayah / Kecamatan</th>
+                        {parsedPreview.rows[0].male !== undefined && <th className="px-4 py-2.5 text-right font-semibold">Laki-laki</th>}
+                        {parsedPreview.rows[0].female !== undefined && <th className="px-4 py-2.5 text-right font-semibold">Perempuan</th>}
+                        <th className="px-4 py-2.5 text-right font-semibold">Total</th>
+                        {parsedPreview.rows[0].values && Object.keys(parsedPreview.rows[0].values).slice(0, 3).map(k => (
+                          <th key={k} className="px-4 py-2.5 text-left font-semibold">{k}</th>
+                        ))}
+                      </>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {parsedPreview.rows.slice(0, 5).map((row, i) => (
+                    <tr key={i} className="border-b border-gray-100 last:border-0 hover:bg-[#f5f8ff] transition-colors">
+                      {parsedPreview.columns && parsedPreview.columns.length > 0 ? (
+                        parsedPreview.columns.map((col) => {
+                          if (col.key === "area") {
+                            return <td key={col.key} className="px-4 py-2.5 font-medium text-gray-800">{row.area}</td>;
+                          }
+                          if (col.key === "male") {
+                            return <td key={col.key} className="px-4 py-2.5 text-right tabular-nums text-gray-600">{(row.male ?? 0).toLocaleString('id-ID')}</td>;
+                          }
+                          if (col.key === "female") {
+                            return <td key={col.key} className="px-4 py-2.5 text-right tabular-nums text-gray-600">{(row.female ?? 0).toLocaleString('id-ID')}</td>;
+                          }
+                          if (col.key === "total") {
+                            return <td key={col.key} className="px-4 py-2.5 text-right font-semibold tabular-nums text-gray-800">{(row.total ?? 0).toLocaleString('id-ID')}</td>;
+                          }
+                          const cellValue = row.values?.[col.key] ?? "";
+                          const isNum = typeof cellValue === "number";
+                          return (
+                            <td
+                              key={col.key}
+                              className={`px-4 py-2.5 text-gray-600 ${isNum ? "text-right font-medium tabular-nums" : "text-left"}`}
+                            >
+                              {isNum ? cellValue.toLocaleString('id-ID') : String(cellValue)}
+                            </td>
+                          );
+                        })
+                      ) : (
+                        <>
+                          <td className="px-4 py-2.5 font-medium text-gray-800">{row.area}</td>
+                          {row.male !== undefined && <td className="px-4 py-2.5 text-right tabular-nums text-gray-600">{row.male.toLocaleString('id-ID')}</td>}
+                          {row.female !== undefined && <td className="px-4 py-2.5 text-right tabular-nums text-gray-600">{row.female.toLocaleString('id-ID')}</td>}
+                          <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-gray-800">{row.total.toLocaleString('id-ID')}</td>
+                          {row.values && Object.entries(row.values).slice(0, 3).map(([k, v]) => (
+                            <td key={k} className="px-4 py-2.5 text-gray-600">{String(v)}</td>
+                          ))}
+                        </>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {parsedPreview.rows.length > 5 && (
+              <p className="text-[10px] text-gray-500 mt-2 italic">Menampilkan 5 baris pertama.</p>
+            )}
+          </div>
+        )}
+
       </Card>
 
       <ToastNotification message={errorMessage} type="error" onClose={() => setErrorMessage(null)} />
