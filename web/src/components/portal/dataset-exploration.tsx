@@ -13,6 +13,7 @@ interface DatasetExplorationProps {
   data: Record<string, unknown>[];
   schema: DatasetSchema;
   selectedMetric: string;
+  metricLabel?: string;
   selectedPeriod: string;
   filteredData: Record<string, unknown>[];
 }
@@ -21,10 +22,11 @@ export function DatasetExploration({
   data,
   schema,
   selectedMetric,
+  metricLabel: customMetricLabel,
   selectedPeriod,
   filteredData,
 }: DatasetExplorationProps) {
-  const metricLabel = formatMetricLabel(selectedMetric);
+  const metricLabel = customMetricLabel || formatMetricLabel(selectedMetric);
 
   // Ambil nilai per wilayah dari filteredData
   const regionValues = useMemo(() => {

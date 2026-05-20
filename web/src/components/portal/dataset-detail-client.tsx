@@ -540,6 +540,11 @@ export function DatasetDetailClient({
   const showPeriodFilter = availablePeriods.length > 0;
   const showAggFilter = availablePeriods.length > 1;
 
+  const activeMetricColInfo = preview.columns?.find((c) => c.key === selectedMetric);
+  const activeMetricLabel = activeMetricColInfo 
+    ? cleanColumnLabel(activeMetricColInfo.label) 
+    : formatMetricLabel(selectedMetric);
+
   return (
     <div className="flex flex-col gap-4">
       {/* ── 1. Tabel ──────────────────────────────────────────── */}
@@ -629,6 +634,7 @@ export function DatasetDetailClient({
         data={data}
         schema={schema}
         selectedMetric={selectedMetric}
+        metricLabel={activeMetricLabel}
         selectedPeriod={selectedPeriod}
         filteredData={filteredData.length ? filteredData : data}
       />
@@ -639,13 +645,13 @@ export function DatasetDetailClient({
           <div className="border-b border-[#f0f2f5] bg-[linear-gradient(180deg,#f8faff_0%,#f3f7ff_100%)] px-5 py-4">
             <h3 className="m-0 text-base font-semibold text-[#1e2f52]">Visualisasi Geospasial</h3>
             <p className="m-0 mt-0.5 text-[13px] text-[#6b7280]">
-              Sebaran{selectedMetric ? ` ${formatMetricLabel(selectedMetric)}` : " data"} di seluruh kecamatan Kabupaten Bulungan.
+              Sebaran{selectedMetric ? ` ${activeMetricLabel}` : " data"} di seluruh kecamatan Kabupaten Bulungan.
             </p>
           </div>
           <div className="relative h-[460px] w-full sm:h-[500px]">
             <ChoroplethMap
               valuesByRegion={valuesByRegion}
-              metricLabel={selectedMetric ? formatMetricLabel(selectedMetric) : undefined}
+              metricLabel={selectedMetric ? activeMetricLabel : undefined}
               periodLabel={selectedPeriod || undefined}
               className="h-full w-full"
             />
