@@ -33,6 +33,7 @@ interface SearchableSelectProps {
   placeholder: string;
   className?: string;
   disabled?: boolean;
+  alignDirection?: "up" | "down";
 }
 
 function SearchableSelect({
@@ -42,6 +43,7 @@ function SearchableSelect({
   placeholder,
   className = "",
   disabled = false,
+  alignDirection = "down",
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -81,7 +83,7 @@ function SearchableSelect({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-hidden rounded-xl border border-[#d6ddeb] bg-white shadow-lg animate-in fade-in slide-in-from-top-1 duration-150 flex flex-col">
+        <div className={`absolute z-50 ${alignDirection === "up" ? "bottom-full mb-1" : "mt-1"} max-h-60 w-full overflow-hidden rounded-xl border border-[#d6ddeb] bg-white shadow-lg animate-in fade-in ${alignDirection === "up" ? "slide-in-from-bottom-1" : "slide-in-from-top-1"} duration-150 flex flex-col`}>
           <div className="relative border-b border-gray-100 p-2 shrink-0 bg-gray-50">
             <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
             <input
@@ -249,7 +251,7 @@ function convertRawRowsToDatasetPreview(rawRows: any[][]): DatasetPreview {
     const firstColValues = cleanRows.slice(headerIndex + 1).map((r) => String(r[0] || "").toLowerCase());
     const hasPartai = firstColValues.some((v) => v.includes("partai") || v.includes("golkar") || v.includes("pdi") || v.includes("gerindra"));
     const hasOPD = firstColValues.some((v) => v.includes("dinas") || v.includes("badan") || v.includes("kantor") || v.includes("sekretariat") || v.includes("opd"));
-    
+
     if (hasPartai) {
       detectedFirstColLabel = "Partai Politik";
     } else if (hasOPD) {
@@ -339,7 +341,7 @@ function convertRawRowsToDatasetPreview(rawRows: any[][]): DatasetPreview {
     if (isSeparator) continue;
 
     const area = row[0] || `Baris ${i + 1}`;
-    
+
     // Skip general sheet totals that we will aggregate or show in insights
     if (area.toLowerCase() === "jumlah" || area.toLowerCase() === "total") {
       continue;
@@ -567,10 +569,10 @@ export function InternalDatasetForm({
     }
 
     if (
-      !form.title.trim() || 
-      !form.period.trim() || 
-      !form.description.trim() || 
-      !form.topic || 
+      !form.title.trim() ||
+      !form.period.trim() ||
+      !form.description.trim() ||
+      !form.topic ||
       !form.frequency ||
       (hasPermission(session.role, "dataset.view_all") && !form.organizationId)
     ) {
@@ -587,14 +589,14 @@ export function InternalDatasetForm({
 
     try {
       const slug = isCreate ? (form.slug || slugify(form.title)) : dataset?.slug;
-      
+
       const uploadedResources = await Promise.all(
         formFiles.map(async (f, idx) => {
           if (f.isExisting) {
-            const absoluteUrl = f.url!.startsWith("http") 
-              ? f.url! 
+            const absoluteUrl = f.url!.startsWith("http")
+              ? f.url!
               : `${window.location.origin}${f.url!}`;
-              
+
             return {
               id: `${slug}-resource-${idx}`,
               name: f.name,
@@ -727,7 +729,7 @@ export function InternalDatasetForm({
 
   return (
     <form className="space-y-6 w-full" onSubmit={handleSubmit}>
-      
+
       {/* ─── BAGIAN 1: METADATA UTAMA ────────────────────────────────────────── */}
       <Card className="p-6 border border-gray-200/80 rounded-3xl shadow-xs bg-white space-y-5">
         <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
@@ -741,21 +743,21 @@ export function InternalDatasetForm({
         </div>
 
         <div className="grid gap-5 md:grid-cols-2">
-          
+
           {/* Judul Dataset */}
           <div className="md:col-span-2 flex flex-col gap-1.5">
             <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
               Judul Dataset <span className="text-red-500">*</span>
             </label>
-            <Input 
-              value={form.title} 
+            <Input
+              value={form.title}
               onChange={(event) => {
                 const val = event.target.value;
                 setForm((current) => ({ ...current, title: val }));
                 validateField("title", val);
-              }} 
-              required 
-              placeholder="Contoh: Jumlah Penduduk Berdasarkan Jenis Kelamin" 
+              }}
+              required
+              placeholder="Contoh: Jumlah Penduduk Berdasarkan Jenis Kelamin"
               className={`h-11 rounded-xl ${validationErrors.title ? "border-red-500 focus-visible:ring-red-500" : "border-gray-200"}`}
             />
             {validationErrors.title ? (
@@ -826,9 +828,8 @@ export function InternalDatasetForm({
                 setForm((current) => ({ ...current, description: val }));
                 validateField("description", val);
               }}
-              className={`w-full rounded-xl border p-3 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#4b7fe0] focus:border-[#4b7fe0] ${
-                validationErrors.description ? "border-red-500" : "border-gray-200"
-              }`}
+              className={`w-full rounded-xl border p-3 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#4b7fe0] focus:border-[#4b7fe0] ${validationErrors.description ? "border-red-500" : "border-gray-200"
+                }`}
               placeholder="Tuliskan keterangan detail mengenai data yang disajikan..."
               required
             />
@@ -865,10 +866,10 @@ export function InternalDatasetForm({
               Unggah File Dataset <span className="text-red-500">*</span>
             </label>
             <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#d6ddeb] bg-gray-50/50 p-6 text-center transition hover:bg-gray-50">
-              <input 
-                type="file" 
-                accept=".xlsx,.xls,.csv,.json,.pdf" 
-                onChange={handleFileChange} 
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv,.json,.pdf"
+                onChange={handleFileChange}
                 multiple
                 className="block max-w-max text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#4b7fe0] hover:file:bg-blue-100 cursor-pointer"
               />
@@ -888,17 +889,16 @@ export function InternalDatasetForm({
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-gray-800 truncate" title={f.name}>{f.name}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className={`inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white ${
-                            f.format === "XLSX" ? "bg-green-600" :
+                          <span className={`inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white ${f.format === "XLSX" ? "bg-green-600" :
                             f.format === "CSV" ? "bg-emerald-500" :
-                            f.format === "PDF" ? "bg-red-500" : "bg-[#4b7fe0]"
-                          }`}>{f.format}</span>
+                              f.format === "PDF" ? "bg-red-500" : "bg-[#4b7fe0]"
+                            }`}>{f.format}</span>
                           <span className="text-[10px] text-gray-400 font-medium">{f.sizeLabel}</span>
                         </div>
                       </div>
                     </div>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => {
                         setFileToRemoveIndex(index);
                         setShowConfirmRemoveFile(true);
@@ -927,8 +927,8 @@ export function InternalDatasetForm({
                     <tr className="bg-gray-50 text-[#5f7398] uppercase text-[10px] font-bold tracking-wider border-b border-gray-150">
                       {parsedPreview.columns && parsedPreview.columns.length > 0 ? (
                         parsedPreview.columns.map((col) => (
-                          <th 
-                            key={col.key} 
+                          <th
+                            key={col.key}
                             className={`px-4 py-2.5 font-semibold ${col.isNumeric ? "text-right" : "text-left"}`}
                           >
                             {col.label}
@@ -967,8 +967,8 @@ export function InternalDatasetForm({
                             const cellValue = row.values?.[col.key] ?? "";
                             const isNum = typeof cellValue === "number";
                             return (
-                              <td 
-                                key={col.key} 
+                              <td
+                                key={col.key}
                                 className={`px-4 py-2.5 text-gray-600 ${isNum ? "text-right font-medium tabular-nums" : "text-left"}`}
                               >
                                 {isNum ? cellValue.toLocaleString('id-ID') : String(cellValue)}
@@ -1012,21 +1012,21 @@ export function InternalDatasetForm({
         </div>
 
         <div className="grid gap-5 md:grid-cols-2">
-          
+
           {/* Periode Data / Series */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
               Periode / Series Data <span className="text-red-500">*</span>
             </label>
-            <Input 
-              value={form.period} 
+            <Input
+              value={form.period}
               onChange={(event) => {
                 const val = event.target.value;
                 setForm((current) => ({ ...current, period: val }));
                 validateField("period", val);
-              }} 
-              required 
-              placeholder="2026 atau 2020-2025" 
+              }}
+              required
+              placeholder="2026 atau 2020-2025"
               className={`h-11 rounded-xl ${validationErrors.period ? "border-red-500 focus-visible:ring-red-500" : "border-gray-200"}`}
             />
             {validationErrors.period ? (
@@ -1055,6 +1055,7 @@ export function InternalDatasetForm({
               options={updatedFrequencies.map(f => ({ label: f, value: f }))}
               placeholder="Pilih frekuensi pembaruan"
               className={validationErrors.frequency ? "border-red-500" : ""}
+              alignDirection="up"
             />
             {validationErrors.frequency ? (
               <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">

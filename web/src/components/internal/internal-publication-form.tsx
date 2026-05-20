@@ -64,7 +64,7 @@ export function InternalPublicationForm({ mode, session, organizations, initialD
       if (file.type !== "application/pdf" || ext !== "pdf") {
         return setErrorMessage("Format file tidak didukung. Gunakan PDF.");
       }
-      
+
       let maxSize = 25 * 1024 * 1024;
       let maxSizeLabel = "25 MB";
       if (formData.type === "digital_publication") {
@@ -154,7 +154,7 @@ export function InternalPublicationForm({ mode, session, organizations, initialD
         }
         uploadedFileUrl = uploadData.url;
       }
-      
+
       // Upload image if exists
       let uploadedImageUrl = formData.imageUrl;
       if (imageFileObj) {
@@ -420,7 +420,7 @@ export function InternalPublicationForm({ mode, session, organizations, initialD
             >
               Batal
             </Button>
-            
+
             <Button
               type="button"
               variant="secondary"
