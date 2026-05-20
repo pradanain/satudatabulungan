@@ -143,17 +143,6 @@ export default async function InternalDatasetDetailPage({
     </Card>
   );
 
-  // Edit form content
-  const editFormContent = (
-    <InternalDatasetForm
-      mode="edit"
-      session={session}
-      dataset={dataset}
-      organizations={store.organizations}
-      topics={store.topics}
-    />
-  );
-
   const metaSummaryContent = (
     <Card className="internal-surface border-transparent p-5 shadow-none">
       <div className="grid gap-3 sm:grid-cols-3">
@@ -256,13 +245,16 @@ export default async function InternalDatasetDetailPage({
 
       <InternalDatasetDetailTabs
         readOnlyContent={readOnlyContent}
-        editFormContent={editFormContent}
         qualityContent={qualityContent}
         geospatialContent={geospatialContent}
         notesContent={notesContent}
         metaSummaryContent={metaSummaryContent}
         role={session.role}
         canEdit={canEdit}
+        session={session}
+        dataset={dataset}
+        organizations={store.organizations}
+        topics={store.topics}
       />
     </InternalShell>
   );

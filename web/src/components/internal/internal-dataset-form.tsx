@@ -141,6 +141,7 @@ type InternalDatasetFormProps = {
   organizations: InternalOrganization[];
   topics: InternalTopicReference[];
   dataset?: InternalDataset;
+  onCancel?: () => void;
 };
 
 const updatedFrequencies = [
@@ -1045,7 +1046,7 @@ export function InternalDatasetForm({
       <ToastNotification message={successMessage} type="success" onClose={() => setSuccessMessage(null)} />
 
       <div className="flex flex-wrap gap-2 pt-2 justify-end">
-        <Button type="button" variant="secondary" className="rounded-full px-6 h-11 font-semibold cursor-pointer border-gray-200" onClick={() => router.push("/internal/datasets")}>
+        <Button type="button" variant="secondary" className="rounded-full px-6 h-11 font-semibold cursor-pointer border-gray-200" onClick={() => onCancel ? onCancel() : router.push("/internal/datasets")}>
           Batal
         </Button>
         <Button type="submit" className="rounded-full px-7 h-11 bg-[var(--color-primary)] font-bold text-white transition-all hover:bg-[#8f1717] active:scale-[0.98] cursor-pointer" disabled={isPending}>

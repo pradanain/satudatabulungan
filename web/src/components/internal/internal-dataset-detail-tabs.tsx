@@ -2,21 +2,28 @@
 
 import { useState } from "react";
 import { FileText, BarChart3, Map, MessageSquare, Pencil } from "lucide-react";
-import type { InternalRole } from "@/lib/types/internal";
+import type { InternalRole, InternalSession, InternalOrganization, InternalTopicReference, InternalDataset } from "@/lib/types/internal";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
+import { InternalDatasetForm } from "@/components/internal/internal-dataset-form";
+import type { DatasetUpdateInput } from "@/lib/types/internal";
 
 type Tab = "form" | "geospatial" | "quality" | "notes";
 
 type InternalDatasetDetailTabsProps = {
   readOnlyContent: React.ReactNode;
-  editFormContent: React.ReactNode;
   qualityContent: React.ReactNode;
   geospatialContent: React.ReactNode | null;
   notesContent: React.ReactNode;
   metaSummaryContent: React.ReactNode;
   role: InternalRole;
   canEdit: boolean;
+  
+  // Form props
+  session: InternalSession;
+  dataset: InternalDataset;
+  organizations: InternalOrganization[];
+  topics: InternalTopicReference[];
 };
 
 const allTabs: { key: Tab; label: string; icon: typeof FileText }[] = [
@@ -28,13 +35,16 @@ const allTabs: { key: Tab; label: string; icon: typeof FileText }[] = [
 
 export function InternalDatasetDetailTabs({
   readOnlyContent,
-  editFormContent,
   qualityContent,
   geospatialContent,
   notesContent,
   metaSummaryContent,
   role,
   canEdit,
+  session,
+  dataset,
+  organizations,
+  topics,
 }: InternalDatasetDetailTabsProps) {
   const [active, setActive] = useState<Tab>("form");
   const [isEditing, setIsEditing] = useState(false);
@@ -85,19 +95,14 @@ export function InternalDatasetDetailTabs({
         {active === "form" && (
           <div className="space-y-4">
             {isEditing ? (
-              <>
-                {editFormContent}
-                <div className="flex justify-end">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="rounded-full px-6 h-11 font-semibold cursor-pointer border-gray-200"
-                    onClick={() => setShowCancelConfirm(true)}
-                  >
-                    Batal Edit
-                  </Button>
-                </div>
-              </>
+              <InternalDatasetForm
+                mode="edit"
+                session={session}
+                dataset={dataset}
+                organizations={organizations}
+                topics={topics}
+                onCancel={() => setShowCancelConfirm(true)}
+              />
             ) : (
               <>
                 {readOnlyContent}
