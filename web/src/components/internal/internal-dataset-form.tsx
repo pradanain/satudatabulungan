@@ -1066,9 +1066,17 @@ export function InternalDatasetForm({
         onOpenChange={setShowConfirmRemoveFile}
         title="Hapus Berkas Dataset?"
         description={
-          fileToRemoveIndex !== null && formFiles[fileToRemoveIndex]
-            ? `Apakah Anda yakin ingin menghapus berkas "${formFiles[fileToRemoveIndex].name}" dari daftar unggahan?`
-            : "Apakah Anda yakin ingin menghapus berkas ini?"
+          fileToRemoveIndex !== null && formFiles[fileToRemoveIndex] ? (
+            <span className="block text-sm">
+              Apakah Anda yakin ingin menghapus berkas{" "}
+              <strong className="break-all text-gray-800">
+                "{formFiles[fileToRemoveIndex].name}"
+              </strong>{" "}
+              dari daftar unggahan?
+            </span>
+          ) : (
+            "Apakah Anda yakin ingin menghapus berkas ini?"
+          )
         }
         confirmLabel="Hapus Berkas"
         cancelLabel="Batal"
