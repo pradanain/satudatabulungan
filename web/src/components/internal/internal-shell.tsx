@@ -7,6 +7,7 @@ import {
   Activity,
   Archive,
   Bell,
+  BookOpen,
   Building2,
   ChevronDown,
   ChevronLeft,
@@ -15,8 +16,10 @@ import {
   ClipboardCheck,
   Database,
   History,
+  ImageIcon,
   LayoutDashboard,
   Menu,
+  Newspaper,
   PlugZap,
   Settings,
   Tags,
@@ -24,7 +27,6 @@ import {
   Users,
   X,
   ExternalLink,
-  Newspaper,
 } from "lucide-react";
 import { InternalLogoutButton } from "@/components/internal/internal-logout-button";
 import { Badge } from "@/components/ui/badge";
@@ -60,7 +62,9 @@ const iconByKey: Record<InternalNavKey, typeof LayoutDashboard> = {
   profile: UserCircle2,
   help: CircleHelp,
   integrations: PlugZap,
-  publications: Newspaper,
+  berita: Newspaper,
+  bukuDigital: BookOpen,
+  infografis: ImageIcon,
 };
 
 type InternalShellProps = {
@@ -79,7 +83,7 @@ const navGroups: NavGroup[] = [
   {
     id: "operasional",
     label: "Operasional",
-    keys: ["dashboard", "datasets", "review", "monitoring", "publications"],
+    keys: ["dashboard", "datasets", "review", "monitoring", "berita", "bukuDigital", "infografis"],
   },
   {
     id: "masterData",
@@ -109,7 +113,9 @@ function getHref(key: InternalNavKey): string {
     case "profile": return "/internal/profile";
     case "help": return "/internal/help";
     case "integrations": return "/internal/integrations";
-    case "publications": return "/internal/publications";
+    case "berita": return "/internal/berita";
+    case "bukuDigital": return "/internal/buku-digital";
+    case "infografis": return "/internal/infografis-internal";
     default: return "/internal/dashboard";
   }
 }

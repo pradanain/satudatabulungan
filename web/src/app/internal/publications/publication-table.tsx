@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { Eye, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,20 @@ import { hasPermission } from "@/lib/utils/internal-auth";
 
 const typeLabelMap: Record<string, string> = {
   news: "Berita",
-  digital_publication: "Publikasi Digital",
+  digital_publication: "Buku Digital",
   infographic: "Infografis",
   regulation: "Regulasi",
   technical_guide: "Petunjuk Teknis",
 };
+
+function getContentBaseUrl(type: string): string {
+  switch (type) {
+    case "news": return "/internal/berita";
+    case "digital_publication": return "/internal/buku-digital";
+    case "infographic": return "/internal/infografis-internal";
+    default: return "/internal/publications";
+  }
+}
 
 export function PublicationTable({
   publications,
@@ -25,22 +34,6 @@ export function PublicationTable({
   publications: InternalPublication[];
   session: InternalSession;
 }) {
-  const [activeTab, setActiveTab] = useState<string>("all");
-
-  const tabs = [
-    { id: "all", label: "Semua Konten" },
-    { id: "news", label: "Berita" },
-    { id: "digital_publication", label: "Publikasi Digital" },
-    { id: "infographic", label: "Infografis" },
-    { id: "regulation", label: "Regulasi" },
-    { id: "technical_guide", label: "Petunjuk Teknis" },
-  ];
-
-  const filteredPublications = useMemo(() => {
-    if (activeTab === "all") return publications;
-    return publications.filter((pub) => pub.type === activeTab);
-  }, [publications, activeTab]);
-
   const columns: ColumnDef<InternalPublication>[] = [
     {
       key: "title",
@@ -48,7 +41,7 @@ export function PublicationTable({
       render: (pub) => (
         <div className="min-w-[220px]">
           <Link
-            href={`/internal/publications/${pub.slug}`}
+            href={`${getContentBaseUrl(pub.type)}/${pub.slug}`}
             className="font-bold text-[var(--color-text)] hover:text-[var(--color-primary)] line-clamp-2"
           >
             {pub.title}
@@ -100,10 +93,11 @@ export function PublicationTable({
       sortable: false,
       className: "text-right",
       render: (pub) => {
-        // Can edit if Walidata (manage_all) or Produsen (edit_own_draft AND is owner)
         const canEdit =
           hasPermission(session, "content.manage_all") ||
           (hasPermission(session, "content.edit_own_draft") && pub.createdByUserId === session.userId);
+
+        const baseUrl = getContentBaseUrl(pub.type);
 
         return (
           <div className="flex items-center justify-end gap-1">
@@ -114,7 +108,7 @@ export function PublicationTable({
                 size="icon"
                 className="h-8 w-8 text-[var(--color-muted)] hover:text-[var(--color-primary)]"
               >
-                <Link href={`/internal/publications/${pub.slug}/edit`} title="Edit Konten">
+                <Link href={`${baseUrl}/${pub.slug}/edit`} title="Edit Konten">
                   <Edit className="size-4" />
                   <span className="sr-only">Edit Konten</span>
                 </Link>
@@ -126,7 +120,7 @@ export function PublicationTable({
               size="icon"
               className="h-8 w-8 text-[var(--color-muted)] hover:text-[var(--color-primary)]"
             >
-              <Link href={`/internal/publications/${pub.slug}`} title="Lihat Detail">
+              <Link href={`${baseUrl}/${pub.slug}`} title="Lihat Detail">
                 <Eye className="size-4" />
                 <span className="sr-only">Lihat Detail</span>
               </Link>
@@ -139,33 +133,16 @@ export function PublicationTable({
 
   return (
     <div className="flex flex-col">
-      <div className="border-b border-[var(--color-border)] px-4 sm:px-5">
-        <div className="flex gap-4 overflow-x-auto scrollbar-none">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium transition-colors ${
-                activeTab === tab.id
-                  ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-                  : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
       <ClientDataTable
-        data={filteredPublications}
+        data={publications}
         columns={columns}
         searchable={true}
-        searchPlaceholder="Cari publikasi..."
+        searchPlaceholder="Cari konten..."
         searchFn={(pub, query) =>
           pub.title.toLowerCase().includes(query.toLowerCase()) ||
           (pub.organizationName || "").toLowerCase().includes(query.toLowerCase())
         }
-        emptyMessage="Belum ada konten publikasi."
+        emptyMessage="Belum ada konten."
       />
     </div>
   );

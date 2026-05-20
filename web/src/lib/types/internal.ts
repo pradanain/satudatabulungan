@@ -76,6 +76,9 @@ export type InternalPermission =
   // Berita
   | "news.view"
   | "news.manage"
+  | "news.create_own_opd"
+  | "news.edit_own_draft"
+  | "news.submit"
   // Regulasi
   | "regulation.view"
   | "regulation.manage"
@@ -114,7 +117,9 @@ export type InternalNavKey =
   | "profile"
   | "help"
   | "integrations"
-  | "publications";
+  | "berita"
+  | "bukuDigital"
+  | "infografis";
 
 export type ContentType = "news" | "digital_publication" | "infographic" | "regulation" | "technical_guide";
 export type ContentStatus = DatasetStatus;

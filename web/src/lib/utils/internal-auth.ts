@@ -157,6 +157,10 @@ export const internalRolePermissions: Record<InternalRole, InternalPermission[]>
     "content.edit_own_draft",
     "content.upload_file",
     "content.submit",
+    "news.view",
+    "news.create_own_opd",
+    "news.edit_own_draft",
+    "news.submit",
     "infographic.view_own_opd",
     "infographic.create_own_opd",
     "digital_publication.view_own_opd",
@@ -242,7 +246,9 @@ export const internalNavLabels: Record<InternalNavKey, string> = {
   profile: "Profil",
   help: "Bantuan / FAQ",
   integrations: "Integrasi & API",
-  publications: "Publikasi",
+  berita: "Berita",
+  bukuDigital: "Buku Digital",
+  infografis: "Infografis",
 };
 
 export const internalRoleLabels: Record<InternalRole, string> = {
@@ -275,7 +281,9 @@ export const internalNavAccess: Record<InternalNavKey, InternalRole[]> = {
   profile: ["sekretariat", "pembina", "walidata", "produsen"],
   help: ["sekretariat", "pembina", "walidata", "produsen"],
   integrations: ["walidata"],
-  publications: ["sekretariat", "pembina", "walidata", "produsen"],
+  berita: ["sekretariat", "pembina", "walidata", "produsen"],
+  bukuDigital: ["sekretariat", "pembina", "walidata", "produsen"],
+  infografis: ["sekretariat", "pembina", "walidata", "produsen"],
 };
 
 const pathMapping: Array<{ prefix: string; navKey: InternalNavKey }> = [
@@ -293,7 +301,9 @@ const pathMapping: Array<{ prefix: string; navKey: InternalNavKey }> = [
   { prefix: "/internal/profile", navKey: "profile" },
   { prefix: "/internal/help", navKey: "help" },
   { prefix: "/internal/integrations", navKey: "integrations" },
-  { prefix: "/internal/publications", navKey: "publications" },
+  { prefix: "/internal/berita", navKey: "berita" },
+  { prefix: "/internal/buku-digital", navKey: "bukuDigital" },
+  { prefix: "/internal/infografis-internal", navKey: "infografis" },
 ];
 
 const apiPathMapping: Array<{ prefix: string; navKey: InternalNavKey }> = [

@@ -31,8 +31,8 @@ export async function POST(request: Request) {
       if (organizationId !== session.organizationId) {
         return NextResponse.json({ success: false, error: "Anda tidak memiliki izin mengunggah untuk OPD lain." }, { status: 403 });
       }
-      if (!["digital_publication", "infographic"].includes(type)) {
-        return NextResponse.json({ success: false, error: "Produsen hanya diizinkan mengunggah Publikasi Digital atau Infografis." }, { status: 403 });
+      if (!["news", "digital_publication", "infographic"].includes(type)) {
+        return NextResponse.json({ success: false, error: "Produsen hanya diizinkan mengunggah Berita, Publikasi Digital, atau Infografis." }, { status: 403 });
       }
       if (status === "Published") {
         return NextResponse.json({ success: false, error: "Produsen tidak memiliki izin untuk menerbitkan langsung." }, { status: 403 });

@@ -859,6 +859,14 @@ export function getScopedPublications(store: InternalPortalStore, session: Inter
   );
 }
 
+export function getScopedPublicationsByType(
+  store: InternalPortalStore,
+  session: InternalSession,
+  type: string,
+): InternalPublication[] {
+  return getScopedPublications(store, session).filter((pub) => pub.type === type);
+}
+
 export function getScopedNotifications(
   store: InternalPortalStore,
   session: InternalSession,

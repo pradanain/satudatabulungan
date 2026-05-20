@@ -16,9 +16,10 @@ interface InternalPublicationFormProps {
   session: InternalSession;
   organizations: InternalOrganization[];
   initialData?: InternalPublication;
+  fixedType?: ContentType;
 }
 
-export function InternalPublicationForm({ mode, session, organizations, initialData }: InternalPublicationFormProps) {
+export function InternalPublicationForm({ mode, session, organizations, initialData, fixedType }: InternalPublicationFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -27,9 +28,11 @@ export function InternalPublicationForm({ mode, session, organizations, initialD
   const isProdusen = session.role === "produsen";
   const canManageAll = hasPermission(session, "content.manage_all");
 
+  const defaultType = fixedType || initialData?.type || (isProdusen ? "digital_publication" : "news") as ContentType;
+
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
-    type: initialData?.type || (isProdusen ? "digital_publication" : "news") as ContentType,
+    type: defaultType,
     description: initialData?.description || "",
     content: initialData?.content || "",
     fileUrl: initialData?.fileUrl || "",
@@ -240,6 +243,7 @@ export function InternalPublicationForm({ mode, session, organizations, initialD
               />
             </div>
 
+            {!fixedType && (
             <div className="space-y-2">
               <label htmlFor="type" className="text-sm font-medium leading-none">Jenis Konten <span className="text-red-500">*</span></label>
               <Select value={formData.type} onValueChange={(val) => handleSelectChange("type", val)}>
@@ -249,6 +253,7 @@ export function InternalPublicationForm({ mode, session, organizations, initialD
                 <SelectContent>
                   {isProdusen ? (
                     <>
+                      <SelectItem value="news">Berita</SelectItem>
                       <SelectItem value="digital_publication">Publikasi Digital</SelectItem>
                       <SelectItem value="infographic">Infografis</SelectItem>
                     </>
@@ -264,6 +269,7 @@ export function InternalPublicationForm({ mode, session, organizations, initialD
                 </SelectContent>
               </Select>
             </div>
+            )}
 
             <div className="space-y-2">
               <label htmlFor="organizationId" className="text-sm font-medium leading-none">OPD / Sumber <span className="text-red-500">*</span></label>
