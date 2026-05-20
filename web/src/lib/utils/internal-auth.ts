@@ -242,7 +242,7 @@ export const internalNavLabels: Record<InternalNavKey, string> = {
   profile: "Profil",
   help: "Bantuan / FAQ",
   integrations: "Integrasi & API",
-  publications: "Publikasi & Konten",
+  publications: "Publikasi",
 };
 
 export const internalRoleLabels: Record<InternalRole, string> = {
@@ -268,7 +268,7 @@ export const internalNavAccess: Record<InternalNavKey, InternalRole[]> = {
   users: ["walidata"],
   archive: ["sekretariat", "pembina", "walidata"],
   organizations: ["sekretariat", "pembina", "walidata"],
-  topics: ["sekretariat", "pembina", "walidata", "produsen"],
+  topics: ["sekretariat", "pembina", "walidata"],
   notifications: ["sekretariat", "pembina", "walidata", "produsen"],
   workflowHistory: ["sekretariat", "pembina", "walidata"],
   settings: ["walidata"],

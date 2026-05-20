@@ -28,7 +28,7 @@ export default async function InternalPublicationsPage() {
   return (
     <InternalShell session={session} activeKey="publications">
       <InternalPageHeader
-        title="Publikasi & Konten"
+        title="Publikasi"
         description="Kelola Berita, Publikasi Digital, Infografis, Regulasi, dan Petunjuk Teknis untuk portal publik."
         badges={
           publications.length > 0 ? (
