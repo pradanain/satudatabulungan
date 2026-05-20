@@ -18,6 +18,8 @@ import ChoroplethMap from "@/components/shared/choropleth-map";
 import { DatasetNotesSection } from "@/components/internal/dataset-notes-section";
 import { InternalDatasetDetailTabs } from "@/components/internal/internal-dataset-detail-tabs";
 import { InternalWorkflowActions } from "@/components/internal/internal-workflow-actions";
+import { InternalActivityTimeline } from "@/components/internal/internal-activity-timeline";
+import { cn } from "@/lib/utils/cn";
 
 export const dynamic = "force-dynamic";
 
@@ -194,8 +196,8 @@ export default async function InternalDatasetDetailPage({
   ) : null;
 
   const notesContent = (
-    <div className="grid gap-6 md:grid-cols-3 items-start">
-      <div className="md:col-span-2">
+    <div className={cn("grid gap-6 items-start", session.role !== "produsen" ? "md:grid-cols-3" : "grid-cols-1")}>
+      <div className={session.role !== "produsen" ? "md:col-span-2" : "col-span-1"}>
         <DatasetNotesSection
           slug={dataset.slug}
           notes={dataset.notes || []}
@@ -204,12 +206,20 @@ export default async function InternalDatasetDetailPage({
           readOnly={session.role === "produsen"}
         />
       </div>
-      <div className="md:col-span-1">
-        <InternalWorkflowActions 
-          dataset={dataset} 
-          session={session} 
-        />
-      </div>
+      {session.role !== "produsen" && (
+        <div className="md:col-span-1">
+          <InternalWorkflowActions 
+            dataset={dataset} 
+            session={session} 
+          />
+        </div>
+      )}
+    </div>
+  );
+
+  const activityContent = (
+    <div className="max-w-3xl">
+      <InternalActivityTimeline events={dataset.workflowHistory || []} />
     </div>
   );
 
@@ -226,6 +236,9 @@ export default async function InternalDatasetDetailPage({
         }
         actions={
           <>
+            {session.role === "produsen" && (
+              <InternalWorkflowActions dataset={dataset} session={session} variant="inline" />
+            )}
             {dataset.status === "Published" ? (
               <Button asChild variant="secondary" className="rounded-full px-5">
                 <Link href={`/dataset/${dataset.slug}`}>Buka Halaman Publik</Link>
@@ -259,6 +272,7 @@ export default async function InternalDatasetDetailPage({
         qualityContent={qualityContent}
         geospatialContent={geospatialContent}
         notesContent={notesContent}
+        activityContent={activityContent}
         metaSummaryContent={metaSummaryContent}
         role={session.role}
         canEdit={canEdit}

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils/cn";
 type InternalWorkflowActionsProps = {
   dataset: InternalDataset;
   session: InternalSession;
+  variant?: "card" | "inline";
 };
 
 const statusActionLabel: Record<DatasetStatus, string> = {
@@ -51,7 +52,7 @@ function getActionLabel(from: DatasetStatus, to: DatasetStatus): string {
   return statusActionLabel[to] || to;
 }
 
-export function InternalWorkflowActions({ dataset, session }: InternalWorkflowActionsProps) {
+export function InternalWorkflowActions({ dataset, session, variant = "card" }: InternalWorkflowActionsProps) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -111,13 +112,15 @@ export function InternalWorkflowActions({ dataset, session }: InternalWorkflowAc
     return null; // No actions available for current role/status
   }
 
-  return (
-    <Card className="p-4 shadow-sm border border-slate-200">
+  const innerContent = (
+    <>
       <ToastNotification message={errorMessage} type="error" onClose={() => setErrorMessage(null)} />
       <ToastNotification message={successMessage} type="success" onClose={() => setSuccessMessage(null)} />
 
-      <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wider">Aksi Workflow</h3>
-      <div className="flex flex-col gap-2">
+      {variant === "card" && (
+        <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wider">Aksi Workflow</h3>
+      )}
+      <div className={cn("flex gap-2", variant === "card" ? "flex-col" : "flex-row")}>
         {nextStatuses.map((nextStatus) => {
           const isRevision = nextStatus === "Need Revision";
           const label = getActionLabel(dataset.status, nextStatus);
@@ -127,9 +130,10 @@ export function InternalWorkflowActions({ dataset, session }: InternalWorkflowAc
               type="button"
               className={cn(
                 "w-full text-xs h-10 font-semibold rounded-xl transition-all",
+                variant === "inline" && "w-auto px-6 h-9 rounded-full",
                 isRevision 
                   ? "bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 border border-amber-200" 
-                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                  : "bg-[var(--color-primary)] hover:bg-[#8f1717] text-white shadow-sm"
               )}
               variant={isRevision ? "outline" : "default"}
               disabled={pendingId === dataset.id}
@@ -158,6 +162,16 @@ export function InternalWorkflowActions({ dataset, session }: InternalWorkflowAc
           }}
         />
       )}
+    </>
+  );
+
+  if (variant === "inline") {
+    return innerContent;
+  }
+
+  return (
+    <Card className="p-4 shadow-sm border border-slate-200">
+      {innerContent}
     </Card>
   );
 }

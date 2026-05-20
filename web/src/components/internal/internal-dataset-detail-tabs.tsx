@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, BarChart3, Map, MessageSquare, Pencil } from "lucide-react";
+import { FileText, BarChart3, Map, MessageSquare, Pencil, Activity } from "lucide-react";
 import type { InternalRole, InternalSession, InternalOrganization, InternalTopicReference, InternalDataset } from "@/lib/types/internal";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
@@ -9,13 +9,14 @@ import { ToastNotification } from "@/components/ui/toast-popup";
 import { InternalDatasetForm } from "@/components/internal/internal-dataset-form";
 import type { DatasetUpdateInput } from "@/lib/types/internal";
 
-type Tab = "form" | "geospatial" | "quality" | "notes";
+type Tab = "form" | "geospatial" | "quality" | "notes" | "activity";
 
 type InternalDatasetDetailTabsProps = {
   readOnlyContent: React.ReactNode;
   qualityContent: React.ReactNode;
   geospatialContent: React.ReactNode | null;
   notesContent: React.ReactNode;
+  activityContent: React.ReactNode;
   metaSummaryContent: React.ReactNode;
   role: InternalRole;
   canEdit: boolean;
@@ -32,6 +33,7 @@ const allTabs: { key: Tab; label: string; icon: typeof FileText }[] = [
   { key: "geospatial", label: "Geospasial", icon: Map },
   { key: "quality", label: "Skor Kualitas", icon: BarChart3 },
   { key: "notes", label: "Catatan", icon: MessageSquare },
+  { key: "activity", label: "Riwayat Aktivitas", icon: Activity },
 ];
 
 export function InternalDatasetDetailTabs({
@@ -39,6 +41,7 @@ export function InternalDatasetDetailTabs({
   qualityContent,
   geospatialContent,
   notesContent,
+  activityContent,
   metaSummaryContent,
   role,
   canEdit,
@@ -137,6 +140,7 @@ export function InternalDatasetDetailTabs({
         {active === "quality" && qualityContent}
         {active === "geospatial" && geospatialContent}
         {active === "notes" && notesContent}
+        {active === "activity" && activityContent}
       </div>
 
       {/* Confirm Edit Dialog */}

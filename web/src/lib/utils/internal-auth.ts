@@ -263,7 +263,7 @@ export function getDisplayOrganizationName(session: InternalSession): string {
 export const internalNavAccess: Record<InternalNavKey, InternalRole[]> = {
   dashboard: ["sekretariat", "pembina", "walidata", "produsen"],
   datasets: ["sekretariat", "pembina", "walidata", "produsen"],
-  review: ["sekretariat", "pembina", "walidata", "produsen"],
+  review: ["sekretariat", "pembina", "walidata"],
   monitoring: ["sekretariat", "pembina", "walidata"],
   users: ["walidata"],
   archive: ["sekretariat", "pembina", "walidata"],
