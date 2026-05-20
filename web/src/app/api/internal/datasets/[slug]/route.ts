@@ -119,7 +119,7 @@ export async function PATCH(
       result,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Gagal memperbarui dataset internal.";
+    const message = error instanceof Error ? error.message : "Gagal memperbarui dataset.";
     const status = inferInternalApiErrorStatus(message);
     return NextResponse.json(
       {

@@ -229,7 +229,7 @@ const DEFAULT_DEV_INTERNAL_SESSION_SECRET = "satudata-dev-internal-session-secre
 
 export const internalNavLabels: Record<InternalNavKey, string> = {
   dashboard: "Dashboard",
-  datasets: "Dataset Internal",
+  datasets: "Dataset",
   review: "Verifikasi Data",
   monitoring: "Monitoring",
   users: "Users",

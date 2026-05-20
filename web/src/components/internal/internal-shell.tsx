@@ -361,7 +361,7 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
 
         {/* Page Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl flex flex-col gap-6">
+          <div className="w-full flex flex-col gap-6">
             {children}
           </div>
         </main>

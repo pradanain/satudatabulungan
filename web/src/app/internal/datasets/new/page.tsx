@@ -13,16 +13,7 @@ export default async function InternalDatasetNewPage() {
 
   return (
     <InternalShell session={session} activeKey="datasets">
-      <InternalPageHeader
-        title="Tambah / Draft Dataset"
-        description="Gunakan form ini untuk membuat draft dataset baru. Draft tersimpan pada shared local store dan langsung muncul di workflow internal."
-        badges={
-          <>
-            <Badge variant="outline">Simpan ke shared data layer</Badge>
-            <Badge variant="outline">Siap submit ke workflow</Badge>
-          </>
-        }
-      />
+      <InternalPageHeader title="Tambah Dataset" description="Gunakan form ini untuk menambah dataset baru." />
 
       <InternalDatasetForm
         mode="create"

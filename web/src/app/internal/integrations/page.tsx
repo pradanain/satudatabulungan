@@ -51,7 +51,7 @@ const apiEndpoints = [
   {
     id: "internal-workflow",
     name: "Workflow Transition API",
-    description: "API transisi status dataset internal (submit, review, approve, dll).",
+    description: "API transisi status dataset (submit, review, approve, dll).",
     endpoint: "/api/internal/workflow/transition",
     method: "POST",
     visibility: "Internal" as const,
@@ -60,7 +60,7 @@ const apiEndpoints = [
   {
     id: "internal-draft",
     name: "Dataset Draft API",
-    description: "API pembuatan dan pengelolaan draft dataset internal.",
+    description: "API pembuatan dan pengelolaan draft dataset.",
     endpoint: "/api/internal/workflow/draft",
     method: "POST",
     visibility: "Internal" as const,
@@ -110,7 +110,7 @@ export default async function InternalIntegrationsPage() {
             <span className="text-xs text-[var(--color-muted)] truncate">{config.ckanBaseUrl}</span>
           </div>
         </Card>
-        
+
         <Card className="p-5 shadow-sm border-[var(--color-border)]">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">

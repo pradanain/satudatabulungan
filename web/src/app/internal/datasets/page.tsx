@@ -23,8 +23,8 @@ export default async function InternalDatasetsPage() {
   return (
     <InternalShell session={session} activeKey="datasets">
       <InternalPageHeader
-        title="Dataset Internal"
-        description="Kelola dataset lintas OPD sebelum dipublikasikan ke portal publik."
+        title="Dataset"
+        description="Kelola dataset yang akan dipublikasikan."
         badges={
           datasets.length > 0 ? (
             <Badge variant="outline">{formatCompactNumber(datasets.length)} Dataset</Badge>
