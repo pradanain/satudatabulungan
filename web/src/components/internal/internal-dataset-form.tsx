@@ -1118,51 +1118,7 @@ export function InternalDatasetForm({
             </span>
           </div>
 
-          {/* Advanced resource configs toggle */}
-          <div className="md:col-span-2 pt-2 border-t border-gray-100 mt-2">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="text-xs font-semibold text-[#4b7fe0] hover:underline flex items-center gap-1 focus:outline-none transition-all cursor-pointer"
-            >
-              {showAdvanced ? "Sembunyikan Pengaturan Berkas Lanjutan ▴" : "Tampilkan Pengaturan Berkas Lanjutan (Nama, Format, URL manual) ▾"}
-            </button>
 
-            {showAdvanced && (
-              <Card className="mt-3 p-4 border border-[#d6ddeb] bg-[#f8fbff] grid gap-4 grid-cols-1 md:grid-cols-3 rounded-2xl animate-in slide-in-from-top-2 duration-200">
-                <label className="internal-field-label">
-                  Nama Resource Utama
-                  <Input value={form.resourceName} onChange={(event) => setForm((current) => ({ ...current, resourceName: event.target.value }))} required />
-                </label>
-                
-                <div className="internal-field-label">
-                  Format Berkas Utama
-                  <Select
-                    value={form.resourceFormat}
-                    onValueChange={(value) =>
-                      setForm((current) => ({ ...current, resourceFormat: value as DatasetFormat }))
-                    }
-                  >
-                    <SelectTrigger className="h-11 bg-white border-[#d6ddeb]">
-                      <SelectValue placeholder="Format" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {resourceFormatOptions.map((item) => (
-                        <SelectItem key={item} value={item}>
-                          {item}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <label className="internal-field-label md:col-span-3">
-                  URL Resource (Diisi otomatis dari unggahan file)
-                  <Input value={form.resourceUrl} onChange={(event) => setForm((current) => ({ ...current, resourceUrl: event.target.value }))} placeholder="Atau isi URL manual untuk API external" />
-                </label>
-              </Card>
-            )}
-          </div>
 
         </div>
       </Card>
