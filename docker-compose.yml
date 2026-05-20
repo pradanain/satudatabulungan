@@ -128,6 +128,7 @@ services:
       - CKAN_BASE_URL=http://ckan:5000
       - NEXT_PUBLIC_CKAN_BASE_URL=${NEXT_PUBLIC_CKAN_BASE_URL:-http://localhost:5000}
       - CKAN_API_KEY=${CKAN_API_KEY}
+      - INTERNAL_SESSION_SECRET=${INTERNAL_SESSION_SECRET:-satudata-prod-internal-session-secret-default-change-me-highly-secret}
     restart: always
 
 volumes:
