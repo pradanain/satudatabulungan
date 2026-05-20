@@ -48,7 +48,7 @@ export default async function InternalDatasetDetailPage({
   const readOnlyContent = (
     <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6 space-y-5">
       <div>
-        <h2 className="m-0 text-xl font-semibold">{dataset.title}</h2>
+        <h2 className="m-0 text-lg sm:text-xl font-bold leading-snug">{dataset.title}</h2>
         <p className="mb-0 mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{dataset.description}</p>
       </div>
 
@@ -98,6 +98,48 @@ export default async function InternalDatasetDetailPage({
           </div>
         </div>
       )}
+
+      {dataset.preview?.rows && dataset.preview.rows.length > 0 && (
+        <div className="mt-6 border-t border-slate-100 pt-6">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-3">Pratinjau Data</h3>
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-sm text-left text-slate-600">
+              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                <tr>
+                  {dataset.preview.columns ? (
+                    dataset.preview.columns.map(c => (
+                       <th key={c.key} className={`px-4 py-3 font-semibold ${c.isNumeric ? 'text-right' : ''}`}>{c.label}</th>
+                    ))
+                  ) : (
+                    <>
+                      <th className="px-4 py-3 font-semibold">Wilayah</th>
+                      <th className="px-4 py-3 font-semibold text-right">Total</th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {dataset.preview.rows.map((r, i) => (
+                  <tr key={i} className="hover:bg-slate-50">
+                    {dataset.preview.columns ? (
+                      dataset.preview.columns.map(c => (
+                         <td key={c.key} className={`px-4 py-3 ${c.isNumeric ? 'text-right font-medium' : ''}`}>
+                            {c.key === 'area' ? r.area : c.key === 'total' ? r.total?.toLocaleString("id-ID") : r.values?.[c.key]}
+                         </td>
+                      ))
+                    ) : (
+                      <>
+                        <td className="px-4 py-3">{r.area}</td>
+                        <td className="px-4 py-3 text-right font-medium">{r.total?.toLocaleString("id-ID")}</td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </Card>
   );
 
@@ -135,11 +177,25 @@ export default async function InternalDatasetDetailPage({
     <InternalQualityScoreCard dataset={dataset as unknown as PortalDataset} />
   );
 
+  const regionValues = new Map<string, { value: number; regionName: string }>();
+  if (showGeo && dataset.preview?.rows) {
+    dataset.preview.rows.forEach(r => {
+      if (r.area && r.total !== undefined) {
+        regionValues.set(r.area, { value: r.total, regionName: r.area });
+      }
+    });
+  }
+
   const geospatialContent = showGeo ? (
     <Card className="internal-surface border-transparent p-5 shadow-none">
       <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-muted)]">Pratinjau Geospasial</h3>
       <div className="mt-4 h-[400px] overflow-hidden rounded-xl border border-white/60 bg-slate-50">
-        <ChoroplethMap valuesByRegion={new Map()} className="h-full w-full" />
+        <ChoroplethMap 
+          valuesByRegion={regionValues} 
+          metricLabel={dataset.preview?.chartTitle || "Total"}
+          unitLabel={dataset.preview?.chartUnit || ""}
+          className="h-full w-full" 
+        />
       </div>
       <p className="mt-3 text-[10px] leading-tight text-[var(--color-muted)]">
         Visualisasi otomatis berdasarkan kolom wilayah yang terdeteksi dalam dataset.
