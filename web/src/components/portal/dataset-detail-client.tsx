@@ -545,6 +545,31 @@ export function DatasetDetailClient({
     ? cleanColumnLabel(activeMetricColInfo.label) 
     : formatMetricLabel(selectedMetric);
 
+  const getContextualTitle = () => {
+    if (!title) return activeMetricLabel;
+    
+    // Jika label berupa tahun (contoh: "2022")
+    if (/^\d{4}$/.test(activeMetricLabel.trim())) {
+      // Ganti range tahun seperti "2022-2025" dengan tahun yang aktif
+      const titleWithYear = title.replace(/\d{4}\s*(?:-|s\.d\.?|s\/d|sampai|hingga)\s*\d{4}/gi, activeMetricLabel);
+      if (titleWithYear !== title) return titleWithYear;
+      
+      const singleYearMatch = title.match(/(?:Tahun\s+)(\d{4})$/i);
+      if (singleYearMatch) {
+         return title.replace(/(?:Tahun\s+)(\d{4})$/i, `Tahun ${activeMetricLabel}`);
+      }
+      return `${title} (Tahun ${activeMetricLabel})`;
+    }
+    
+    if (title.toLowerCase().includes(activeMetricLabel.toLowerCase())) {
+       return title;
+    }
+    
+    return `${title} — ${activeMetricLabel}`;
+  };
+
+  const contextualTitle = getContextualTitle();
+
   return (
     <div className="flex flex-col gap-4">
       {/* ── 1. Tabel ──────────────────────────────────────────── */}
@@ -635,6 +660,7 @@ export function DatasetDetailClient({
         schema={schema}
         selectedMetric={selectedMetric}
         metricLabel={activeMetricLabel}
+        contextualTitle={contextualTitle}
         selectedPeriod={selectedPeriod}
         filteredData={filteredData.length ? filteredData : data}
       />
@@ -645,7 +671,7 @@ export function DatasetDetailClient({
           <div className="border-b border-[#f0f2f5] bg-[linear-gradient(180deg,#f8faff_0%,#f3f7ff_100%)] px-5 py-4">
             <h3 className="m-0 text-base font-semibold text-[#1e2f52]">Visualisasi Geospasial</h3>
             <p className="m-0 mt-0.5 text-[13px] text-[#6b7280]">
-              Sebaran{selectedMetric ? ` ${activeMetricLabel}` : " data"} di seluruh kecamatan Kabupaten Bulungan.
+              {contextualTitle || `Sebaran${selectedMetric ? ` ${activeMetricLabel}` : " data"}`} di seluruh kecamatan Kabupaten Bulungan.
             </p>
           </div>
           <div className="relative h-[460px] w-full sm:h-[500px]">

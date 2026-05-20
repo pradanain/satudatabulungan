@@ -14,6 +14,7 @@ interface DatasetExplorationProps {
   schema: DatasetSchema;
   selectedMetric: string;
   metricLabel?: string;
+  contextualTitle?: string;
   selectedPeriod: string;
   filteredData: Record<string, unknown>[];
 }
@@ -23,6 +24,7 @@ export function DatasetExploration({
   schema,
   selectedMetric,
   metricLabel: customMetricLabel,
+  contextualTitle,
   selectedPeriod,
   filteredData,
 }: DatasetExplorationProps) {
@@ -121,7 +123,7 @@ export function DatasetExploration({
       <Card className="overflow-hidden border-[#d5dceb] bg-[linear-gradient(180deg,#ffffff_0%,#f9fbff_100%)] p-5 sm:p-6">
         <SectionHeading
           title="Eksplorasi Dataset"
-          description={`Distribusi ${metricLabel}${selectedPeriod ? ` — Periode ${selectedPeriod}` : ""}`}
+          description={contextualTitle || `Distribusi ${metricLabel}${selectedPeriod ? ` — Periode ${selectedPeriod}` : ""}`}
           titleClassName="text-2xl sm:text-3xl"
           descriptionClassName="text-sm sm:text-base"
         />
