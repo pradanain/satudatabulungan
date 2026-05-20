@@ -21,9 +21,9 @@ ENV PORT=3000
 
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 
-COPY --from=builder /app/public ./public
+COPY --from=builder /app/public ./app/public
 COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/.next/static ./app/.next/static
 COPY --from=builder /app/infografis.json ./infografis.json
 RUN mkdir -p /app/.local && chown -R nextjs:nodejs /app
 
