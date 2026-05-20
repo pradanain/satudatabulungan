@@ -44,7 +44,65 @@ export default async function InternalDatasetDetailPage({
   const canEdit = hasPermission(session, "dataset.edit_metadata") || hasPermission(session, "dataset.edit_draft_own_opd");
   const showGeo = hasGeospatialData(dataset as any);
 
-  const formContent = canEdit ? (
+  // Read-only view of the dataset
+  const readOnlyContent = (
+    <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6 space-y-5">
+      <div>
+        <h2 className="m-0 text-xl font-semibold">{dataset.title}</h2>
+        <p className="mb-0 mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{dataset.description}</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">Topik</span>
+          <span className="text-sm font-semibold">{dataset.topic}</span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">Periode</span>
+          <span className="text-sm font-semibold">{dataset.metadata.period}</span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">Frekuensi</span>
+          <span className="text-sm font-semibold">{dataset.frequency}</span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">Walidata</span>
+          <span className="text-sm font-semibold">{dataset.metadata.walidata}</span>
+        </div>
+      </div>
+
+      {dataset.metadata.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {dataset.metadata.tags.map((tag) => (
+            <Badge key={tag} variant="secondary">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {dataset.resources.length > 0 && (
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Resource ({dataset.resources.length})</h3>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {dataset.resources.map((r, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3">
+                <span className={`inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white ${
+                  r.format === "XLSX" ? "bg-green-600" :
+                  r.format === "CSV" ? "bg-emerald-500" :
+                  r.format === "PDF" ? "bg-red-500" : "bg-blue-500"
+                }`}>{r.format}</span>
+                <span className="text-xs font-medium text-slate-700 truncate">{r.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+
+  // Edit form content
+  const editFormContent = (
     <InternalDatasetForm
       mode="edit"
       session={session}
@@ -52,18 +110,6 @@ export default async function InternalDatasetDetailPage({
       organizations={store.organizations}
       topics={store.topics}
     />
-  ) : (
-    <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6">
-      <h2 className="m-0 text-xl font-semibold">Ringkasan Dataset</h2>
-      <p className="mb-0 mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{dataset.description}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {dataset.metadata.tags.map((tag) => (
-          <Badge key={tag} variant="secondary">
-            {tag}
-          </Badge>
-        ))}
-      </div>
-    </Card>
   );
 
   const metaSummaryContent = (
@@ -153,14 +199,15 @@ export default async function InternalDatasetDetailPage({
       </section>
 
       <InternalDatasetDetailTabs
-        formContent={formContent}
+        readOnlyContent={readOnlyContent}
+        editFormContent={editFormContent}
         qualityContent={qualityContent}
         geospatialContent={geospatialContent}
         notesContent={notesContent}
         metaSummaryContent={metaSummaryContent}
         role={session.role}
+        canEdit={canEdit}
       />
     </InternalShell>
   );
 }
-

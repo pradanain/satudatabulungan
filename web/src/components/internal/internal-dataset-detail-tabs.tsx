@@ -1,52 +1,50 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, BarChart3, Map, MessageSquare } from "lucide-react";
+import { FileText, BarChart3, Map, MessageSquare, Pencil } from "lucide-react";
 import type { InternalRole } from "@/lib/types/internal";
+import { Button } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
 
-type Tab = "form" | "quality" | "geospatial" | "notes";
+type Tab = "form" | "geospatial" | "quality" | "notes";
 
 type InternalDatasetDetailTabsProps = {
-  formContent: React.ReactNode;
+  readOnlyContent: React.ReactNode;
+  editFormContent: React.ReactNode;
   qualityContent: React.ReactNode;
   geospatialContent: React.ReactNode | null;
   notesContent: React.ReactNode;
   metaSummaryContent: React.ReactNode;
   role: InternalRole;
+  canEdit: boolean;
 };
 
 const allTabs: { key: Tab; label: string; icon: typeof FileText }[] = [
   { key: "form", label: "Dataset", icon: FileText },
-  { key: "quality", label: "Skor Kualitas", icon: BarChart3 },
   { key: "geospatial", label: "Geospasial", icon: Map },
+  { key: "quality", label: "Skor Kualitas", icon: BarChart3 },
   { key: "notes", label: "Catatan", icon: MessageSquare },
 ];
 
 export function InternalDatasetDetailTabs({
-  formContent,
+  readOnlyContent,
+  editFormContent,
   qualityContent,
   geospatialContent,
   notesContent,
   metaSummaryContent,
   role,
+  canEdit,
 }: InternalDatasetDetailTabsProps) {
-  // For produsen, only show notes tab
-  const isProdusen = role === "produsen";
-
-  const [active, setActive] = useState<Tab>(isProdusen ? "notes" : "form");
-
-  let visibleTabs = isProdusen
-    ? allTabs.filter((t) => t.key === "notes")
-    : allTabs;
+  const [active, setActive] = useState<Tab>("form");
+  const [isEditing, setIsEditing] = useState(false);
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // Filter out geospatial tab if no geospatial content
+  let visibleTabs = allTabs;
   if (!geospatialContent) {
     visibleTabs = visibleTabs.filter((t) => t.key !== "geospatial");
-  }
-
-  // For produsen with only notes tab, skip the tab bar entirely
-  if (isProdusen) {
-    return <div>{notesContent}</div>;
   }
 
   return (
@@ -60,10 +58,18 @@ export function InternalDatasetDetailTabs({
             <button
               key={tab.key}
               type="button"
-              onClick={() => setActive(tab.key)}
+              onClick={() => {
+                if (isEditing && tab.key !== "form") {
+                  // Don't allow switching tabs while editing
+                  return;
+                }
+                setActive(tab.key);
+              }}
               className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
                 isActive
                   ? "bg-[var(--color-primary)] text-white shadow-sm"
+                  : isEditing && tab.key !== "form"
+                  ? "text-gray-300 cursor-not-allowed"
                   : "text-[var(--color-muted)] hover:bg-slate-100 hover:text-[var(--color-text)]"
               }`}
             >
@@ -78,14 +84,67 @@ export function InternalDatasetDetailTabs({
       <div>
         {active === "form" && (
           <div className="space-y-4">
-            {formContent}
-            {metaSummaryContent}
+            {isEditing ? (
+              <>
+                {editFormContent}
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="rounded-full px-6 h-11 font-semibold cursor-pointer border-gray-200"
+                    onClick={() => setShowCancelConfirm(true)}
+                  >
+                    Batal Edit
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                {readOnlyContent}
+                {metaSummaryContent}
+                {canEdit && (
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      type="button"
+                      onClick={() => setShowEditConfirm(true)}
+                      className="rounded-full px-6 h-11 bg-[var(--color-primary)] font-bold text-white transition-all hover:bg-[#8f1717] active:scale-[0.98] cursor-pointer"
+                    >
+                      <Pencil className="size-4 mr-2" />
+                      Edit Dataset
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
         {active === "quality" && qualityContent}
         {active === "geospatial" && geospatialContent}
         {active === "notes" && notesContent}
       </div>
+
+      {/* Confirm Edit Dialog */}
+      <ConfirmationDialog
+        open={showEditConfirm}
+        onOpenChange={setShowEditConfirm}
+        title="Edit Dataset?"
+        description="Anda akan masuk ke mode edit untuk mengubah informasi dataset ini. Pastikan perubahan yang dilakukan sudah benar sebelum menyimpan."
+        confirmLabel="Ya, Edit"
+        cancelLabel="Batal"
+        onConfirm={() => setIsEditing(true)}
+      />
+
+      {/* Confirm Cancel Edit Dialog */}
+      <ConfirmationDialog
+        open={showCancelConfirm}
+        onOpenChange={setShowCancelConfirm}
+        title="Batalkan Perubahan?"
+        description="Perubahan yang belum disimpan akan hilang. Apakah Anda yakin ingin keluar dari mode edit?"
+        confirmLabel="Ya, Batalkan"
+        cancelLabel="Lanjut Edit"
+        variant="destructive"
+        onConfirm={() => setIsEditing(false)}
+      />
     </div>
   );
 }
