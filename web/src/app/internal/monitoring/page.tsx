@@ -51,7 +51,13 @@ export default async function InternalMonitoringPage() {
     <InternalShell session={session} activeKey="monitoring">
       <InternalPageHeader
         title="Monitoring"
-        description="Pantau kualitas data, aktivitas user, dan dataset yang perlu perhatian."
+        description={
+          session.role === "produsen" 
+            ? "Pantau catatan tindak lanjut dan perbaikan kualitas data OPD Anda."
+            : session.role === "sekretariat"
+              ? "Pantau kualitas data, catatan evaluasi, dan koordinasi antar OPD."
+              : "Pantau kualitas data, aktivitas user, dan dataset yang perlu perhatian."
+        }
       />
 
       <MonitoringTabs 

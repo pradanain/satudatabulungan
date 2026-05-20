@@ -61,7 +61,13 @@ export default async function InternalDashboardPage() {
     <InternalShell session={session} activeKey="dashboard">
       <InternalPageHeader
         title="Dashboard"
-        description="Ringkasan status dataset dan aktivitas portal internal Satu Data Kabupaten Bulungan."
+        description={
+          session.role === "produsen" 
+            ? "Ringkasan kontribusi dataset dan status pengajuan OPD Anda."
+            : session.role === "walidata"
+              ? "Ringkasan pengelolaan, verifikasi dataset, dan aktivitas portal."
+              : "Ringkasan pengawasan dataset dan aktivitas portal internal."
+        }
       />
 
       {/* KPI Summary Cards */}

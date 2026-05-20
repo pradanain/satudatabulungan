@@ -29,7 +29,11 @@ export default async function InternalArchivePage() {
     <InternalShell session={session} activeKey="archive">
       <InternalPageHeader
         title="Arsip Dataset"
-        description="Lihat dataset yang sudah diarsipkan dan alasan pengarsipan. Anda dapat memulihkan dataset jika diperlukan."
+        description={
+          session.role === "walidata"
+            ? "Lihat dataset yang diarsipkan. Anda dapat memulihkan dataset jika diperlukan."
+            : "Lihat daftar dataset yang ditarik dari publikasi beserta alasannya."
+        }
         badges={
           <>
             <Badge variant="outline">{datasets.length} dataset diarsipkan</Badge>

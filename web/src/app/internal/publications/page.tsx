@@ -29,7 +29,11 @@ export default async function InternalPublicationsPage() {
     <InternalShell session={session} activeKey="publications">
       <InternalPageHeader
         title="Publikasi"
-        description="Kelola Berita, Publikasi Digital, Infografis, Regulasi, dan Petunjuk Teknis untuk portal publik."
+        description={
+          session.role === "produsen"
+            ? "Kelola Publikasi Digital dan Infografis OPD Anda."
+            : "Kelola Berita, Publikasi Digital, Infografis, Regulasi, dan Petunjuk Teknis untuk portal publik."
+        }
         badges={
           publications.length > 0 ? (
             <Badge variant="outline">{formatCompactNumber(publications.length)} Konten</Badge>
