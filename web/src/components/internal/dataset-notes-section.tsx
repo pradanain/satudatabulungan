@@ -16,6 +16,7 @@ type DatasetNotesSectionProps = {
   notes: DatasetNote[];
   session: InternalSession;
   organizationId: string; // The dataset's OPD ID to check ownership
+  readOnly?: boolean;
 };
 
 const categoryLabels: Record<DatasetNoteCategory, string> = {
@@ -44,7 +45,7 @@ const typeColors: Record<DatasetNoteType, string> = {
   produsen_follow_up: "border-emerald-200 bg-emerald-50 text-emerald-700",
 };
 
-export function DatasetNotesSection({ slug, notes = [], session, organizationId }: DatasetNotesSectionProps) {
+export function DatasetNotesSection({ slug, notes = [], session, organizationId, readOnly = false }: DatasetNotesSectionProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [activeFilter, setActiveFilter] = useState<"all" | DatasetNoteType>("all");
@@ -60,10 +61,12 @@ export function DatasetNotesSection({ slug, notes = [], session, organizationId 
   const canWriteWalidata = hasPermission(session, "dataset.add_review_note") && session.role === "walidata";
   const canWriteProdusen = session.role === "produsen" && isOwnOpd;
 
-  const showNoteForm = (session.role === "pembina" && canWritePembina) ||
+  const showNoteForm = !readOnly && (
+                       (session.role === "pembina" && canWritePembina) ||
                        (session.role === "sekretariat" && canWriteSekretariat) ||
                        (session.role === "walidata" && canWriteWalidata) ||
-                       (session.role === "produsen" && canWriteProdusen);
+                       (session.role === "produsen" && canWriteProdusen)
+                     );
 
   // Set default category when role loads
   useState(() => {
@@ -152,32 +155,36 @@ export function DatasetNotesSection({ slug, notes = [], session, organizationId 
             <MessageSquare className="size-5 text-[var(--color-primary)]" />
             Catatan & Rekomendasi
           </h3>
-          <p className="text-xs text-[var(--color-muted)] mt-1">
-            Wadah koordinasi Pembina, Sekretariat, Walidata, dan Produsen terkait kesesuaian data.
-          </p>
+          {!readOnly && (
+            <p className="text-xs text-[var(--color-muted)] mt-1">
+              Wadah koordinasi Pembina, Sekretariat, Walidata, dan Produsen terkait kesesuaian data.
+            </p>
+          )}
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-1.5">
-          {(["all", "walidata_review", "pembina_recommendation", "sekretariat_monitoring", "produsen_follow_up"] as const).map((filter) => (
-            <Button
-              key={filter}
-              variant={activeFilter === filter ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveFilter(filter)}
-              className="rounded-full text-xs font-semibold h-8"
-            >
-              {filter === "all" ? "Semua" : filter === "walidata_review" ? "Walidata" : filter === "pembina_recommendation" ? "Pembina" : filter === "sekretariat_monitoring" ? "Sekretariat" : "Produsen"}
-            </Button>
-          ))}
-        </div>
+        {/* Filters - hidden in readOnly mode */}
+        {!readOnly && (
+          <div className="flex flex-wrap gap-1.5">
+            {(["all", "walidata_review", "pembina_recommendation", "sekretariat_monitoring", "produsen_follow_up"] as const).map((filter) => (
+              <Button
+                key={filter}
+                variant={activeFilter === filter ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveFilter(filter)}
+                className="rounded-full text-xs font-semibold h-8"
+              >
+                {filter === "all" ? "Semua" : filter === "walidata_review" ? "Walidata" : filter === "pembina_recommendation" ? "Pembina" : filter === "sekretariat_monitoring" ? "Sekretariat" : "Produsen"}
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Note Lists */}
       <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
         {filteredNotes.length === 0 ? (
           <div className="text-center py-8 text-[var(--color-muted)] text-sm">
-            Belum ada catatan untuk filter ini.
+            {readOnly ? "Tidak ada catatan atau rekomendasi untuk dataset ini." : "Belum ada catatan untuk filter ini."}
           </div>
         ) : (
           filteredNotes.map((note) => {

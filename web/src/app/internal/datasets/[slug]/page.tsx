@@ -107,6 +107,7 @@ export default async function InternalDatasetDetailPage({
       notes={dataset.notes || []}
       session={session}
       organizationId={dataset.organizationId}
+      readOnly={session.role === "produsen"}
     />
   );
 
@@ -128,9 +129,6 @@ export default async function InternalDatasetDetailPage({
                 <Link href={`/dataset/${dataset.slug}`}>Buka Halaman Publik</Link>
               </Button>
             ) : null}
-            <Button asChild variant="secondary" className="rounded-full px-5">
-              <Link href="/internal/workflow">Kembali ke Workflow</Link>
-            </Button>
           </>
         }
       />
