@@ -92,6 +92,7 @@ function inferNewsTopicLabel(content: string) {
 }
 
 import { loadInternalPortalStore } from "@/lib/services/internal-store";
+import { readdir, readFile } from "node:fs/promises";
 
 export async function loadKabarDataItems(limit = Number.MAX_SAFE_INTEGER): Promise<PortalNewsItem[]> {
   try {
@@ -100,7 +101,7 @@ export async function loadKabarDataItems(limit = Number.MAX_SAFE_INTEGER): Promi
       (pub) => pub.type === "news" && pub.status === "Published"
     ) || [];
 
-    const newsItems = newsPublications.map((pub) => {
+    const dynamicNewsItems = newsPublications.map((pub) => {
       const title = pub.title;
       const description = pub.description || pub.content?.substring(0, 200) || "";
       const date = pub.publishedAt || pub.updatedAt;
@@ -116,10 +117,61 @@ export async function loadKabarDataItems(limit = Number.MAX_SAFE_INTEGER): Promi
       } satisfies PortalNewsItem;
     });
 
-    return newsItems
+    let staticNewsItems: PortalNewsItem[] = [];
+    try {
+      const directoryEntries = await readdir(beritaDirectory, { withFileTypes: true });
+      const txtEntries = directoryEntries.filter((entry) => entry.isFile() && entry.name.endsWith(".txt"));
+
+      const parsedItems = await Promise.all(
+        txtEntries.map(async (entry) => {
+          const slug = entry.name.replace(/\.txt$/, "");
+          const rawText = await readFile(path.join(beritaDirectory, entry.name), "utf8");
+          const lines = rawText
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
+
+          if (lines.length < 2) return null;
+
+          const sourceUrl = lines[0];
+          if (!sourceUrl.startsWith("http")) return null;
+
+          const title = normalizeNewsTitle(lines[1]);
+          const firstParagraph = normalizeNewsText(lines.slice(2).join(" "));
+          const description =
+            firstParagraph.length > 200 ? `${firstParagraph.slice(0, 197).trimEnd()}...` : firstParagraph;
+
+          const imageFileName = beritaImageExtensions
+            .map((extension) => `${slug}${extension}`)
+            .find((fileName) => directoryEntries.some((candidate) => candidate.isFile() && candidate.name === fileName));
+
+          if (!imageFileName) return null;
+
+          const parsedDate = extractDateFromNewsUrl(sourceUrl);
+
+          return {
+            title,
+            description,
+            date: parsedDate ?? "2026-01-01",
+            organization: inferNewsOrganization(sourceUrl),
+            href: sourceUrl,
+            topicLabel: inferNewsTopicLabel(`${title} ${description}`),
+            imageSrc: `/berita/${imageFileName}`,
+          } satisfies PortalNewsItem;
+        })
+      );
+      staticNewsItems = parsedItems.filter((item): item is PortalNewsItem => Boolean(item));
+    } catch {
+      // Ignore errors if directory doesn't exist
+    }
+
+    const allNewsItems = [...dynamicNewsItems, ...staticNewsItems];
+
+    return allNewsItems
       .sort((left, right) => right.date.localeCompare(left.date))
       .slice(0, limit);
   } catch {
     return [];
   }
 }
+
