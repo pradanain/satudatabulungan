@@ -5,6 +5,7 @@ import { FileText, BarChart3, Map, MessageSquare, Pencil } from "lucide-react";
 import type { InternalRole, InternalSession, InternalOrganization, InternalTopicReference, InternalDataset } from "@/lib/types/internal";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
+import { ToastNotification } from "@/components/ui/toast-popup";
 import { InternalDatasetForm } from "@/components/internal/internal-dataset-form";
 import type { DatasetUpdateInput } from "@/lib/types/internal";
 
@@ -50,6 +51,7 @@ export function InternalDatasetDetailTabs({
   const [isEditing, setIsEditing] = useState(false);
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Filter out geospatial tab if no geospatial content
   let visibleTabs = allTabs;
@@ -102,7 +104,10 @@ export function InternalDatasetDetailTabs({
                 organizations={organizations}
                 topics={topics}
                 onCancel={() => setShowCancelConfirm(true)}
-                onSuccess={() => setIsEditing(false)}
+                onSuccess={(msg) => {
+                  setSuccessMessage(msg || "Berhasil disimpan.");
+                  setIsEditing(false);
+                }}
               />
             ) : (
               <>
@@ -150,6 +155,12 @@ export function InternalDatasetDetailTabs({
         cancelLabel="Lanjut Edit"
         variant="destructive"
         onConfirm={() => setIsEditing(false)}
+      />
+
+      <ToastNotification 
+        message={successMessage} 
+        type="success" 
+        onClose={() => setSuccessMessage(null)} 
       />
     </div>
   );

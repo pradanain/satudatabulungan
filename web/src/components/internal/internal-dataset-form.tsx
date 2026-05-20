@@ -142,7 +142,7 @@ type InternalDatasetFormProps = {
   topics: InternalTopicReference[];
   dataset?: InternalDataset;
   onCancel?: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (message: string) => void;
 };
 
 const updatedFrequencies = [
@@ -442,6 +442,7 @@ export function InternalDatasetForm({
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showConfirmSave, setShowConfirmSave] = useState(false);
 
   const [showConfirmRemoveFile, setShowConfirmRemoveFile] = useState(false);
   const [fileToRemoveIndex, setFileToRemoveIndex] = useState<number | null>(null);
@@ -556,9 +557,8 @@ export function InternalDatasetForm({
     }
   };
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsPending(true);
     setErrorMessage(null);
     setSuccessMessage(null);
 
@@ -581,15 +581,25 @@ export function InternalDatasetForm({
       (hasPermission(session.role, "dataset.view_all") && !form.organizationId)
     ) {
       setErrorMessage("Silakan lengkapi semua kolom wajib yang bertanda bintang.");
-      setIsPending(false);
       return;
     }
 
     if (formFiles.length === 0) {
       setErrorMessage("Silakan unggah minimal satu file dataset terlebih dahulu.");
-      setIsPending(false);
       return;
     }
+
+    if (mode === "edit") {
+      setShowConfirmSave(true);
+    } else {
+      executeSave();
+    }
+  }
+
+  async function executeSave() {
+    setIsPending(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
 
     try {
       const slug = isCreate ? (form.slug || slugify(form.title)) : dataset?.slug;
@@ -693,10 +703,11 @@ export function InternalDatasetForm({
       }
 
       const nextSlug = data.result?.slug ?? payload.slug;
-      setSuccessMessage(isCreate ? "Draft dataset berhasil dibuat." : "Dataset berhasil diperbarui.");
+      const msg = isCreate ? "Draft dataset berhasil dibuat." : "Dataset berhasil diperbarui.";
+      setSuccessMessage(msg);
 
       if (onSuccess) {
-        onSuccess();
+        onSuccess(msg);
       }
 
       startTransition(() => {
@@ -736,7 +747,7 @@ export function InternalDatasetForm({
   };
 
   return (
-    <form className="space-y-6 w-full" onSubmit={handleSubmit}>
+    <form className="space-y-6 w-full" onSubmit={handleFormSubmit}>
 
       <Card className="p-6 border border-gray-200/80 rounded-3xl shadow-xs bg-white space-y-6">
 
@@ -1086,6 +1097,18 @@ export function InternalDatasetForm({
             removeFile(fileToRemoveIndex);
             setFileToRemoveIndex(null);
           }
+        }}
+      />
+
+      <ConfirmationDialog
+        open={showConfirmSave}
+        onOpenChange={setShowConfirmSave}
+        title="Simpan Perubahan?"
+        description="Apakah Anda yakin data yang diubah sudah benar dan siap untuk disimpan?"
+        confirmLabel="Ya, Simpan"
+        cancelLabel="Kembali"
+        onConfirm={() => {
+          executeSave();
         }}
       />
     </form>
