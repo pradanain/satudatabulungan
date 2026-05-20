@@ -1098,22 +1098,8 @@ export function InternalDatasetForm({
             <input type="hidden" value={form.organizationId} />
           )}
 
-          {/* Walidata */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-              Walidata <span className="text-red-500">*</span>
-            </label>
-            <Input 
-              value={form.walidata} 
-              onChange={(event) => setForm((current) => ({ ...current, walidata: event.target.value }))} 
-              required 
-              placeholder="Contoh: Walidata Bulungan" 
-              className="h-11 rounded-xl border-gray-200"
-            />
-            <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mt-0.5">
-              Instansi yang bertindak sebagai walidata.
-            </span>
-          </div>
+          {/* Walidata (Hidden because it is always Walidata Bulungan) */}
+          <input type="hidden" value={form.walidata} />
 
           {/* Cakupan Wilayah */}
           <div className="flex flex-col gap-1.5">
