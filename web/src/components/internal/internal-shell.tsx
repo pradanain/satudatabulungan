@@ -189,6 +189,9 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
                 {group.keys.map((key) => {
                   const Icon = iconByKey[key];
                   const isActive = activeKey === key;
+                  const label = key === "review" && session.role === "produsen"
+                    ? "Pengajuan Dataset"
+                    : internalNavLabels[key];
                   
                   const navItem = (
                     <Link
@@ -207,7 +210,7 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
                         isCollapsed ? "size-5" : "size-4",
                         isActive && "text-[var(--color-primary)]"
                       )} />
-                      {!isCollapsed && <span className="truncate">{internalNavLabels[key]}</span>}
+                      {!isCollapsed && <span className="truncate">{label}</span>}
                       {/* Optional active indicator for collapsed state */}
                       {isCollapsed && isActive && (
                         <div className="absolute left-0 top-1/2 h-1/2 w-1 -translate-y-1/2 rounded-r-md bg-[var(--color-primary)]" />
@@ -220,8 +223,8 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
                       <TooltipTrigger asChild>
                         {navItem}
                       </TooltipTrigger>
-                      <TooltipContent side="right" className="font-semibold">
-                        {internalNavLabels[key]}
+                      <TooltipContent side="right" className="flex items-center gap-4">
+                        {label}
                       </TooltipContent>
                     </Tooltip>
                   ) : (
