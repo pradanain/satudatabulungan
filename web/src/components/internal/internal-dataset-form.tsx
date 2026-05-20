@@ -1360,6 +1360,8 @@ export function InternalDatasetForm({
             {/* Hidden fields */}
             <input type="hidden" value={form.walidata} />
             <input type="hidden" value={form.coverage} />
+          </div>
+        </div>
       </Card>
 
       <ToastNotification
