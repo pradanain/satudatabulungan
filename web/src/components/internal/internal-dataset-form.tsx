@@ -141,12 +141,12 @@ type InternalDatasetFormProps = {
   dataset?: InternalDataset;
 };
 
-const frequencyOptions: DatasetFrequency[] = [
-  "Harian",
+const updatedFrequencies = [
   "Bulanan",
   "Triwulanan",
   "Semesteran",
   "Tahunan",
+  "Lainnya",
 ];
 
 const resourceFormatOptions: DatasetFormat[] = ["CSV", "XLSX", "JSON", "API", "PDF"];

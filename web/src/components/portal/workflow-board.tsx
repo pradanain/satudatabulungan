@@ -95,11 +95,11 @@ function getActionLabel(from: DatasetStatus, to: DatasetStatus): string {
 }
 
 const frequencyOptions: DatasetFrequency[] = [
-  "Harian",
   "Bulanan",
   "Triwulanan",
   "Semesteran",
   "Tahunan",
+  "Lainnya",
 ];
 
 const resourceFormatOptions: DatasetFormat[] = ["CSV", "XLSX", "JSON", "API", "PDF"];

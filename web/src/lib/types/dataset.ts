@@ -1,13 +1,10 @@
 export type DatasetFormat = "CSV" | "XLSX" | "PDF" | "API" | "JSON";
 
 export type DatasetFrequency =
-  | "Harian"
   | "Bulanan"
   | "Triwulanan"
   | "Semesteran"
   | "Tahunan"
-  | "Series"
-  | "Multi-tahunan"
   | "Lainnya";
 
 export type DatasetStatus =

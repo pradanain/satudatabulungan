@@ -26,13 +26,10 @@ type DraftPayload = {
 };
 
 const allowedFrequencies: DatasetFrequency[] = [
-  "Harian",
   "Bulanan",
   "Triwulanan",
   "Semesteran",
   "Tahunan",
-  "Series",
-  "Multi-tahunan",
   "Lainnya",
 ];
 
