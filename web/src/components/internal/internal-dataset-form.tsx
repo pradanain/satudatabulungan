@@ -871,7 +871,7 @@ export function InternalDatasetForm({
                 accept=".xlsx,.xls,.csv,.json,.pdf" 
                 onChange={handleFileChange} 
                 multiple
-                className="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#4b7fe0] hover:file:bg-blue-100 cursor-pointer"
+                className="block max-w-max text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#4b7fe0] hover:file:bg-blue-100 cursor-pointer"
               />
               <span className="text-[10px] text-gray-500 font-normal">Mendukung multi-file & berbagai format (.xlsx, .csv, .json, .pdf)</span>
             </div>
