@@ -185,8 +185,6 @@ export default async function DatasetDetailPage({ params }: DatasetDetailPagePro
     { label: "Definisi", value: definitionText },
     { label: "Klasifikasi", value: `${dataset.topic}${dataset.metadata.tags.length ? ` • ${dataset.metadata.tags.join(", ")}` : ""}` },
     { label: "Produsen Data", value: displayOrganization },
-    { label: "Walidata", value: dataset.metadata.walidata || "Walidata Bulungan" },
-    { label: "Cakupan Wilayah", value: dataset.metadata.coverage || "Kabupaten Bulungan" },
     { label: "Periode Data", value: dataset.metadata.period || "-" },
     { label: "Frekuensi Pembaruan", value: dataset.frequency },
     { label: "Satuan", value: unitLabel },

@@ -1101,22 +1101,8 @@ export function InternalDatasetForm({
           {/* Walidata (Hidden because it is always Walidata Bulungan) */}
           <input type="hidden" value={form.walidata} />
 
-          {/* Cakupan Wilayah */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-              Cakupan Wilayah <span className="text-red-500">*</span>
-            </label>
-            <Input 
-              value={form.coverage} 
-              onChange={(event) => setForm((current) => ({ ...current, coverage: event.target.value }))} 
-              required 
-              placeholder="Contoh: Kabupaten Bulungan" 
-              className="h-11 rounded-xl border-gray-200"
-            />
-            <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mt-0.5">
-              Wilayah representasi dari data.
-            </span>
-          </div>
+          {/* Cakupan Wilayah (Hidden because it is usually Kabupaten Bulungan) */}
+          <input type="hidden" value={form.coverage} />
 
 
 
