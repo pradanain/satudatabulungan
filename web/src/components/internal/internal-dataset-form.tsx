@@ -711,7 +711,6 @@ export function InternalDatasetForm({
     value: org.id,
   }));
 
-  const updatedFrequencies = [...frequencyOptions, "Series", "Multi-tahunan", "Lainnya"];
 
   const getFileIcon = (format: DatasetFormat) => {
     switch (format) {
