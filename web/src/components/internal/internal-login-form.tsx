@@ -23,7 +23,7 @@ const demoAccounts = [
   },
   {
     label: "Produsen",
-    username: "operator.dinas-kesehatan",
+    username: "operator.dinkes",
     password: "bulunganbisa",
     note: "Input data OPD, draft dataset, submit review, dan kelola resource.",
   },
