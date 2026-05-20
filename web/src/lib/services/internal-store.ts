@@ -836,7 +836,12 @@ export function isSameOrgId(a: string | null | undefined, b: string | null | und
 
 export function getScopedDatasets(store: InternalPortalStore, session: InternalSession): InternalDataset[] {
   if (hasPermission(session, "dataset.view_all")) {
-    return [...store.datasets];
+    return store.datasets.filter(
+      (dataset) => 
+        dataset.status !== "Draft" || 
+        isSameOrgId(dataset.organizationId, session.organizationId) || 
+        dataset.ownerUserId === session.userId
+    );
   }
 
   return store.datasets.filter(

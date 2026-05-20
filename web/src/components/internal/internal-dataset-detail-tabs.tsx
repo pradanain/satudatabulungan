@@ -53,8 +53,13 @@ export function InternalDatasetDetailTabs({
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Filter out geospatial tab if no geospatial content
-  let visibleTabs = allTabs;
+  let visibleTabs = allTabs.map(tab => {
+    if (tab.key === "notes" && (role === "walidata" || role === "sekretariat" || role === "pembina")) {
+      return { ...tab, label: "Verifikasi & Approval" };
+    }
+    return tab;
+  });
+
   if (!geospatialContent) {
     visibleTabs = visibleTabs.filter((t) => t.key !== "geospatial");
   }

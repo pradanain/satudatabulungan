@@ -17,6 +17,7 @@ import type { PortalDataset } from "@/lib/services/ckan-portal-api";
 import ChoroplethMap from "@/components/shared/choropleth-map";
 import { DatasetNotesSection } from "@/components/internal/dataset-notes-section";
 import { InternalDatasetDetailTabs } from "@/components/internal/internal-dataset-detail-tabs";
+import { InternalWorkflowActions } from "@/components/internal/internal-workflow-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -193,13 +194,23 @@ export default async function InternalDatasetDetailPage({
   ) : null;
 
   const notesContent = (
-    <DatasetNotesSection
-      slug={dataset.slug}
-      notes={dataset.notes || []}
-      session={session}
-      organizationId={dataset.organizationId}
-      readOnly={session.role === "produsen"}
-    />
+    <div className="grid gap-6 md:grid-cols-3 items-start">
+      <div className="md:col-span-2">
+        <DatasetNotesSection
+          slug={dataset.slug}
+          notes={dataset.notes || []}
+          session={session}
+          organizationId={dataset.organizationId}
+          readOnly={session.role === "produsen"}
+        />
+      </div>
+      <div className="md:col-span-1">
+        <InternalWorkflowActions 
+          dataset={dataset} 
+          session={session} 
+        />
+      </div>
+    </div>
   );
 
   return (
