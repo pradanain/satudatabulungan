@@ -781,8 +781,8 @@ export function InternalDatasetForm({
         </div>
         <input type="hidden" value={form.slug} />
 
-        {/* ─── ROW 2: Metadata Fields ──────────────────── */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* ─── ROW 2: Metadata Utama (4 kolom) ──────────────────── */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
           {/* Topik Klasifikasi */}
           <div className="flex flex-col gap-1.5">
@@ -863,7 +863,10 @@ export function InternalDatasetForm({
               </span>
             )}
           </div>
+        </div>
 
+        {/* ─── ROW 3: Satuan & Produsen Data ──────────────────── */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Satuan */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
@@ -902,7 +905,6 @@ export function InternalDatasetForm({
           ) : (
             <input type="hidden" value={form.organizationId} />
           )}
-
         </div>
 
         {/* Hidden fields */}
