@@ -299,7 +299,7 @@ const pathMapping: Array<{ prefix: string; navKey: InternalNavKey }> = [
 const apiPathMapping: Array<{ prefix: string; navKey: InternalNavKey }> = [
   { prefix: "/api/internal/workflow/draft", navKey: "datasets" },
   { prefix: "/api/internal/datasets", navKey: "datasets" },
-  { prefix: "/api/internal/workflow/transition", navKey: "review" },
+  { prefix: "/api/internal/workflow/transition", navKey: "datasets" },
   { prefix: "/api/internal/profile", navKey: "profile" },
   { prefix: "/api/internal/settings", navKey: "settings" },
 ];
