@@ -1360,61 +1360,6 @@ export function InternalDatasetForm({
             {/* Hidden fields */}
             <input type="hidden" value={form.walidata} />
             <input type="hidden" value={form.coverage} />
-
-            {/* ─── ROW 4: Deskripsi Dataset ──────────────────── */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-                Deskripsi Dataset <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                rows={3}
-                value={form.description}
-                onChange={(event) => {
-                  const val = event.target.value;
-                  setForm((current) => ({ ...current, description: val }));
-                  validateField("description", val);
-                }}
-                className={`w-full rounded-xl border p-3 text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#4b7fe0] focus:border-[#4b7fe0] ${validationErrors.description ? "border-red-500" : "border-gray-200"}`}
-                placeholder="Tuliskan keterangan detail mengenai data yang disajikan..."
-                required
-              />
-              {validationErrors.description && (
-                <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
-                  <AlertCircle className="size-3" />{" "}
-                  {validationErrors.description}
-                </span>
-              )}
-            </div>
-
-            {/* ─── DIVIDER ──────────────────── */}
-            <div className="border-t border-dashed border-gray-200" />
-
-            {/* ─── ROW 5: Upload File ──────────────────── */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-                <FileUp className="size-3.5 text-green-600" /> Unggah File
-                Dataset <span className="text-red-500">*</span>
-              </label>
-              <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#d6ddeb] bg-gray-50/50 p-5 text-center transition hover:bg-gray-50">
-                <input
-                  type="file"
-                  accept=".xlsx,.xls,.csv,.json,.pdf"
-                  onChange={handleFileChange}
-                  multiple
-                  className="block max-w-max text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#4b7fe0] hover:file:bg-blue-100 cursor-pointer"
-                />
-                <span className="text-[10px] text-gray-400">
-                  Mendukung multi-file (.xlsx, .csv, .json, .pdf)
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <input type="hidden" value={form.slug} />
-
-        {/* Hidden fields */}
-        <input type="hidden" value={form.walidata} />
-        <input type="hidden" value={form.coverage} />
       </Card>
 
       <ToastNotification
