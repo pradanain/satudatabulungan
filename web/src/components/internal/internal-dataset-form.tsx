@@ -781,8 +781,8 @@ export function InternalDatasetForm({
         </div>
         <input type="hidden" value={form.slug} />
 
-        {/* ─── ROW 2: Topik + Tags + Periode + Frekuensi (4 kolom) ──────────────────── */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* ─── ROW 2: Metadata Fields ──────────────────── */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
           {/* Topik Klasifikasi */}
           <div className="flex flex-col gap-1.5">
@@ -863,10 +863,21 @@ export function InternalDatasetForm({
               </span>
             )}
           </div>
-        </div>
 
-        {/* ─── ROW 3: Produsen Data & Satuan ──────────────────── */}
-        <div className="grid gap-4 sm:grid-cols-2">
+          {/* Satuan */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+              Satuan
+            </label>
+            <Input
+              value={form.unit}
+              onChange={(event) => setForm((current) => ({ ...current, unit: event.target.value }))}
+              placeholder="Contoh: ribu jiwa, km², unit, %"
+              className="h-11 rounded-xl border-gray-200"
+            />
+          </div>
+
+          {/* Produsen Data / OPD (admin only) */}
           {hasPermission(session.role, "dataset.view_all") ? (
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
@@ -892,18 +903,6 @@ export function InternalDatasetForm({
             <input type="hidden" value={form.organizationId} />
           )}
 
-          {/* Satuan */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-              Satuan
-            </label>
-            <Input
-              value={form.unit}
-              onChange={(event) => setForm((current) => ({ ...current, unit: event.target.value }))}
-              placeholder="Contoh: ribu jiwa, km², unit, %"
-              className="h-11 rounded-xl border-gray-200"
-            />
-          </div>
         </div>
 
         {/* Hidden fields */}
