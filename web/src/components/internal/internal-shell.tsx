@@ -115,7 +115,7 @@ function getHref(key: InternalNavKey): string {
     case "integrations": return "/internal/integrations";
     case "berita": return "/internal/berita";
     case "bukuDigital": return "/internal/buku-digital";
-    case "infografis": return "/internal/infografis-internal";
+    case "infografis": return "/internal/infografis";
     default: return "/internal/dashboard";
   }
 }
@@ -198,7 +198,7 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
                   const label = key === "review" && session.role === "produsen"
                     ? "Pengajuan Dataset"
                     : internalNavLabels[key];
-                  
+
                   const navItem = (
                     <Link
                       href={getHref(key)}
@@ -246,16 +246,16 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
       {/* Footer / Logout */}
       <div className="shrink-0 border-t border-[var(--color-border)] p-4">
         {isCollapsed ? (
-           <TooltipProvider delayDuration={0}>
-             <Tooltip>
-               <TooltipTrigger asChild>
-                 <div className="flex justify-center">
-                    <InternalLogoutButton variant="ghost" className="h-10 w-10 text-red-600 hover:bg-red-50 hover:text-red-700" iconOnly />
-                 </div>
-               </TooltipTrigger>
-               <TooltipContent side="right" className="font-semibold text-red-600">Keluar</TooltipContent>
-             </Tooltip>
-           </TooltipProvider>
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex justify-center">
+                  <InternalLogoutButton variant="ghost" className="h-10 w-10 text-red-600 hover:bg-red-50 hover:text-red-700" iconOnly />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="font-semibold text-red-600">Keluar</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         ) : (
           <InternalLogoutButton variant="destructive" className="w-full justify-center" />
         )}
@@ -277,8 +277,8 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
 
       {/* Mobile Drawer Overlay */}
       {isMobileOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm xl:hidden transition-opacity" 
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm xl:hidden transition-opacity"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -306,7 +306,7 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
             >
               <Menu className="size-5" />
             </Button>
-            
+
             {/* Desktop sidebar toggle */}
             <Button
               variant="ghost"
@@ -317,7 +317,7 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
             >
               <Menu className="size-5" />
             </Button>
-            
+
             <div className="hidden sm:block">
               <div className="flex items-center gap-2 text-sm font-semibold text-[var(--color-muted)]">
                 <span>Portal Internal</span>
@@ -346,18 +346,6 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
                 </Link>
               </Button>
             )}
-            <Button asChild variant="outline" size="sm" className="hidden sm:flex rounded-full gap-1.5 border-[var(--color-border)]">
-              <Link href="/dataset">
-                <ExternalLink className="size-3.5" />
-                <span>Portal Publik</span>
-              </Link>
-            </Button>
-            {/* Mobile portal link */}
-            <Button asChild variant="ghost" size="icon" className="sm:hidden text-[var(--color-muted)]">
-               <Link href="/dataset" aria-label="Portal Publik">
-                <ExternalLink className="size-5" />
-              </Link>
-            </Button>
             <Link href="/internal/profile" className="ml-1 flex items-center gap-2.5 rounded-full p-1 pr-3 hover:bg-[var(--color-surface-soft)] transition-colors">
               <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
                 <UserCircle2 className="size-5" />

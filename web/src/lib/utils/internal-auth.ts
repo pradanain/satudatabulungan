@@ -303,7 +303,7 @@ const pathMapping: Array<{ prefix: string; navKey: InternalNavKey }> = [
   { prefix: "/internal/integrations", navKey: "integrations" },
   { prefix: "/internal/berita", navKey: "berita" },
   { prefix: "/internal/buku-digital", navKey: "bukuDigital" },
-  { prefix: "/internal/infografis-internal", navKey: "infografis" },
+  { prefix: "/internal/infografis", navKey: "infografis" },
 ];
 
 const apiPathMapping: Array<{ prefix: string; navKey: InternalNavKey }> = [

@@ -38,7 +38,7 @@ export default async function InternalInfografisPage() {
         {canCreate && (
           <div className="flex items-center justify-end px-4 pt-3 sm:px-5">
             <Button asChild size="sm" className="gap-1.5">
-              <Link href="/internal/infografis-internal/new">
+              <Link href="/internal/infografis/new">
                 <Plus className="size-4" />
                 Tambah Infografis
               </Link>

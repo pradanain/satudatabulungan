@@ -1,6 +1,5 @@
 import Link from "next/link";
-import type { ActiveMenu } from "@/components/portal/portal-header";
-import { PortalPageShell } from "@/components/portal/portal-page-shell";
+import Image from "next/image";
 import { SectionHeading } from "@/components/portal/section-heading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,6 @@ interface StatusPageProps {
   title: string;
   description: string;
   note?: string;
-  activeMenu?: ActiveMenu;
   primaryAction?: {
     href: string;
     label: string;
@@ -26,34 +24,51 @@ export function StatusPage({
   title,
   description,
   note,
-  activeMenu = "none",
   primaryAction = { href: "/", label: "Kembali ke Beranda" },
   secondaryAction,
 }: StatusPageProps) {
   return (
-    <PortalPageShell activeMenu={activeMenu} mainClassName="gap-0 py-0 sm:py-0">
-      <section className="flex min-h-full flex-1 items-center">
-        <div className="w-full border border-(--color-border) bg-[linear-gradient(122deg,#f6f4ee_0%,#eef4fc_52%,#e7effa_100%)] px-5 py-8 sm:px-8 sm:py-10">
-          <div className="mx-auto w-full max-w-3xl">
-            <div className="flex flex-wrap items-center gap-3">
-              <Badge variant="blue">Status {code}</Badge>
-              <p className="m-0 text-xs font-medium uppercase tracking-wide text-[var(--color-muted)]">Portal Satu Data Bulungan</p>
-            </div>
-            <SectionHeading title={title} description={description} className="mt-5 max-w-2xl" />
-            {note ? <p className="m-0 mt-4 text-sm text-[var(--color-muted)]">{note}</p> : null}
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button asChild className="rounded-lg">
-                <Link href={primaryAction.href}>{primaryAction.label}</Link>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-[#f4f7fc] p-6">
+      <div className="absolute top-8 left-8 flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3">
+          <Image
+            src="/assets/brand/logos/lambang-bulungan-icon.png"
+            alt="Logo Pemkab Bulungan"
+            width={40}
+            height={48}
+            className="w-10 h-auto"
+          />
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold tracking-widest text-[var(--color-primary)]">PEMERINTAH KABUPATEN</span>
+            <span className="text-xl font-bold leading-none tracking-tight text-[var(--color-text)]">BULUNGAN</span>
+          </div>
+        </Link>
+      </div>
+
+      <div className="w-full max-w-3xl rounded-3xl border border-[#d2d9e4] bg-white p-8 shadow-[0_8px_32px_rgba(25,35,52,0.04)] sm:p-12">
+        <div className="flex flex-col items-center text-center">
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+            <Badge variant="blue" className="px-3 py-1 text-sm font-semibold">Status {code}</Badge>
+            <p className="m-0 text-xs font-medium uppercase tracking-wide text-[var(--color-muted)]">Portal Satu Data Bulungan</p>
+          </div>
+          
+          <h1 className="text-3xl sm:text-4xl font-bold font-heading text-[var(--color-text)] mb-4">{title}</h1>
+          <p className="text-lg text-[var(--color-muted)] mb-6 max-w-2xl">{description}</p>
+          
+          {note ? <p className="m-0 mb-8 text-sm text-[#738297] bg-[#f8fbff] p-4 rounded-xl border border-[#e1e7f0]">{note}</p> : null}
+          
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Button asChild size="lg" className="rounded-xl font-semibold">
+              <Link href={primaryAction.href}>{primaryAction.label}</Link>
+            </Button>
+            {secondaryAction ? (
+              <Button asChild variant="outline" size="lg" className="rounded-xl font-semibold">
+                <Link href={secondaryAction.href}>{secondaryAction.label}</Link>
               </Button>
-              {secondaryAction ? (
-                <Button asChild variant="secondary" className="rounded-lg">
-                  <Link href={secondaryAction.href}>{secondaryAction.label}</Link>
-                </Button>
-              ) : null}
-            </div>
+            ) : null}
           </div>
         </div>
-      </section>
-    </PortalPageShell>
+      </div>
+    </main>
   );
 }

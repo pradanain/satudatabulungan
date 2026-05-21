@@ -22,7 +22,7 @@ function getContentBaseUrl(type: string): string {
   switch (type) {
     case "news": return "/internal/berita";
     case "digital_publication": return "/internal/buku-digital";
-    case "infographic": return "/internal/infografis-internal";
+    case "infographic": return "/internal/infografis";
     default: return "/internal/publications";
   }
 }

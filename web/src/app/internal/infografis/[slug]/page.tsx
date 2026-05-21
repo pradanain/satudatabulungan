@@ -30,9 +30,9 @@ export default async function InfografisDetailPage({ params }: PageProps) {
       <InternalPublicationDetail
         publication={pub}
         session={session}
-        backHref="/internal/infografis-internal"
+        backHref="/internal/infografis"
         backLabel="Kembali ke Infografis"
-        editHref={`/internal/infografis-internal/${pub.slug}/edit`}
+        editHref={`/internal/infografis/${pub.slug}/edit`}
       />
     </InternalShell>
   );

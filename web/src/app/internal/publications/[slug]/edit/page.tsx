@@ -19,7 +19,7 @@ export default async function PublicationEditRedirect({ params }: PageProps) {
   switch (pub.type) {
     case "news": redirect(`/internal/berita/${slug}/edit`);
     case "digital_publication": redirect(`/internal/buku-digital/${slug}/edit`);
-    case "infographic": redirect(`/internal/infografis-internal/${slug}/edit`);
+    case "infographic": redirect(`/internal/infografis/${slug}/edit`);
     default: redirect("/internal/berita");
   }
 }
