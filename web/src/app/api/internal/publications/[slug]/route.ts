@@ -7,6 +7,7 @@ import {
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
 import { hasPermission } from "@/lib/utils/internal-auth";
 import type { DatasetStatus } from "@/lib/types/dataset";
+import { resolveCkanOwnerOrgId } from "@/lib/utils/resolve-ckan-owner-org";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,9 @@ export async function PUT(
       }
     }
 
+    const resolvedOwnerOrgId = organizationId
+      ? await resolveCkanOwnerOrgId(organizationId)
+      : undefined;
     const ckanType = type ? mapInternalTypeToCkan(type) : undefined;
     const result = await updateCkanPublication(
       slug,
@@ -63,7 +67,7 @@ export async function PUT(
         status,
         year: payload.year,
         publishedAt: payload.publishedAt || undefined,
-        ownerOrgId: organizationId,
+        ownerOrgId: resolvedOwnerOrgId,
       },
       ckanType
     );

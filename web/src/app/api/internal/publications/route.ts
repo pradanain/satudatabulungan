@@ -3,6 +3,7 @@ import { createCkanPublication, type PortalContentType } from "@/lib/services/ck
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
 import { hasPermission } from "@/lib/utils/internal-auth";
 import type { ContentType } from "@/lib/types/internal";
+import { resolveCkanOwnerOrgId } from "@/lib/utils/resolve-ckan-owner-org";
 
 export const dynamic = "force-dynamic";
 
@@ -62,13 +63,14 @@ export async function POST(request: Request) {
       }
     }
 
+    const resolvedOwnerOrgId = await resolveCkanOwnerOrgId(organizationId);
     const ckanType = mapInternalTypeToCkan(type);
     const newPub = await createCkanPublication(
       {
         title,
         description,
         content: payload.content || "",
-        ownerOrgId: organizationId,
+        ownerOrgId: resolvedOwnerOrgId,
         status,
         publishedAt: payload.publishedAt || undefined,
         imageUrl: payload.imageUrl || "",
