@@ -82,9 +82,18 @@ export async function PATCH(
     }
 
     const resourceUrl = getRequired(payload.resourceUrl, "resourceUrl");
+    const unit = getRequired(payload.unit, "unit");
     const resourceUrlValidation = validateResourceUrl(resourceUrl);
     if (!resourceUrlValidation.valid) {
       throw new Error(resourceUrlValidation.error);
+    }
+
+    const tags =
+      payload.tags
+        ?.map((item) => sanitizeStoredText(item))
+        .filter((item): item is string => Boolean(item && item.trim().length > 0)) ?? [];
+    if (tags.length === 0) {
+      throw new Error("Field 'tags' wajib diisi minimal satu kata kunci.");
     }
 
     const result = await updateInternalDataset(
@@ -102,14 +111,11 @@ export async function PATCH(
         resourceName: getRequired(payload.resourceName, "resourceName"),
         resourceFormat: resourceFormat as DatasetFormat,
         resourceUrl,
-        tags:
-          payload.tags
-            ?.map((item) => sanitizeStoredText(item))
-            .filter((item): item is string => Boolean(item && item.trim().length > 0)) ?? [],
+        tags,
         reviewSummary: sanitizeStoredText(payload.reviewSummary?.trim() ?? "") || undefined,
         preview: payload.preview,
         resources: payload.resources,
-        unit: sanitizeStoredText(payload.unit?.trim() ?? "") || undefined,
+        unit,
       },
       session,
     );
@@ -183,5 +189,4 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: message }, { status });
   }
 }
-
 

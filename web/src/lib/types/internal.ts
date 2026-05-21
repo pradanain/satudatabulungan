@@ -341,6 +341,7 @@ export interface DatasetDraftInput {
   resourceUrl: string;
   preview?: DatasetPreview;
   resources?: DatasetResource[];
+  tags?: string[];
   unit?: string;
 }
 

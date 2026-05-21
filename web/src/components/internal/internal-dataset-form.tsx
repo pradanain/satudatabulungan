@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { startTransition, useState, useEffect, useRef } from "react";
@@ -43,7 +43,7 @@ import { homepageTopics } from "@/lib/data/homepage-topics";
 import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
 import { ToastNotification } from "@/components/ui/toast-popup";
 
-// ─── Searchable Dropdown / Select Component ───────────────────────────────────
+// â”€â”€â”€ Searchable Dropdown / Select Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface SearchableSelectProps {
   value: string;
   onValueChange: (value: string) => void;
@@ -168,7 +168,7 @@ function SearchableSelect({
   );
 }
 
-// ─── File Upload Interface ───────────────────────────────────────────────────
+// â”€â”€â”€ File Upload Interface â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface FormFile {
   name: string;
   format: DatasetFormat;
@@ -483,17 +483,17 @@ function convertRawRowsToDatasetPreview(rawRows: any[][]): DatasetPreview {
           if (hasComma && hasDot) {
             // Both separators: the one appearing LAST is the decimal separator
             if (cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")) {
-              // Indonesian: 1.234,56 → 1234.56
+              // Indonesian: 1.234,56 â†’ 1234.56
               cleaned = cleaned.replace(/\./g, "").replace(",", ".");
             } else {
-              // International: 1,234.56 → 1234.56
+              // International: 1,234.56 â†’ 1234.56
               cleaned = cleaned.replace(/,/g, "");
             }
           } else if (hasComma && !hasDot) {
-            // Only comma — decimal comma (1,58) or thousands comma (1,234)
+            // Only comma â€” decimal comma (1,58) or thousands comma (1,234)
             const parts = cleaned.split(",");
             if (parts.length === 2 && parts[1].length <= 3) {
-              // Treat as decimal separator: 1,58 → 1.58
+              // Treat as decimal separator: 1,58 â†’ 1.58
               cleaned = cleaned.replace(",", ".");
             } else {
               cleaned = cleaned.replace(/,/g, "");
@@ -502,19 +502,19 @@ function convertRawRowsToDatasetPreview(rawRows: any[][]): DatasetPreview {
             const absStr = cleaned.replace(/^-/, "");
             const dotParts = absStr.split(".");
             if (dotParts.length > 2) {
-              // Multiple dots: all thousands separators → strip (1.000.000 → 1000000)
+              // Multiple dots: all thousands separators â†’ strip (1.000.000 â†’ 1000000)
               cleaned = cleaned.replace(/\./g, "");
             } else if (
               dotParts.length === 2 &&
               dotParts[1].length === 3 &&
               dotParts[0].length >= 2
             ) {
-              // Single dot, 3 digits after, 2+ digits before → Indonesian thousands
-              // e.g. 10.000 → 10000, 12.345 → 12345
+              // Single dot, 3 digits after, 2+ digits before â†’ Indonesian thousands
+              // e.g. 10.000 â†’ 10000, 12.345 â†’ 12345
               // But: 1.234 (1-digit whole) is kept as decimal 1.234
               cleaned = cleaned.replace(/\./g, "");
             }
-            // else: simple decimal like -1.58, 2.30, 0.06 → leave as-is
+            // else: simple decimal like -1.58, 2.30, 0.06 â†’ leave as-is
           }
 
           const parsed = Number(cleaned);
@@ -663,6 +663,10 @@ export function InternalDatasetForm({
       error = "Frekuensi pembaruan wajib dipilih.";
     } else if (name === "organizationId" && !value) {
       error = "OPD Produsen data wajib dipilih.";
+    } else if (name === "tags" && !value.trim()) {
+      error = "Tags / kata kunci wajib diisi.";
+    } else if (name === "unit" && !value.trim()) {
+      error = "Satuan data wajib diisi.";
     }
     setValidationErrors((prev) => ({ ...prev, [name]: error }));
   };
@@ -739,6 +743,8 @@ export function InternalDatasetForm({
     validateField("description", form.description);
     validateField("topic", form.topic);
     validateField("frequency", form.frequency);
+    validateField("tags", form.tags);
+    validateField("unit", form.unit);
     if (hasPermission(session.role, "dataset.view_all")) {
       validateField("organizationId", form.organizationId);
     }
@@ -750,6 +756,8 @@ export function InternalDatasetForm({
       !form.description.trim() ||
       !form.topic ||
       !form.frequency ||
+      !form.tags.trim() ||
+      !form.unit.trim() ||
       (hasPermission(session.role, "dataset.view_all") && !form.organizationId)
     ) {
       setErrorMessage(
@@ -1201,8 +1209,13 @@ export function InternalDatasetForm({
 
         {/* Card Body */}
         <div className="p-6 space-y-5">
-          {/* Row: Topik, Tags, Periode, Frekuensi */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <section className="rounded-xl border border-gray-200 bg-gray-50/40 p-4">
+            <div className="mb-3 space-y-0.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">1. Klasifikasi Data</p>
+              <p className="text-[11px] text-gray-500">Kelompokkan dataset agar mudah ditemukan dan dipahami pengguna.</p>
+            </div>
+            {/* Row: Topik, Tags, Periode, Frekuensi */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Topik */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
@@ -1227,19 +1240,30 @@ export function InternalDatasetForm({
 
             {/* Tags */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                Tags / Kata Kunci
+              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                Tags / Kata Kunci <span className="text-red-500">*</span>
               </label>
               <Input
                 value={form.tags}
-                onChange={(event) => setForm((current) => ({ ...current, tags: event.target.value }))}
+                onChange={(event) => {
+                  const val = event.target.value;
+                  setForm((current) => ({ ...current, tags: val }));
+                  validateField("tags", val);
+                }}
+                required
                 placeholder="wisata, turis, dsb"
-                className="h-11 rounded-xl border-gray-200"
+                className={`h-11 rounded-xl ${validationErrors.tags ? "border-red-500 focus-visible:ring-red-500" : "border-gray-200"}`}
               />
-              <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
-                <Info className="size-3 text-blue-400 shrink-0" />
-                Contoh: <em>wisata, demografi, kependudukan</em> (pisahkan dengan koma).
-              </span>
+              {validationErrors.tags ? (
+                <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
+                  <AlertCircle className="size-3" /> {validationErrors.tags}
+                </span>
+              ) : (
+                <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+                  <Info className="size-3 text-blue-400 shrink-0" />
+                  Contoh: <em>wisata, demografi, kependudukan</em> (pisahkan dengan koma).
+                </span>
+              )}
             </div>
 
             {/* Periode Data */}
@@ -1294,21 +1318,41 @@ export function InternalDatasetForm({
                 <span className="text-[10px] text-gray-400 font-medium">Seberapa sering data ini di-update oleh produsen data.</span>
               )}
             </div>
-          </div>
+            </div>
+          </section>
 
-          {/* Row: Satuan & Produsen Data */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <section className="rounded-xl border border-gray-200 bg-gray-50/40 p-4">
+            <div className="mb-3 space-y-0.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">2. Standar Publikasi</p>
+              <p className="text-[11px] text-gray-500">Pastikan konteks satuan dan penanggung jawab data terisi dengan benar.</p>
+            </div>
+            {/* Row: Satuan & Produsen Data */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Satuan */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                Satuan
+              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                Satuan <span className="text-red-500">*</span>
               </label>
               <Input
                 value={form.unit}
-                onChange={(event) => setForm((current) => ({ ...current, unit: event.target.value }))}
-                placeholder="Contoh: ribu jiwa, km², unit, %"
-                className="h-11 rounded-xl border-gray-200"
+                onChange={(event) => {
+                  const val = event.target.value;
+                  setForm((current) => ({ ...current, unit: val }));
+                  validateField("unit", val);
+                }}
+                required
+                placeholder="Contoh: ribu jiwa, km2, unit, %"
+                className={`h-11 rounded-xl ${validationErrors.unit ? "border-red-500 focus-visible:ring-red-500" : "border-gray-200"}`}
               />
+              {validationErrors.unit ? (
+                <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1 mt-0.5">
+                  <AlertCircle className="size-3" /> {validationErrors.unit}
+                </span>
+              ) : (
+                <span className="text-[10px] text-gray-400 font-medium">
+                  Contoh: <em>ribu jiwa</em>, <em>km2</em>, <em>unit</em>, atau <em>%</em>.
+                </span>
+              )}
             </div>
 
             {/* Produsen Data / OPD (admin only) */}
@@ -1339,7 +1383,8 @@ export function InternalDatasetForm({
             ) : (
               <input type="hidden" value={form.organizationId} />
             )}
-          </div>
+            </div>
+          </section>
 
           {/* Hidden fields */}
           <input type="hidden" value={form.walidata} />
@@ -1424,3 +1469,4 @@ export function InternalDatasetForm({
     </form>
   );
 }
+

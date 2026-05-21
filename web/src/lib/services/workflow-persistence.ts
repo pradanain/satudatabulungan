@@ -69,6 +69,7 @@ export type DraftCreateInput = {
   resourceUrl: string;
   preview?: DatasetPreview;
   resources?: DatasetResource[];
+  tags?: string[];
   unit?: string;
 };
 

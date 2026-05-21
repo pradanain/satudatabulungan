@@ -1307,7 +1307,17 @@ export async function createInternalDatasetDraft(
     const safeCoverage = sanitizeStoredText(input.coverage?.trim() || "") || "Kabupaten Bulungan";
     const safePeriod = sanitizeStoredText(input.period);
     const safeResourceName = sanitizeStoredText(input.resourceName);
-    const tags = [slugify(safeTopic), slugify(safeOrganizationName), "draft-internal"].filter(Boolean);
+    const manualTags = (input.tags ?? [])
+      .map((item) => sanitizeStoredText(item))
+      .filter((item): item is string => Boolean(item && item.trim().length > 0))
+      .map((item) => slugify(item))
+      .filter(Boolean);
+    const tags = [...new Set([
+      ...manualTags,
+      slugify(safeTopic),
+      slugify(safeOrganizationName),
+      "draft-internal",
+    ])];
     const dataset: InternalDataset = {
       id: `INT-${slugify(input.slug)}`.toUpperCase(),
       slug: input.slug,

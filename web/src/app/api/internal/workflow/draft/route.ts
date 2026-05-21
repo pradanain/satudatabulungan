@@ -23,6 +23,7 @@ type DraftPayload = {
   resourceUrl?: string;
   preview?: any;
   resources?: any;
+  tags?: string[];
   unit?: string;
 };
 
@@ -76,9 +77,17 @@ export async function POST(request: Request) {
     const walidata = getRequired(payload, "walidata");
     const resourceName = getRequired(payload, "resourceName");
     const resourceUrl = getRequired(payload, "resourceUrl");
+    const unit = getRequired(payload, "unit");
     const resourceUrlValidation = validateResourceUrl(resourceUrl);
     if (!resourceUrlValidation.valid) {
       throw new Error(resourceUrlValidation.error);
+    }
+
+    const tags = (payload.tags ?? [])
+      .map((item) => sanitizeStoredText(item))
+      .filter((item): item is string => Boolean(item && item.trim().length > 0));
+    if (tags.length === 0) {
+      throw new Error("Field 'tags' wajib diisi minimal satu kata kunci.");
     }
 
     const frequencyRaw = getRequired(payload, "frequency");
@@ -105,12 +114,13 @@ export async function POST(request: Request) {
         period,
         walidata,
         coverage: sanitizeStoredText(payload.coverage?.trim() || "") || undefined,
-        unit: sanitizeStoredText(payload.unit?.trim() || "") || undefined,
+        unit,
         resourceName,
         resourceFormat: resourceFormatRaw as DatasetFormat,
         resourceUrl,
         preview: payload.preview,
         resources: payload.resources,
+        tags,
       },
       actor,
       session,
