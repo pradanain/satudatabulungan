@@ -736,9 +736,39 @@ export async function loadInternalPortalStore(): Promise<InternalPortalStore> {
     if (Array.isArray(loaded.notifications)) {
       for (const notif of loaded.notifications) {
         if (Array.isArray(notif.targetRoles)) {
-          notif.targetRoles = notif.targetRoles.map(
-            (r) => normalizeInternalRole(r as string),
+          const normalizedRoles = notif.targetRoles.map((r) =>
+            normalizeInternalRole(r as string),
           );
+          if (
+            normalizedRoles.length !== notif.targetRoles.length ||
+            normalizedRoles.some((role, index) => role !== notif.targetRoles[index])
+          ) {
+            notif.targetRoles = normalizedRoles;
+            dirty = true;
+          }
+        }
+
+        if (!Array.isArray(notif.readByUserIds)) {
+          notif.readByUserIds = [];
+          dirty = true;
+        }
+
+        if (!notif.organizationId) {
+          const ownerByUser =
+            notif.userId ? loaded.users.find((user) => user.id === notif.userId)?.organizationId : undefined;
+          if (ownerByUser) {
+            notif.organizationId = ownerByUser;
+            dirty = true;
+          } else {
+            const maybeSlug = extractDatasetSlugFromNotificationLink(notif.link);
+            if (maybeSlug) {
+              const datasetOrgId = loaded.datasets.find((dataset) => dataset.slug === maybeSlug)?.organizationId;
+              if (datasetOrgId) {
+                notif.organizationId = datasetOrgId;
+                dirty = true;
+              }
+            }
+          }
         }
       }
     }
@@ -871,10 +901,8 @@ export function getScopedNotifications(
   store: InternalPortalStore,
   session: InternalSession,
 ): InternalNotification[] {
-  return store.notifications.filter(
-    (notification) =>
-      notification.targetRoles.includes(session.role) &&
-      (!notification.userId || notification.userId === session.userId),
+  return store.notifications.filter((notification) =>
+    canSessionAccessNotification(notification, session),
   );
 }
 
@@ -956,6 +984,44 @@ function sortDatasets(datasets: Dataset[], sort: DatasetSort = defaultSort): Dat
   return [...datasets].sort(
     (a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime(),
   );
+}
+
+function extractDatasetSlugFromNotificationLink(link: string): string | null {
+  const internalMatch = link.match(/^\/internal\/datasets\/([^/?#]+)/i);
+  if (internalMatch?.[1]) {
+    return decodeURIComponent(internalMatch[1]);
+  }
+
+  const publicMatch = link.match(/^\/dataset\/([^/?#]+)/i);
+  if (publicMatch?.[1]) {
+    return decodeURIComponent(publicMatch[1]);
+  }
+
+  return null;
+}
+
+export function canSessionAccessNotification(
+  notification: InternalNotification,
+  session: InternalSession,
+): boolean {
+  // Walidata can observe all notifications across organizations.
+  if (session.role === "walidata") {
+    return true;
+  }
+
+  if (!notification.targetRoles.includes(session.role)) {
+    return false;
+  }
+
+  if (notification.userId && notification.userId !== session.userId) {
+    return false;
+  }
+
+  if (session.role === "produsen" && notification.organizationId) {
+    return isSameOrgId(notification.organizationId, session.organizationId);
+  }
+
+  return true;
 }
 
 function buildFilterOptions(datasets: Dataset[]): DatasetFilterOptions {
@@ -1148,6 +1214,7 @@ function pushNotification(
   link: string,
   targetRoles: InternalRole[],
   userId?: string,
+  organizationId?: string,
 ): InternalPortalStore {
   return {
     ...store,
@@ -1161,6 +1228,7 @@ function pushNotification(
         link,
         targetRoles,
         userId,
+        organizationId,
         readByUserIds: [],
       },
       ...store.notifications,
@@ -1324,6 +1392,7 @@ export async function createInternalDatasetDraft(
       `/internal/datasets/${dataset.slug}`,
       ["sekretariat", "walidata", "produsen"],
       session.userId,
+      dataset.organizationId,
     );
 
     return {
@@ -1554,6 +1623,7 @@ export async function transitionInternalDataset(
         `/internal/datasets/${updated.slug}`,
         ["produsen"],
         updated.ownerUserId,
+        updated.organizationId,
       );
     }
 
@@ -1564,6 +1634,8 @@ export async function transitionInternalDataset(
         `${updated.title} telah dipublikasikan dan kini tampil di portal publik.`,
         `/dataset/${updated.slug}`,
         ["sekretariat", "walidata", "produsen"],
+        undefined,
+        updated.organizationId,
       );
     }
 
@@ -1750,7 +1822,9 @@ export async function addDatasetNote(
         "Catatan Monitoring Baru",
         `${session.name} menambahkan catatan evaluasi/isu pada ${dataset.title}.`,
         `/internal/datasets/${dataset.slug}`,
-        ["walidata", "produsen"]
+        ["walidata", "produsen"],
+        undefined,
+        dataset.organizationId,
       );
     } else if (type === "walidata_review") {
       nextStore = pushNotification(
@@ -1758,7 +1832,9 @@ export async function addDatasetNote(
         "Catatan Pemeriksaan Walidata",
         `${session.name} menambahkan catatan review pada ${dataset.title}.`,
         `/internal/datasets/${dataset.slug}`,
-        ["produsen"]
+        ["produsen"],
+        undefined,
+        dataset.organizationId,
       );
     }
 
@@ -1953,4 +2029,3 @@ export async function updateInternalPublication(
     };
   });
 }
-

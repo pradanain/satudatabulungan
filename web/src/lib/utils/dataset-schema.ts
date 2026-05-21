@@ -71,6 +71,50 @@ export interface AggregatedRegionData {
   rawValues: number[];
 }
 
+const BULUNGAN_DISTRICT_NAMES = new Set([
+  "tanjung selor",
+  "tanjung palas",
+  "tanjung palas barat",
+  "tanjung palas utara",
+  "tanjung palas timur",
+  "tanjung palas tengah",
+  "sekatak",
+  "peso",
+  "peso hilir",
+  "bunyu",
+]);
+
+const AGGREGATE_REGION_PREFIXES = [
+  "kabupaten ",
+  "kota ",
+  "provinsi ",
+];
+
+const AGGREGATE_REGION_TOKENS = [
+  "total",
+  "jumlah",
+  "semua",
+  "overall",
+  "grand total",
+  "all",
+  "bulungan",
+];
+
+const INDONESIAN_MONTH_ORDER = [
+  "januari",
+  "februari",
+  "maret",
+  "april",
+  "mei",
+  "juni",
+  "juli",
+  "agustus",
+  "september",
+  "oktober",
+  "november",
+  "desember",
+];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Normalisasi nama wilayah untuk join (lowercase, tanpa prefix, tanpa spasi ekstra) */
@@ -82,6 +126,32 @@ export function normalizeRegionName(name: string): string {
     .replace(/[^\w\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+export function isBulunganDistrictName(name: string): boolean {
+  const normalized = normalizeRegionName(name);
+  return BULUNGAN_DISTRICT_NAMES.has(normalized);
+}
+
+export function isAggregateRegionName(name: string): boolean {
+  const normalized = normalizeRegionName(name);
+  if (!normalized) {
+    return false;
+  }
+
+  if (AGGREGATE_REGION_TOKENS.includes(normalized)) {
+    return true;
+  }
+
+  if (AGGREGATE_REGION_PREFIXES.some((prefix) => normalized.startsWith(prefix))) {
+    return true;
+  }
+
+  if (normalized.includes("total") || normalized.includes("jumlah")) {
+    return true;
+  }
+
+  return false;
 }
 
 /** Format angka dengan locale Indonesia */
@@ -253,9 +323,39 @@ export function extractAvailablePeriods(
   schema: DatasetSchema,
 ): string[] {
   if (!schema.periodKey) return [];
-  return [
+
+  const unique = [
     ...new Set(data.map((r) => String(r[schema.periodKey!] ?? "")).filter(Boolean)),
-  ].sort();
+  ];
+
+  const monthIndex = (value: string): number => {
+    const normalized = value.trim().toLowerCase();
+    const idx = INDONESIAN_MONTH_ORDER.indexOf(normalized);
+    if (idx >= 0) return idx;
+
+    const parsed = Number(normalized);
+    if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 12) {
+      return parsed - 1;
+    }
+
+    return -1;
+  };
+
+  return unique.sort((a, b) => {
+    const aMonth = monthIndex(a);
+    const bMonth = monthIndex(b);
+    if (aMonth >= 0 && bMonth >= 0) {
+      return aMonth - bMonth;
+    }
+
+    const aYear = Number(a);
+    const bYear = Number(b);
+    if (Number.isFinite(aYear) && Number.isFinite(bYear)) {
+      return aYear - bYear;
+    }
+
+    return a.localeCompare(b, "id-ID");
+  });
 }
 
 // ─── Filter Dataset ───────────────────────────────────────────────────────────
@@ -302,6 +402,11 @@ export function aggregateByRegion(
     const regionName = schema.regionNameKey
       ? String(row[schema.regionNameKey] ?? "")
       : "";
+
+    if (regionName && isAggregateRegionName(regionName)) {
+      continue;
+    }
+
     const key = regionCode || normalizeRegionName(regionName);
     if (!key) continue;
 

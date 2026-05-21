@@ -26,6 +26,7 @@ import {
   aggregateByRegion,
   formatMetricLabel,
   formatNumber,
+  isBulunganDistrictName,
 } from "@/lib/utils/dataset-schema";
 
 const ChoroplethMap = dynamic(
@@ -155,13 +156,15 @@ function DynamicTable({
           if (!data.length) return false;
           return key in data[0];
         });
-    } else {
-      if (!data.length) return [];
-      keys = Object.keys(data[0]);
+      // Jika metadata kolom tersedia, pertahankan urutan persis dari sumber.
+      return keys;
     }
 
-    // Urutkan kolom secara semantik agar "wilayah" di paling kiri dan "total" di paling kanan
-    return [...keys].sort((a, b) => {
+    if (!data.length) return [];
+    keys = Object.keys(data[0]);
+
+    // Fallback untuk dataset lama yang tidak memiliki metadata kolom.
+    return keys.sort((a, b) => {
       const aLower = a.toLowerCase();
       const bLower = b.toLowerCase();
 
@@ -528,6 +531,20 @@ export function DatasetDetailClient({
 
   const hasData = data.length > 0;
 
+  const hasSpatialCoverage = useMemo(() => {
+    if (!schema.hasRegion || valuesByRegion.size === 0) {
+      return false;
+    }
+
+    if (schema.regionCodeKey) {
+      return true;
+    }
+
+    return [...valuesByRegion.values()].some((entry) =>
+      isBulunganDistrictName(entry.regionName),
+    );
+  }, [schema, valuesByRegion]);
+
   if (!hasData) {
     return (
       <div className="rounded-2xl border border-dashed border-[#d6deed] bg-[#f8fafd] p-6 text-center text-sm text-[#9ca3af]">
@@ -666,7 +683,7 @@ export function DatasetDetailClient({
       />
 
       {/* ── 3. Peta Choropleth ────────────────────────────────── */}
-      {schema.hasRegion ? (
+      {hasSpatialCoverage ? (
         <Card className="overflow-hidden border-[#d6ddeb] bg-white p-0">
           <div className="border-b border-[#f0f2f5] bg-[linear-gradient(180deg,#f8faff_0%,#f3f7ff_100%)] px-5 py-4">
             <h3 className="m-0 text-base font-semibold text-[#1e2f52]">Visualisasi Geospasial</h3>
@@ -705,7 +722,7 @@ export function DatasetDetailClient({
       ) : (
         <Card className="overflow-hidden border-[#d6ddeb] bg-white p-5">
           <p className="m-0 text-sm text-[#9ca3af]">
-            Dataset ini tidak memiliki kolom wilayah yang dapat divisualisasikan secara geospasial.
+            Dataset ini belum memiliki data kecamatan yang dapat divisualisasikan secara geospasial.
           </p>
         </Card>
       )}

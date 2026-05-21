@@ -1,6 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
-import { SectionHeading } from "@/components/portal/section-heading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +15,7 @@ interface StatusPageProps {
     href: string;
     label: string;
   };
+  showBranding?: boolean;
 }
 
 export function StatusPage({
@@ -26,24 +25,20 @@ export function StatusPage({
   note,
   primaryAction = { href: "/", label: "Kembali ke Beranda" },
   secondaryAction,
+  showBranding = true,
 }: StatusPageProps) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#f4f7fc] p-6">
-      <div className="absolute top-8 left-8 flex items-center gap-3">
-        <Link href="/" className="flex items-center gap-3">
-          <Image
-            src="/assets/brand/logos/lambang-bulungan-icon.png"
-            alt="Logo Pemkab Bulungan"
-            width={40}
-            height={48}
-            className="w-10 h-auto"
-          />
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold tracking-widest text-[var(--color-primary)]">PEMERINTAH KABUPATEN</span>
-            <span className="text-xl font-bold leading-none tracking-tight text-[var(--color-text)]">BULUNGAN</span>
-          </div>
-        </Link>
-      </div>
+      {showBranding ? (
+        <div className="absolute top-8 left-8 flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold tracking-widest text-[var(--color-primary)]">PEMERINTAH KABUPATEN</span>
+              <span className="text-xl font-bold leading-none tracking-tight text-[var(--color-text)]">BULUNGAN</span>
+            </div>
+          </Link>
+        </div>
+      ) : null}
 
       <div className="w-full max-w-3xl rounded-3xl border border-[#d2d9e4] bg-white p-8 shadow-[0_8px_32px_rgba(25,35,52,0.04)] sm:p-12">
         <div className="flex flex-col items-center text-center">

@@ -149,6 +149,28 @@ function parseSize(value?: string | number): string {
   return value;
 }
 
+function resolveResourceUrl(url: string | undefined, ckanBaseUrl?: string): string {
+  const normalized = (url ?? "").trim();
+  if (!normalized) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(normalized)) {
+    return normalized;
+  }
+
+  if (!ckanBaseUrl) {
+    return normalized;
+  }
+
+  const base = ckanBaseUrl.replace(/\/+$/, "");
+  if (normalized.startsWith("/")) {
+    return `${base}${normalized}`;
+  }
+
+  return `${base}/${normalized.replace(/^\.?\/+/, "")}`;
+}
+
 function getExtra(extras: CkanExtra[] | undefined, keys: string[]): string | undefined {
   if (!extras) return undefined;
 
@@ -543,7 +565,7 @@ async function mapPackageToDataset(
       name: resource.name ?? `resource-${index + 1}`,
       description: resource.description ?? "Resource dataset",
       format,
-      url: resource.url ?? "",
+      url: resolveResourceUrl(resource.url, options?.ckanBaseUrl),
       sizeLabel: parseSize(resource.size),
       lastUpdated: resource.last_modified,
     };
@@ -711,7 +733,11 @@ export class CkanDatasetAdapter implements DatasetAdapter {
     const mapped = await Promise.all(
       result.results
         .filter((pkg) => isMainDatasetPackage(pkg))
-        .map((pkg) => mapPackageToDataset(pkg)),
+        .map((pkg) =>
+          mapPackageToDataset(pkg, {
+            ckanBaseUrl: this.ckanBaseUrl,
+          }),
+        ),
     );
     const filtered = filterCkanDatasets(mapped, filters);
     return sortDatasets(filtered, filters.sort ?? "terbaru");

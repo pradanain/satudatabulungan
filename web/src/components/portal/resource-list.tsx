@@ -174,10 +174,9 @@ export function ResourceList({ resources }: ResourceListProps) {
         onConfirm={() => {
           if (downloadResource) {
             const link = document.createElement("a");
-            link.href = downloadResource.url;
+            const proxyUrl = `/api/resources/download?url=${encodeURIComponent(downloadResource.url)}&name=${encodeURIComponent(downloadResource.name)}`;
+            link.href = proxyUrl;
             link.setAttribute("download", "");
-            link.setAttribute("target", "_blank");
-            link.setAttribute("rel", "noreferrer");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

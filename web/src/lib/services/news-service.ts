@@ -1,5 +1,7 @@
 import "server-only";
 
+import { readFile, readdir } from "node:fs/promises";
+import path from "node:path";
 import {
   getPublishedNews,
   getNews,
@@ -19,6 +21,8 @@ export interface PortalNewsItem {
 
 const beritaAcronyms = new Set(["SDI", "BPS", "OPD", "DKIP", "API"]);
 const beritaMinorWords = new Set(["dan", "di", "ke", "dari", "untuk", "pada", "dengan", "selaku", "yang"]);
+const beritaImageExtensions = [".jpg", ".jpeg", ".png", ".webp"];
+const beritaDirectory = path.join(process.cwd(), "public", "berita");
 
 function normalizeNewsTitle(text: string) {
   const normalized = text.trim().toLowerCase();
@@ -46,6 +50,79 @@ function inferNewsTopicLabel(content: string) {
   if (normalized.includes("bimtek")) return "Bimtek Portal";
 
   return "Satu Data";
+}
+
+function normalizeLegacyText(text: string) {
+  return text
+    .replaceAll("\u00e2\u0080\u0093", "-")
+    .replaceAll("\u00e2\u0080\u009c", '"')
+    .replaceAll("\u00e2\u0080\u009d", '"')
+    .replaceAll("\u00e2\u0080\u0099", "'")
+    .replaceAll("\u00c2", "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function inferOrganizationFromSourceUrl(sourceUrl: string): string {
+  const normalized = sourceUrl.toLowerCase();
+  if (normalized.includes("bulungankab.bps.go.id")) return "BPS Kabupaten Bulungan";
+  if (normalized.includes("diskominfo.bulungan.go.id")) return "Diskominfo Kabupaten Bulungan";
+  return "Pemerintah Kabupaten Bulungan";
+}
+
+function extractDateFromLegacySourceUrl(sourceUrl: string): string | null {
+  const match = sourceUrl.match(/\/(\d{4})\/(\d{2})\/(\d{2})\//);
+  if (!match) return null;
+  return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+async function loadLegacyNewsItemsFromPublic(limit = Number.MAX_SAFE_INTEGER): Promise<PortalNewsItem[]> {
+  try {
+    const entries = await readdir(beritaDirectory, { withFileTypes: true });
+    const txtEntries = entries.filter((entry) => entry.isFile() && entry.name.endsWith(".txt"));
+    const output: PortalNewsItem[] = [];
+
+    for (const entry of txtEntries) {
+      const slug = entry.name.replace(/\.txt$/, "");
+      const rawText = await readFile(path.join(beritaDirectory, entry.name), "utf8");
+      const lines = rawText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      if (lines.length < 2) continue;
+
+      const sourceUrl = lines[0];
+      if (!sourceUrl.startsWith("http")) continue;
+
+      const title = normalizeLegacyText(lines[1]);
+      if (!title) continue;
+
+      const content = normalizeLegacyText(lines.slice(2).join(" "));
+      const description = content.length > 200
+        ? `${content.slice(0, 197).trimEnd()}...`
+        : content;
+      const fallbackDate = "2024-01-01";
+      const date = extractDateFromLegacySourceUrl(sourceUrl) ?? fallbackDate;
+      const imageFileName = beritaImageExtensions
+        .map((ext) => `${slug}${ext}`)
+        .find((fileName) => entries.some((file) => file.isFile() && file.name === fileName));
+
+      output.push({
+        title,
+        description,
+        date,
+        organization: inferOrganizationFromSourceUrl(sourceUrl),
+        href: sourceUrl,
+        topicLabel: inferNewsTopicLabel(`${title} ${content}`),
+        imageSrc: imageFileName ? `/berita/${imageFileName}` : "/assets/brand/logos/lambang-bulungan.png",
+      });
+    }
+
+    return output
+      .sort((left, right) => right.date.localeCompare(left.date))
+      .slice(0, limit);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Unknown error";
+    console.error(`[news-service] fallback public/berita gagal dibaca: ${reason}`);
+    return [];
+  }
 }
 
 function mapCkanToNewsItem(dataset: PortalDataset): PortalNewsItem {
@@ -86,6 +163,11 @@ export async function loadKabarDataItems(limit = Number.MAX_SAFE_INTEGER): Promi
       .slice(0, limit);
   } catch (error) {
     console.error("[news-service] Gagal memuat berita dari CKAN:", error);
+    const fallbackItems = await loadLegacyNewsItemsFromPublic(limit);
+    if (fallbackItems.length > 0) {
+      console.info(`[news-service] fallback public/berita aktif: ${fallbackItems.length} item.`);
+      return fallbackItems;
+    }
     return [];
   }
 }
@@ -97,7 +179,8 @@ export async function loadAllNewsItems(): Promise<PortalNewsItem[]> {
   try {
     const allNews = await getNews();
     return allNews.map(mapCkanToNewsItem);
-  } catch {
-    return [];
+  } catch (error) {
+    console.error("[news-service] Gagal memuat semua berita dari CKAN:", error);
+    return loadLegacyNewsItemsFromPublic();
   }
 }

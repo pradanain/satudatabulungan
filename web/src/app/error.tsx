@@ -22,7 +22,7 @@ export default function GlobalError({
       description="Maaf, terjadi kesalahan internal pada server kami. Silakan coba beberapa saat lagi."
       note="Jika masalah berlanjut, silakan hubungi administrator sistem."
       primaryAction={{ href: "/", label: "Kembali ke Beranda" }}
-      secondaryAction={{ href: "/dataset", label: "Telusuri Dataset" }}
+      showBranding={false}
     />
   );
 }

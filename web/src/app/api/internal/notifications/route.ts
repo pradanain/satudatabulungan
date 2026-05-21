@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { getScopedNotifications, loadInternalPortalStore, saveInternalPortalStore } from "@/lib/services/internal-store";
+import {
+  canSessionAccessNotification,
+  getScopedNotifications,
+  loadInternalPortalStore,
+  saveInternalPortalStore,
+} from "@/lib/services/internal-store";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
 
 export const dynamic = "force-dynamic";
@@ -54,11 +59,8 @@ export async function POST(request: Request) {
     const store = await loadInternalPortalStore();
 
     if (action === "markAllAsRead") {
-      // Find all notifications that target this session's role and user
       store.notifications = store.notifications.map((notif) => {
-        const isTarget =
-          notif.targetRoles.includes(session.role) &&
-          (!notif.userId || notif.userId === session.userId);
+        const isTarget = canSessionAccessNotification(notif, session);
         
         if (isTarget && !notif.readByUserIds.includes(session.userId)) {
           return {
@@ -77,6 +79,11 @@ export async function POST(request: Request) {
       const { notificationId } = body;
       if (!notificationId) {
         return NextResponse.json({ success: false, error: "ID notifikasi diperlukan." }, { status: 400 });
+      }
+
+      const targetNotification = store.notifications.find((notif) => notif.id === notificationId);
+      if (!targetNotification || !canSessionAccessNotification(targetNotification, session)) {
+        return NextResponse.json({ success: false, error: "Notifikasi tidak ditemukan." }, { status: 404 });
       }
 
       store.notifications = store.notifications.map((notif) => {

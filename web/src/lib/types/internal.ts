@@ -270,6 +270,7 @@ export interface InternalNotification {
   link: string;
   targetRoles: InternalRole[];
   userId?: string;
+  organizationId?: string;
   readByUserIds: string[];
 }
 

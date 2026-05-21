@@ -15,7 +15,16 @@ export const dynamic = "force-dynamic";
 
 export default async function InternalInfografisPage() {
   const session = await requireInternalSession("infografis");
-  const rawInfografis = await getCkanPublications("infografis");
+  let rawInfografis = [] as Awaited<ReturnType<typeof getCkanPublications>>;
+  let loadError: string | null = null;
+  try {
+    rawInfografis = await getCkanPublications("infografis");
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Unknown error";
+    console.error(`[internal/infografis] gagal memuat publikasi dari CKAN: ${reason}`);
+    loadError = "Data infografis dari CKAN sedang tidak tersedia. Menampilkan data kosong sementara.";
+  }
+
   const allInfografis = rawInfografis.map(mapPortalDatasetToPublication);
   const publications =
     hasPermission(session, "content.view_all")
@@ -39,6 +48,11 @@ export default async function InternalInfografisPage() {
       />
 
       <Card className="flex flex-col shadow-sm border-[var(--color-border)]">
+        {loadError ? (
+          <div className="border-b border-[var(--color-border)] bg-amber-50/80 px-4 py-3 text-sm text-amber-800">
+            {loadError}
+          </div>
+        ) : null}
         <PublicationTable 
           publications={publications} 
           session={session} 

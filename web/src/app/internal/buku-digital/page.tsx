@@ -15,7 +15,16 @@ export const dynamic = "force-dynamic";
 
 export default async function InternalBukuDigitalPage() {
   const session = await requireInternalSession("bukuDigital");
-  const rawBooks = await getCkanPublications("publikasi");
+  let rawBooks = [] as Awaited<ReturnType<typeof getCkanPublications>>;
+  let loadError: string | null = null;
+  try {
+    rawBooks = await getCkanPublications("publikasi");
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Unknown error";
+    console.error(`[internal/buku-digital] gagal memuat publikasi dari CKAN: ${reason}`);
+    loadError = "Data buku digital dari CKAN sedang tidak tersedia. Menampilkan data kosong sementara.";
+  }
+
   const allBooks = rawBooks.map(mapPortalDatasetToPublication);
   const publications =
     hasPermission(session, "content.view_all")
@@ -39,6 +48,11 @@ export default async function InternalBukuDigitalPage() {
       />
 
       <Card className="flex flex-col shadow-sm border-[var(--color-border)]">
+        {loadError ? (
+          <div className="border-b border-[var(--color-border)] bg-amber-50/80 px-4 py-3 text-sm text-amber-800">
+            {loadError}
+          </div>
+        ) : null}
         <PublicationTable 
           publications={publications} 
           session={session} 

@@ -7,6 +7,7 @@ import {
   type DatasetSchema,
   formatNumber,
   formatMetricLabel,
+  isAggregateRegionName,
 } from "@/lib/utils/dataset-schema";
 
 interface DatasetExplorationProps {
@@ -41,6 +42,7 @@ export function DatasetExploration({
         ? String(row[schema.regionCodeKey] ?? "")
         : "";
       if (!name) continue;
+      if (isAggregateRegionName(name)) continue;
 
       let value: number;
       if (schema.format === "long" && schema.valueKey) {
