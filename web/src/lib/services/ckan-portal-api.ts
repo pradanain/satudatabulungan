@@ -816,13 +816,16 @@ export async function updateCkanPublication(
   };
 }
 
-export async function getCkanPublicationBySlug(slug: string): Promise<PortalDataset | null> {
+export async function getCkanPublicationBySlug(
+  slug: string,
+  options?: { fresh?: boolean },
+): Promise<PortalDataset | null> {
   if (!slug.trim()) return null;
   try {
     const raw = await ckanAction<CkanPackageRaw>(
       "package_show",
       { id: slug },
-      { method: "POST", nextRevalidateSeconds: 30 },
+      { method: "POST", nextRevalidateSeconds: options?.fresh ? 0 : 30 },
     );
     return mapDataset(raw);
   } catch {

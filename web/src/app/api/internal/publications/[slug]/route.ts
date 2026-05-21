@@ -101,7 +101,7 @@ export async function PATCH(
     const { slug } = await context.params;
     const { action } = await request.json();
 
-    const pub = await getCkanPublicationBySlug(slug);
+    const pub = await getCkanPublicationBySlug(slug, { fresh: true });
     if (!pub) {
       return NextResponse.json({ success: false, error: "Konten tidak ditemukan." }, { status: 404 });
     }
@@ -116,8 +116,11 @@ export async function PATCH(
         if (pub.status !== "Draft" && pub.status !== "Need Revision") {
           return NextResponse.json({ success: false, error: `Tidak bisa mengajukan konten dengan status "${pub.status}".` }, { status: 400 });
         }
-        if (isProdusen && pub.organizationId !== session.organizationId) {
-          return NextResponse.json({ success: false, error: "Anda hanya bisa mengajukan konten milik OPD Anda." }, { status: 403 });
+        if (isProdusen) {
+          const ownCkanOrgId = await resolveCkanOwnerOrgId(session.organizationId).catch(() => session.organizationId);
+          if (pub.organizationId !== ownCkanOrgId) {
+            return NextResponse.json({ success: false, error: "Anda hanya bisa mengajukan konten milik OPD Anda." }, { status: 403 });
+          }
         }
         newStatus = "Submitted";
         break;
