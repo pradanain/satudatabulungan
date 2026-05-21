@@ -8,8 +8,46 @@ import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-se
 import { hasPermission } from "@/lib/utils/internal-auth";
 import type { DatasetStatus } from "@/lib/types/dataset";
 import { resolveCkanOwnerOrgId } from "@/lib/utils/resolve-ckan-owner-org";
+import { loadInternalPortalStore } from "@/lib/services/internal-store";
 
 export const dynamic = "force-dynamic";
+
+function normalizeText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+async function isPublicationOwnedBySessionOrg(
+  publicationOrgId: string,
+  publicationOrgName: string,
+  sessionOrgId: string,
+): Promise<boolean> {
+  if (publicationOrgId === sessionOrgId) {
+    return true;
+  }
+
+  const store = await loadInternalPortalStore().catch(() => null);
+  if (!store) {
+    return false;
+  }
+
+  const localOrg = store.organizations.find((org) => org.id === sessionOrgId);
+  if (!localOrg) {
+    return false;
+  }
+
+  const publicationName = normalizeText(publicationOrgName);
+  if (!publicationName) {
+    return false;
+  }
+
+  const localTokens = [
+    normalizeText(localOrg.name),
+    normalizeText(localOrg.shortName),
+    normalizeText(localOrg.slug),
+  ].filter(Boolean);
+
+  return localTokens.some((token) => publicationName.includes(token) || token.includes(publicationName));
+}
 
 function mapInternalTypeToCkan(type: string): PortalContentType {
   if (type === "news") return "news";
@@ -117,8 +155,12 @@ export async function PATCH(
           return NextResponse.json({ success: false, error: `Tidak bisa mengajukan konten dengan status "${pub.status}".` }, { status: 400 });
         }
         if (isProdusen) {
-          const ownCkanOrgId = await resolveCkanOwnerOrgId(session.organizationId).catch(() => session.organizationId);
-          if (pub.organizationId !== ownCkanOrgId) {
+          const isOwnedBySessionOrg = await isPublicationOwnedBySessionOrg(
+            pub.organizationId,
+            pub.organizationName,
+            session.organizationId,
+          );
+          if (!isOwnedBySessionOrg) {
             return NextResponse.json({ success: false, error: "Anda hanya bisa mengajukan konten milik OPD Anda." }, { status: 403 });
           }
         }

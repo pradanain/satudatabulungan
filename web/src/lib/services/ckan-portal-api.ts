@@ -231,9 +231,14 @@ function parseJson<T>(value: string | undefined, fallback: T): T {
 async function ckanAction<T>(
   action: string,
   payload: Record<string, unknown> | undefined,
-  options?: { method?: "GET" | "POST"; requireAuth?: boolean; nextRevalidateSeconds?: number },
+  options?: {
+    method?: "GET" | "POST";
+    requireAuth?: boolean;
+    nextRevalidateSeconds?: number;
+    bypassUnavailableWindow?: boolean;
+  },
 ): Promise<T> {
-  if (isInUnavailableWindow()) {
+  if (isInUnavailableWindow() && !options?.bypassUnavailableWindow) {
     throw new Error("CKAN upstream sementara tidak tersedia.");
   }
 
@@ -401,7 +406,11 @@ async function getAccountsPackage(): Promise<CkanPackageRaw | null> {
 }
 
 export async function getOrganizations(): Promise<PortalOrganization[]> {
-  const names = await ckanAction<string[]>("organization_list", { all_fields: false }, { method: "POST" });
+  const names = await ckanAction<string[]>(
+    "organization_list",
+    { all_fields: false },
+    { method: "POST", bypassUnavailableWindow: true },
+  );
   const organizations = await Promise.all(
     names.map((name) =>
       ckanAction<CkanOrganizationRaw>(
@@ -414,7 +423,7 @@ export async function getOrganizations(): Promise<PortalOrganization[]> {
           include_users: false,
           include_groups: false,
         },
-        { method: "POST" },
+        { method: "POST", bypassUnavailableWindow: true },
       ),
     ),
   );
@@ -437,7 +446,7 @@ export async function getOrganizationById(id: string): Promise<PortalOrganizatio
       include_users: false,
       include_groups: false,
     },
-    { method: "POST" },
+    { method: "POST", bypassUnavailableWindow: true },
   ).catch(() => null);
 
   return raw ? mapOrganization(raw) : null;
@@ -739,7 +748,7 @@ export async function createCkanPublication(
   const result = await ckanAction<CkanPackageRaw>(
     "package_create",
     packageData,
-    { requireAuth: true },
+    { requireAuth: true, bypassUnavailableWindow: true },
   );
 
   return {
@@ -763,7 +772,7 @@ export async function updateCkanPublication(
   const current = await ckanAction<CkanPackageRaw>(
     "package_show",
     { id: slugOrId },
-    { requireAuth: true, nextRevalidateSeconds: 0 },
+    { requireAuth: true, nextRevalidateSeconds: 0, bypassUnavailableWindow: true },
   );
 
   const currentExtras = toExtrasMap(current.extras);
@@ -806,7 +815,7 @@ export async function updateCkanPublication(
   const result = await ckanAction<CkanPackageRaw>(
     "package_update",
     packageData,
-    { requireAuth: true },
+    { requireAuth: true, bypassUnavailableWindow: true },
   );
 
   return {
@@ -825,7 +834,11 @@ export async function getCkanPublicationBySlug(
     const raw = await ckanAction<CkanPackageRaw>(
       "package_show",
       { id: slug },
-      { method: "POST", nextRevalidateSeconds: options?.fresh ? 0 : 30 },
+      {
+        method: "POST",
+        nextRevalidateSeconds: options?.fresh ? 0 : 30,
+        bypassUnavailableWindow: Boolean(options?.fresh),
+      },
     );
     return mapDataset(raw);
   } catch {
