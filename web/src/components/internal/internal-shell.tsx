@@ -29,6 +29,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { InternalLogoutButton } from "@/components/internal/internal-logout-button";
+import { InternalNotificationPopover } from "@/components/internal/internal-notification-popover";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { InternalNavKey, InternalSession } from "@/lib/types/internal";
@@ -338,13 +339,7 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
               </Button>
             )}
             {canAccessNav(session.role, "notifications") && (
-              <Button asChild variant="ghost" size="icon" className="text-[var(--color-muted)] hover:text-[var(--color-text)] relative">
-                <Link href="/internal/notifications" aria-label="Notifikasi">
-                  <Bell className="size-5" />
-                  {/* Fake badge for demonstration */}
-                  <span className="absolute right-2 top-2 flex size-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-                </Link>
-              </Button>
+              <InternalNotificationPopover session={session} />
             )}
             <Link href="/internal/profile" className="ml-1 flex items-center gap-2.5 rounded-full p-1 pr-3 hover:bg-[var(--color-surface-soft)] transition-colors">
               <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]">

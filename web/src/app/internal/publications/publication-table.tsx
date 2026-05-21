@@ -30,9 +30,11 @@ function getContentBaseUrl(type: string): string {
 export function PublicationTable({
   publications,
   session,
+  actionButton,
 }: {
   publications: InternalPublication[];
   session: InternalSession;
+  actionButton?: React.ReactNode;
 }) {
   const columns: ColumnDef<InternalPublication>[] = [
     {
@@ -143,6 +145,7 @@ export function PublicationTable({
           (pub.organizationName || "").toLowerCase().includes(query.toLowerCase())
         }
         emptyMessage="Belum ada konten."
+        actionButton={actionButton}
       />
     </div>
   );

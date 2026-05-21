@@ -11,6 +11,7 @@ import type { DatasetStatus } from "@/lib/types/dataset";
 import type { InternalRole, InternalSession, InternalDataset } from "@/lib/types/internal";
 import { hasPermission } from "@/lib/utils/internal-auth";
 import { cn } from "@/lib/utils/cn";
+import { Trash2 } from "lucide-react";
 
 type InternalWorkflowActionsProps = {
   dataset: InternalDataset;
@@ -61,6 +62,19 @@ export function InternalWorkflowActions({ dataset, session, variant = "card" }: 
   const [showConfirmTransition, setShowConfirmTransition] = useState(false);
   const [transitionTarget, setTransitionTarget] = useState<DatasetStatus | null>(null);
 
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Determine delete permission
+  const canDeletePermanent = hasPermission(session, "dataset.delete_permanent"); // walidata
+  const canDeleteDraft = hasPermission(session, "dataset.delete_draft_own_opd"); // produsen
+  const isOwnOrg = dataset.organizationId === session.organizationId ||
+    session.role === "walidata";
+
+  const showDeleteButton =
+    (canDeletePermanent) ||
+    (canDeleteDraft && dataset.status === "Draft" && isOwnOrg);
+
   async function handleTransition(nextStatus: DatasetStatus) {
     setPendingId(dataset.id);
     setErrorMessage(null);
@@ -104,13 +118,36 @@ export function InternalWorkflowActions({ dataset, session, variant = "card" }: 
     }
   }
 
+  async function handleDelete() {
+    setIsDeleting(true);
+    setErrorMessage(null);
+    try {
+      const response = await fetch(`/api/internal/datasets/${dataset.slug}`, {
+        method: "DELETE",
+      });
+      const data = (await response.json()) as { success?: boolean; error?: string };
+      if (!response.ok || !data.success) {
+        throw new Error(data.error ?? "Gagal menghapus dataset.");
+      }
+      router.push("/internal/datasets");
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Gagal menghapus dataset.");
+      setIsDeleting(false);
+    }
+  }
+
   const nextStatuses = getNextStatuses(dataset.status).filter((nextStatus) =>
     isTransitionVisible(session.role, dataset.status, nextStatus)
   );
 
-  if (nextStatuses.length === 0) {
+  if (nextStatuses.length === 0 && !showDeleteButton) {
     return null; // No actions available for current role/status
   }
+
+  const deleteTooltip = canDeletePermanent
+    ? "Hapus dataset secara permanen dari sistem dan CKAN."
+    : "Hapus dataset yang masih berstatus Draft sebelum dikirim ke Walidata.";
 
   const innerContent = (
     <>
@@ -120,7 +157,7 @@ export function InternalWorkflowActions({ dataset, session, variant = "card" }: 
       {variant === "card" && (
         <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wider">Aksi Workflow</h3>
       )}
-      <div className={cn("flex gap-2", variant === "card" ? "flex-col" : "flex-row")}>
+      <div className={cn("flex gap-2", variant === "card" ? "flex-col" : "flex-row flex-wrap")}>
         {nextStatuses.map((nextStatus) => {
           const isRevision = nextStatus === "Need Revision";
           const label = getActionLabel(dataset.status, nextStatus);
@@ -131,8 +168,8 @@ export function InternalWorkflowActions({ dataset, session, variant = "card" }: 
               className={cn(
                 "w-full text-xs h-10 font-semibold rounded-xl transition-all",
                 variant === "inline" && "w-auto px-6 h-9 rounded-full",
-                isRevision 
-                  ? "bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 border border-amber-200" 
+                isRevision
+                  ? "bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800 border border-amber-200"
                   : "bg-[var(--color-primary)] hover:bg-[#8f1717] text-white shadow-sm"
               )}
               variant={isRevision ? "outline" : "default"}
@@ -146,6 +183,25 @@ export function InternalWorkflowActions({ dataset, session, variant = "card" }: 
             </Button>
           );
         })}
+
+        {/* Delete Button */}
+        {showDeleteButton && (
+          <Button
+            type="button"
+            className={cn(
+              "w-full text-xs h-10 font-semibold rounded-xl transition-all border",
+              variant === "inline" && "w-auto px-5 h-9 rounded-full",
+              "bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border-red-200"
+            )}
+            variant="outline"
+            disabled={isDeleting}
+            title={deleteTooltip}
+            onClick={() => setShowConfirmDelete(true)}
+          >
+            <Trash2 className="size-3.5 mr-1.5 shrink-0" />
+            {isDeleting ? "Menghapus..." : "Hapus Dataset"}
+          </Button>
+        )}
       </div>
 
       {transitionTarget && (
@@ -162,6 +218,21 @@ export function InternalWorkflowActions({ dataset, session, variant = "card" }: 
           }}
         />
       )}
+
+      <ConfirmationDialog
+        open={showConfirmDelete}
+        onOpenChange={setShowConfirmDelete}
+        title="Hapus Dataset?"
+        description={
+          canDeletePermanent
+            ? `Dataset "${dataset.title}" akan dihapus secara permanen dari sistem dan portal CKAN. Tindakan ini tidak dapat dibatalkan.`
+            : `Dataset "${dataset.title}" akan dihapus. Dataset yang belum dikirim ke Walidata dapat dihapus oleh Operator OPD. Tindakan ini tidak dapat dibatalkan.`
+        }
+        confirmLabel="Ya, Hapus Sekarang"
+        cancelLabel="Batal"
+        variant="destructive"
+        onConfirm={handleDelete}
+      />
     </>
   );
 
@@ -175,3 +246,4 @@ export function InternalWorkflowActions({ dataset, session, variant = "card" }: 
     </Card>
   );
 }
+

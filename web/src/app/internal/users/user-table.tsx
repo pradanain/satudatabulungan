@@ -8,7 +8,13 @@ import { internalRoleLabels } from "@/lib/utils/internal-auth";
 import { cn } from "@/lib/utils/cn";
 import { PortalAccount } from "@/lib/services/ckan-portal-api";
 
-export function UserTable({ accounts }: { accounts: PortalAccount[] }) {
+export function UserTable({
+  accounts,
+  actionButton,
+}: {
+  accounts: PortalAccount[];
+  actionButton?: React.ReactNode;
+}) {
   const columns: ColumnDef<PortalAccount>[] = [
     {
       key: "name",
@@ -87,6 +93,7 @@ export function UserTable({ accounts }: { accounts: PortalAccount[] }) {
       data={accounts}
       columns={columns}
       searchable={true}
+      actionButton={actionButton}
       searchPlaceholder="Cari akun..."
       searchFn={(user, query) => 
         user.name.toLowerCase().includes(query.toLowerCase()) || 

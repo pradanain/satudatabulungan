@@ -167,7 +167,11 @@ function parseNumericValue(value: string | number | undefined): number | null {
     return Number.isFinite(value) ? value : null;
   }
 
-  const normalized = (value ?? "").toString().trim();
+  let normalized = (value ?? "").toString().trim();
+  if (normalized.endsWith("%")) {
+    normalized = normalized.slice(0, -1).trim();
+  }
+  
   if (!normalized) {
     return null;
   }
@@ -431,7 +435,11 @@ async function loadPreviewFromResources(
   resources: Array<{ format: DatasetFormat; url: string }>,
   topic: string,
 ): Promise<Dataset["preview"] | null> {
-  const candidates = resources.filter((resource) => resource.url && (resource.format === "CSV" || resource.format === "JSON"));
+  const candidates = resources.filter(
+    (resource) =>
+      resource.url &&
+      (resource.format === "CSV" || resource.format === "JSON" || resource.format === "XLSX"),
+  );
 
   for (const resource of candidates) {
     const absoluteUrl = resource.url.startsWith("http")
@@ -447,18 +455,58 @@ async function loadPreviewFromResources(
         continue;
       }
 
-      const raw = await response.text();
-      const records =
-        resource.format === "JSON"
-          ? parseJsonRecords(raw)
-          : parseCsvRecords(raw);
+      let records: RawRecord[] = [];
+
+      if (resource.format === "JSON") {
+        const raw = await response.text();
+        records = parseJsonRecords(raw);
+      } else if (resource.format === "CSV") {
+        const raw = await response.text();
+        records = parseCsvRecords(raw);
+      } else if (resource.format === "XLSX") {
+        const arrayBuffer = await response.arrayBuffer();
+        const XLSX = await import("xlsx");
+        const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rawRows = XLSX.utils.sheet_to_json<any[]>(worksheet, {
+          header: 1,
+          raw: true,
+          defval: "",
+        });
+
+        if (rawRows.length > 0) {
+          let headerIdx = 0;
+          for (let i = 0; i < Math.min(rawRows.length, 6); i++) {
+            const row = rawRows[i];
+            if (Array.isArray(row) && row.filter((c) => c !== "").length >= 2) {
+              headerIdx = i;
+              break;
+            }
+          }
+
+          const headers = (rawRows[headerIdx] || []).map((h) => String(h ?? "").trim());
+          const dataRows = rawRows.slice(headerIdx + 1);
+
+          records = dataRows.map((row) => {
+            const rec: RawRecord = {};
+            headers.forEach((h, idx) => {
+              if (h) {
+                const val = Array.isArray(row) ? row[idx] : undefined;
+                rec[h] = val !== undefined && val !== null ? val : "";
+              }
+            });
+            return rec;
+          });
+        }
+      }
 
       const preview = buildPreviewFromRecords(records, topic);
       if (preview) {
         return preview;
       }
-    } catch {
-      // try next candidate
+    } catch (err) {
+      console.warn(`[ckan-dataset-adapter] Gagal parse pratinjau untuk format ${resource.format}:`, err);
     }
   }
 
@@ -531,7 +579,7 @@ async function mapPackageToDataset(
   return {
     id: pkg.id,
     slug: pkg.name,
-    title: pkg.title ?? pkg.name,
+    title: (pkg.title ?? pkg.name).replace(/_/g, " ").trim(),
     summary: pkg.notes?.slice(0, 140) ?? "Dataset CKAN tanpa deskripsi ringkas.",
     description: pkg.notes ?? "Tidak ada deskripsi panjang.",
     topic,
@@ -570,6 +618,7 @@ function isMainDatasetPackage(pkg: CkanPackage): boolean {
   if (contentType.includes("infografis")) return false;
   if (contentType.includes("publikasi")) return false;
   if (contentType.includes("akun") || contentType.includes("account")) return false;
+  if (contentType.includes("news") || contentType.includes("berita")) return false;
   return true;
 }
 

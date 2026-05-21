@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import type { DatasetFormat, DatasetFrequency } from "@/lib/types/dataset";
-import { updateInternalDataset } from "@/lib/services/internal-store";
+import { updateInternalDataset, getInternalDatasetBySlug, deleteInternalDataset } from "@/lib/services/internal-store";
 import { inferInternalApiErrorStatus } from "@/lib/utils/internal-api-response";
 import { sanitizeStoredText } from "@/lib/utils/input-sanitizer";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
 import { validateResourceUrl } from "@/lib/utils/resource-url";
+import { hasPermission } from "@/lib/utils/internal-auth";
 
 type DatasetUpdatePayload = {
   title?: string;
@@ -129,3 +130,58 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ slug: string }> },
+) {
+  try {
+    const session = await getInternalSessionFromCookieHeader(request.headers.get("cookie"));
+    if (!session) {
+      return NextResponse.json({ success: false, error: "Sesi internal tidak ditemukan." }, { status: 401 });
+    }
+
+    const { slug } = await context.params;
+
+    // Load dataset for permission checks
+    const dataset = await getInternalDatasetBySlug(slug, session);
+    if (!dataset) {
+      return NextResponse.json({ success: false, error: "Dataset tidak ditemukan." }, { status: 404 });
+    }
+
+    const canDeletePermanent = hasPermission(session, "dataset.delete_permanent");
+    const canDeleteDraft = hasPermission(session, "dataset.delete_draft_own_opd");
+
+    // Walidata: can delete any dataset regardless of status
+    if (canDeletePermanent) {
+      await deleteInternalDataset(slug, session);
+      return NextResponse.json({ success: true });
+    }
+
+    // Produsen (operator OPD): can only delete Draft datasets milik OPD sendiri
+    if (canDeleteDraft) {
+      if (dataset.status !== "Draft") {
+        return NextResponse.json(
+          { success: false, error: "Operator OPD hanya dapat menghapus dataset berstatus Draft yang belum dikirim ke Walidata." },
+          { status: 403 },
+        );
+      }
+      if (dataset.organizationId !== session.organizationId) {
+        return NextResponse.json(
+          { success: false, error: "Anda tidak memiliki akses untuk menghapus dataset dari OPD lain." },
+          { status: 403 },
+        );
+      }
+      await deleteInternalDataset(slug, session);
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ success: false, error: "Anda tidak memiliki izin untuk menghapus dataset." }, { status: 403 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Gagal menghapus dataset.";
+    const status = inferInternalApiErrorStatus(message);
+    return NextResponse.json({ success: false, error: message }, { status });
+  }
+}
+
+

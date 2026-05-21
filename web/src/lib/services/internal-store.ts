@@ -1423,6 +1423,49 @@ export async function updateInternalDataset(
   });
 }
 
+export async function deleteInternalDataset(
+  slug: string,
+  session: InternalSession,
+): Promise<void> {
+  await withInternalPortalStore(async (store) => {
+    const index = store.datasets.findIndex((item) => item.slug === slug);
+    if (index < 0) {
+      throw new Error("Dataset tidak ditemukan.");
+    }
+
+    const dataset = store.datasets[index];
+
+    // Call CKAN API to delete the package
+    const ckanBaseUrl = (process.env.CKAN_BASE_URL ?? "").trim();
+    const apiKey = (process.env.CKAN_API_KEY ?? "").trim();
+    if (ckanBaseUrl && apiKey && dataset.id) {
+      try {
+        await fetch(`${ckanBaseUrl}/api/3/action/package_delete`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: apiKey,
+          },
+          body: JSON.stringify({ id: dataset.id }),
+        });
+      } catch {
+        // CKAN delete failure is non-fatal — still remove from local store
+      }
+    }
+
+    // Remove from local store
+    const nextDatasets = [...store.datasets];
+    nextDatasets.splice(index, 1);
+
+    const nextStore: InternalPortalStore = {
+      ...store,
+      datasets: nextDatasets,
+    };
+
+    return { store: nextStore, result: undefined };
+  });
+}
+
 export async function transitionInternalDataset(
   slug: string,
   fromStatus: Dataset["status"],
@@ -1848,7 +1891,8 @@ export async function createInternalPublication(
     };
 
     if (newPublication.status === "Published") {
-      newPublication.publishedAt = new Date().toISOString();
+      // Gunakan tanggal yang diberikan user (dari form), bukan tanggal sekarang
+      newPublication.publishedAt = newPublication.publishedAt || new Date().toISOString();
     }
 
     const nextStore = {
@@ -1891,7 +1935,8 @@ export async function updateInternalPublication(
     } as InternalPublication;
 
     if (input.status === "Published" && original.status !== "Published") {
-      updated.publishedAt = new Date().toISOString();
+      // Gunakan tanggal dari input jika tersedia, jika tidak gunakan sekarang
+      updated.publishedAt = input.publishedAt || new Date().toISOString();
     }
 
     const nextPubs = [...store.publications];

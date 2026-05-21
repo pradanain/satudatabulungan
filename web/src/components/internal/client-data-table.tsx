@@ -24,6 +24,7 @@ interface ClientDataTableProps<T> {
   searchPlaceholder?: string;
   searchFn?: (row: T, query: string) => boolean;
   emptyMessage?: string;
+  actionButton?: ReactNode;
 }
 
 export function ClientDataTable<T>({
@@ -34,6 +35,7 @@ export function ClientDataTable<T>({
   searchPlaceholder = "Cari data...",
   searchFn,
   emptyMessage = "Tidak ada data ditemukan.",
+  actionButton,
 }: ClientDataTableProps<T>) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(defaultPageSize);
@@ -109,20 +111,29 @@ export function ClientDataTable<T>({
 
   return (
     <div className="flex flex-col w-full">
-      {searchable && (
-        <div className="border-b border-[var(--color-border)] p-4 flex items-center gap-4 bg-[var(--color-surface-soft)]/20">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-muted)]" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setPage(1);
-              }}
-              placeholder={searchPlaceholder}
-              className="pl-9 h-9 border-[var(--color-border)] bg-white"
-            />
-          </div>
+      {(searchable || actionButton) && (
+        <div className="border-b border-[var(--color-border)] p-4 flex items-center justify-between gap-4 bg-[var(--color-surface-soft)]/20">
+          {searchable ? (
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[var(--color-muted)]" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
+                placeholder={searchPlaceholder}
+                className="pl-9 h-9 border-[var(--color-border)] bg-white"
+              />
+            </div>
+          ) : (
+            <div className="flex-1" />
+          )}
+          {actionButton && (
+            <div className="flex items-center gap-2">
+              {actionButton}
+            </div>
+          )}
         </div>
       )}
 

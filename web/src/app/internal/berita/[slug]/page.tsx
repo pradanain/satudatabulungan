@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { InternalShell } from "@/components/internal/internal-shell";
 import { InternalPublicationDetail } from "@/components/internal/internal-publication-detail";
-import { loadInternalPortalStore } from "@/lib/services/internal-store";
+import { getCkanPublicationBySlug, mapPortalDatasetToPublication } from "@/lib/services/ckan-portal-api";
 import { requireInternalSession } from "@/lib/utils/internal-auth-server";
 import { hasPermission } from "@/lib/utils/internal-auth";
 
@@ -14,12 +14,13 @@ interface PageProps {
 export default async function BeritaDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const session = await requireInternalSession("berita");
-  const store = await loadInternalPortalStore();
 
-  const pub = (store.publications || []).find((p) => p.slug === slug && p.type === "news");
-  if (!pub) {
+  const ckanPub = await getCkanPublicationBySlug(slug);
+  if (!ckanPub || ckanPub.contentType !== "news") {
     notFound();
   }
+
+  const pub = mapPortalDatasetToPublication(ckanPub);
 
   // Auth: produsen can only see own OPD
   if (!hasPermission(session, "content.view_all") && pub.organizationId !== session.organizationId) {

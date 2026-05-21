@@ -8,7 +8,7 @@ import { InternalStatusBadge } from "@/components/internal/internal-status-badge
 import { formatIndonesianDate } from "@/lib/utils/formatters";
 import { InternalDataset } from "@/lib/types/internal";
 
-export function DatasetTable({ datasets }: { datasets: InternalDataset[] }) {
+export function DatasetTable({ datasets, actionButton }: { datasets: InternalDataset[]; actionButton?: React.ReactNode }) {
   const columns: ColumnDef<InternalDataset>[] = [
     {
       key: "title",
@@ -85,6 +85,7 @@ export function DatasetTable({ datasets }: { datasets: InternalDataset[] }) {
         (dataset.topic || "").toLowerCase().includes(query.toLowerCase())
       }
       emptyMessage="Belum ada dataset. Dataset akan muncul setelah Anda atau OPD mulai menambahkan data."
+      actionButton={actionButton}
     />
   );
 }

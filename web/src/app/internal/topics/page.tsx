@@ -29,15 +29,18 @@ export default async function InternalTopicsPage() {
       />
 
       <Card className="flex flex-col shadow-sm border-[var(--color-border)]">
-        {canManage && (
-          <div className="flex items-center justify-end px-4 pt-3 sm:px-5">
-            <Button size="sm" className="gap-1.5">
-              <Plus className="size-4" />
-              Tambah Topik
-            </Button>
-          </div>
-        )}
-        <TopicsTable topics={store.topics} organizations={store.organizations} />
+        <TopicsTable
+          topics={store.topics}
+          organizations={store.organizations}
+          actionButton={
+            canManage ? (
+              <Button size="sm" className="gap-1.5 bg-[var(--color-primary)] hover:bg-[#8f1717] text-white">
+                <Plus className="size-4" />
+                Tambah Topik
+              </Button>
+            ) : undefined
+          }
+        />
       </Card>
     </InternalShell>
   );

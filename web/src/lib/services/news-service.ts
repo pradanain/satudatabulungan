@@ -1,5 +1,11 @@
-import { readFile, readdir } from "node:fs/promises";
-import path from "node:path";
+import "server-only";
+
+import {
+  getPublishedNews,
+  getNews,
+  type PortalDataset,
+} from "@/lib/services/ckan-portal-api";
+import { ensureLegacyNewsMigration } from "@/lib/services/migrate-legacy-news";
 
 export interface PortalNewsItem {
   title: string;
@@ -11,166 +17,87 @@ export interface PortalNewsItem {
   imageSrc: string;
 }
 
-const beritaDirectory = path.join(process.cwd(), "public", "berita");
-const beritaImageExtensions = [".jpg", ".jpeg", ".png", ".webp"];
 const beritaAcronyms = new Set(["SDI", "BPS", "OPD", "DKIP", "API"]);
 const beritaMinorWords = new Set(["dan", "di", "ke", "dari", "untuk", "pada", "dengan", "selaku", "yang"]);
 
-function normalizeNewsText(text: string) {
-  return text
-    .replaceAll("â€“", "-")
-    .replaceAll("â€œ", "\"")
-    .replaceAll("â€", "\"")
-    .replaceAll("â€™", "'")
-    .replaceAll("Â", "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function normalizeNewsTitle(text: string) {
-  const normalized = normalizeNewsText(text).toLowerCase();
+  const normalized = text.trim().toLowerCase();
 
   return normalized
     .split(" ")
     .map((word, index) => {
-      if (!word) {
-        return word;
-      }
+      if (!word) return word;
 
       const acronymCandidate = word.toUpperCase();
-      if (beritaAcronyms.has(acronymCandidate)) {
-        return acronymCandidate;
-      }
+      if (beritaAcronyms.has(acronymCandidate)) return acronymCandidate;
 
-      if (index > 0 && beritaMinorWords.has(word)) {
-        return word;
-      }
+      if (index > 0 && beritaMinorWords.has(word)) return word;
 
       return `${word.charAt(0).toUpperCase()}${word.slice(1)}`;
     })
     .join(" ");
 }
 
-function extractDateFromNewsUrl(url: string) {
-  const match = url.match(/\/(\d{4})\/(\d{2})\/(\d{2})\//);
-  if (!match) {
-    return null;
-  }
-
-  const [, year, month, day] = match;
-  return `${year}-${month}-${day}`;
-}
-
-function inferNewsOrganization(url: string) {
-  if (url.includes("bulungankab.bps.go.id")) {
-    return "BPS Kabupaten Bulungan";
-  }
-
-  if (url.includes("diskominfo.bulungan.go.id")) {
-    return "Diskominfo Kabupaten Bulungan";
-  }
-
-  return "Pemerintah Kabupaten Bulungan";
-}
-
 function inferNewsTopicLabel(content: string) {
   const normalized = content.toLowerCase();
 
-  if (normalized.includes("forum")) {
-    return "Forum Satu Data";
-  }
-
-  if (normalized.includes("koordinasi")) {
-    return "Koordinasi SDI";
-  }
-
-  if (normalized.includes("bimtek")) {
-    return "Bimtek Portal";
-  }
+  if (normalized.includes("forum")) return "Forum Satu Data";
+  if (normalized.includes("koordinasi")) return "Koordinasi SDI";
+  if (normalized.includes("bimtek")) return "Bimtek Portal";
 
   return "Satu Data";
 }
 
-import { loadInternalPortalStore } from "@/lib/services/internal-store";
+function mapCkanToNewsItem(dataset: PortalDataset): PortalNewsItem {
+  const publishedAt = dataset.extras.published_at || dataset.metadataModified;
+  const date = publishedAt.slice(0, 10);
+  const imageUrl = dataset.extras.image_url || "";
+  const sourceUrl = dataset.extras.source_url || "";
+  const description = dataset.extras.description || dataset.description || "";
+
+  // If there's a source_url (legacy migrated news), link to that external URL
+  // Otherwise link to our internal page
+  const href = sourceUrl || `/publikasi-berita/${dataset.slug}`;
+
+  return {
+    title: dataset.title,
+    description: description.length > 200
+      ? `${description.slice(0, 197).trimEnd()}...`
+      : description,
+    date,
+    organization: dataset.organizationName,
+    href,
+    topicLabel: inferNewsTopicLabel(`${dataset.title} ${description}`),
+    imageSrc: imageUrl || "/assets/brand/logos/lambang-bulungan.png",
+  };
+}
 
 export async function loadKabarDataItems(limit = Number.MAX_SAFE_INTEGER): Promise<PortalNewsItem[]> {
+  // Trigger migrasi berita lama (non-blocking, sekali saja)
+  ensureLegacyNewsMigration();
+
   try {
-    const store = await loadInternalPortalStore();
-    const newsPublications = store.publications?.filter(
-      (pub) => pub.type === "news" && pub.status === "Published"
-    ) || [];
+    const publishedNews = await getPublishedNews();
 
-    const dynamicNewsItems = newsPublications.map((pub) => {
-      const title = pub.title;
-      const description = pub.description || pub.content?.substring(0, 200) || "";
-      const date = pub.publishedAt || pub.updatedAt;
+    const newsItems = publishedNews.map(mapCkanToNewsItem);
 
-      return {
-        title,
-        description,
-        date: date.substring(0, 10),
-        organization: pub.organizationName || "Pemerintah Kabupaten Bulungan",
-        href: `/publikasi-berita/${pub.slug}`, // Or however it should be accessed
-        topicLabel: inferNewsTopicLabel(`${title} ${description}`),
-        imageSrc: pub.imageUrl || "/assets/brand/logos/lambang-bulungan.png",
-      } satisfies PortalNewsItem;
-    });
-
-    let staticNewsItems: PortalNewsItem[] = [];
-    try {
-      const directoryEntries = await readdir(beritaDirectory, { withFileTypes: true });
-      const txtEntries = directoryEntries.filter((entry) => entry.isFile() && entry.name.endsWith(".txt"));
-
-      const parsedItems = await Promise.all(
-        txtEntries.map(async (entry) => {
-          const slug = entry.name.replace(/\.txt$/, "");
-          const rawText = await readFile(path.join(beritaDirectory, entry.name), "utf8");
-          const lines = rawText
-            .split(/\r?\n/)
-            .map((line) => line.trim())
-            .filter(Boolean);
-
-          if (lines.length < 2) return null;
-
-          const sourceUrl = lines[0];
-          if (!sourceUrl.startsWith("http")) return null;
-
-          const title = normalizeNewsTitle(lines[1]);
-          const firstParagraph = normalizeNewsText(lines.slice(2).join(" "));
-          const description =
-            firstParagraph.length > 200 ? `${firstParagraph.slice(0, 197).trimEnd()}...` : firstParagraph;
-
-          const imageFileName = beritaImageExtensions
-            .map((extension) => `${slug}${extension}`)
-            .find((fileName) => directoryEntries.some((candidate) => candidate.isFile() && candidate.name === fileName));
-
-          if (!imageFileName) return null;
-
-          const parsedDate = extractDateFromNewsUrl(sourceUrl);
-
-          return {
-            title,
-            description,
-            date: parsedDate ?? "2026-01-01",
-            organization: inferNewsOrganization(sourceUrl),
-            href: sourceUrl,
-            topicLabel: inferNewsTopicLabel(`${title} ${description}`),
-            imageSrc: `/berita/${imageFileName}`,
-          } satisfies PortalNewsItem;
-        })
-      );
-      staticNewsItems = parsedItems.filter((item): item is PortalNewsItem => Boolean(item));
-    } catch {
-      // Ignore errors if directory doesn't exist
-    }
-
-    const allNewsItems = [...dynamicNewsItems, ...staticNewsItems];
-
-    return allNewsItems
+    return newsItems
       .sort((left, right) => right.date.localeCompare(left.date))
       .slice(0, limit);
-  } catch {
+  } catch (error) {
+    console.error("[news-service] Gagal memuat berita dari CKAN:", error);
     return [];
   }
 }
 
+/**
+ * Load all news items (including non-published) for internal dashboard.
+ */
+export async function loadAllNewsItems(): Promise<PortalNewsItem[]> {
+  try {
+    const allNews = await getNews();
+    return allNews.map(mapCkanToNewsItem);
+  } catch {
+    return [];
+  }
+}

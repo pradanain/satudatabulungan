@@ -9,9 +9,10 @@ import type { InternalTopicReference, InternalOrganization } from "@/lib/types/i
 type TopicsTableProps = {
   topics: InternalTopicReference[];
   organizations: InternalOrganization[];
+  actionButton?: React.ReactNode;
 };
 
-export function TopicsTable({ topics, organizations }: TopicsTableProps) {
+export function TopicsTable({ topics, organizations, actionButton }: TopicsTableProps) {
   const orgById = new Map(organizations.map(o => [o.id, o]));
 
   const columns: ColumnDef<InternalTopicReference>[] = [
@@ -88,6 +89,7 @@ export function TopicsTable({ topics, organizations }: TopicsTableProps) {
       data={topics}
       columns={columns}
       searchable={true}
+      actionButton={actionButton}
       searchPlaceholder="Cari topik..."
       searchFn={(topic, query) =>
         topic.name.toLowerCase().includes(query.toLowerCase()) ||

@@ -25,7 +25,7 @@ export function InternalPageHeader({
             {eyebrow}
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="m-0 font-[family-name:var(--font-heading)] text-xl font-bold leading-tight sm:text-2xl">
+            <h1 className="m-0 font-[family-name:var(--font-heading)] text-xl font-bold leading-tight sm:text-2xl break-words">
               {title}
             </h1>
             {badges ? <div className="flex flex-wrap gap-2">{badges}</div> : null}

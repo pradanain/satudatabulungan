@@ -9,7 +9,13 @@ import type { InternalOrganization } from "@/lib/types/internal";
 
 type OrgWithCount = InternalOrganization & { datasetCount: number };
 
-export function OpdTable({ organizations }: { organizations: OrgWithCount[] }) {
+export function OpdTable({
+  organizations,
+  actionButton,
+}: {
+  organizations: OrgWithCount[];
+  actionButton?: React.ReactNode;
+}) {
   const columns: ColumnDef<OrgWithCount>[] = [
     {
       key: "name",
@@ -83,6 +89,7 @@ export function OpdTable({ organizations }: { organizations: OrgWithCount[] }) {
       data={organizations}
       columns={columns}
       searchable={true}
+      actionButton={actionButton}
       searchPlaceholder="Cari OPD..."
       searchFn={(org, query) =>
         org.name.toLowerCase().includes(query.toLowerCase()) ||

@@ -27,6 +27,7 @@ export type InternalPermission =
   | "dataset.archive"
   | "dataset.restore_from_archive"
   | "dataset.delete_permanent"
+  | "dataset.delete_draft_own_opd"
   // Monitoring
   | "monitoring.view_all"
   | "monitoring.view_own_opd"

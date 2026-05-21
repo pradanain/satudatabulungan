@@ -133,13 +133,15 @@ export function UserRolesTabs({ accounts }: UserRolesTabsProps) {
       {/* Users Tab */}
       {activeTab === "users" && (
         <Card className="flex flex-col shadow-sm border-[var(--color-border)] overflow-hidden bg-white">
-          <div className="flex items-center justify-end px-4 pt-3 sm:px-5">
-            <Button size="sm" className="gap-1.5">
-              <Plus className="size-4" />
-              Tambah Akun
-            </Button>
-          </div>
-          <UserTable accounts={accounts} />
+          <UserTable
+            accounts={accounts}
+            actionButton={
+              <Button size="sm" className="gap-1.5 bg-[var(--color-primary)] hover:bg-[#8f1717] text-white">
+                <Plus className="size-4" />
+                Tambah Akun
+              </Button>
+            }
+          />
         </Card>
       )}
 

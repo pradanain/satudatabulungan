@@ -5,7 +5,7 @@ import { InternalShell } from "@/components/internal/internal-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getScopedPublicationsByType, loadInternalPortalStore } from "@/lib/services/internal-store";
+import { getCkanPublications, mapPortalDatasetToPublication } from "@/lib/services/ckan-portal-api";
 import { requireInternalSession } from "@/lib/utils/internal-auth-server";
 import { hasPermission } from "@/lib/utils/internal-auth";
 import { formatCompactNumber } from "@/lib/utils/formatters";
@@ -15,8 +15,12 @@ export const dynamic = "force-dynamic";
 
 export default async function InternalBukuDigitalPage() {
   const session = await requireInternalSession("bukuDigital");
-  const store = await loadInternalPortalStore();
-  const publications = getScopedPublicationsByType(store, session, "digital_publication");
+  const rawBooks = await getCkanPublications("publikasi");
+  const allBooks = rawBooks.map(mapPortalDatasetToPublication);
+  const publications =
+    hasPermission(session, "content.view_all")
+      ? allBooks
+      : allBooks.filter((pub) => pub.organizationId === session.organizationId || pub.createdByUserId === session.username);
 
   const canCreate =
     hasPermission(session, "digital_publication.create_own_opd") ||
@@ -35,17 +39,20 @@ export default async function InternalBukuDigitalPage() {
       />
 
       <Card className="flex flex-col shadow-sm border-[var(--color-border)]">
-        {canCreate && (
-          <div className="flex items-center justify-end px-4 pt-3 sm:px-5">
-            <Button asChild size="sm" className="gap-1.5">
-              <Link href="/internal/buku-digital/new">
-                <Plus className="size-4" />
-                Tambah Buku Digital
-              </Link>
-            </Button>
-          </div>
-        )}
-        <PublicationTable publications={publications} session={session} />
+        <PublicationTable 
+          publications={publications} 
+          session={session} 
+          actionButton={
+            canCreate ? (
+              <Button asChild size="sm" className="gap-1.5 bg-[var(--color-primary)] hover:bg-[#8f1717] text-white">
+                <Link href="/internal/buku-digital/new">
+                  <Plus className="size-4" />
+                  Tambah Buku Digital
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
       </Card>
     </InternalShell>
   );

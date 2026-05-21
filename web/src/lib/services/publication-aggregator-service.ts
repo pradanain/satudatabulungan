@@ -2,7 +2,7 @@ import "server-only";
 
 import type { PublicationCatalogItem } from "@/app/publikasi/publikasi-content";
 import { getBappedaDigitalPublications } from "@/lib/services/bappeda-publication-service";
-import { getBooks, getInfographics } from "@/lib/services/ckan-portal-api";
+import { getPublishedBooks, getPublishedInfographics, type PortalDataset } from "@/lib/services/ckan-portal-api";
 import { getInfografisApiPayload } from "@/lib/services/infografis-service";
 import { normalizeOrganizationName } from "@/lib/utils/organization";
 import {
@@ -31,39 +31,24 @@ function dedupeByTitle(items: PublicationCatalogItem[]): PublicationCatalogItem[
     if (!key || seen.has(key)) {
       continue;
     }
+    
+    // Hapus/abaikan publikasi jika link unduhan/akses-nya kosong, '#' atau berupa placeholder CKAN/mock
+    const isPlaceholderHref =
+      !item.href ||
+      item.href === "#" ||
+      item.href === "/#" ||
+      item.href.toLowerCase().includes("placeholder") ||
+      item.href.toLowerCase().includes("mock");
+      
+    if (isPlaceholderHref) {
+      continue;
+    }
+
     seen.add(key);
     output.push(item);
   }
 
   return output;
-}
-
-function isAbsoluteHttpUrl(urlValue: string): boolean {
-  return /^https?:\/\//i.test(urlValue.trim());
-}
-
-function isImageResourceUrl(urlValue: string): boolean {
-  return IMAGE_RESOURCE_PATTERN.test(urlValue.trim());
-}
-
-function pickInfographicImageFromCkanResources(
-  resources: Array<{ url: string; format: string }>,
-): string | undefined {
-  for (const resource of resources) {
-    const normalizedFormat = resource.format.trim().toUpperCase();
-    if (
-      normalizedFormat.includes("PNG") ||
-      normalizedFormat.includes("JPG") ||
-      normalizedFormat.includes("JPEG") ||
-      normalizedFormat.includes("WEBP") ||
-      normalizedFormat.includes("GIF") ||
-      normalizedFormat.includes("SVG")
-    ) {
-      return resource.url;
-    }
-  }
-
-  return resources.find((resource) => isImageResourceUrl(resource.url))?.url;
 }
 
 function formatInfografisTitle(title: string): string {
@@ -95,7 +80,30 @@ function formatInfografisTitle(title: string): string {
   return formatted.trim();
 }
 
-import { loadInternalPortalStore } from "@/lib/services/internal-store";
+function mapCkanBookToItem(dataset: PortalDataset): PublicationCatalogItem {
+  const fileUrl = dataset.extras.file_url || "";
+  const imageUrl = dataset.extras.image_url || "";
+  const description = dataset.extras.description || dataset.description || "";
+  const publishedAt = dataset.extras.published_at || dataset.metadataModified;
+
+  // If there's a resource with a URL, use it as the document link
+  const resourceUrl = dataset.resources.length > 0 ? dataset.resources[0].url : "";
+  const docHref = fileUrl || resourceUrl || "#";
+
+  return {
+    id: `ckan-${dataset.id}`,
+    title: dataset.title,
+    summary: description || "Publikasi Digital Satu Data Bulungan",
+    organization: dataset.organizationName,
+    lastUpdated: publishedAt.slice(0, 10),
+    href: docHref,
+    hrefLabel: "Lihat Dokumen",
+    downloadHref: docHref,
+    downloadLabel: "Unduh Dokumen",
+    openInNewTab: true,
+    imageSrc: imageUrl || undefined,
+  };
+}
 
 export async function getCombinedBukuDigitalPublications(): Promise<PublicationCatalogItem[]> {
   const bappedaItems = await getBappedaDigitalPublications().catch(() => []);
@@ -117,29 +125,16 @@ export async function getCombinedBukuDigitalPublications(): Promise<PublicationC
     imageSrc: undefined,
   }));
 
-  let fromInternal: PublicationCatalogItem[] = [];
+  // Buku digital dari CKAN
+  let fromCkan: PublicationCatalogItem[] = [];
   try {
-    const store = await loadInternalPortalStore();
-    fromInternal = (store.publications || [])
-      .filter((pub) => pub.type === "digital_publication" && pub.status === "Published")
-      .map((pub) => ({
-        id: `internal-${pub.id}`,
-        title: pub.title,
-        summary: pub.description || "Publikasi Digital Satu Data Bulungan",
-        organization: pub.organizationName,
-        lastUpdated: pub.publishedAt || pub.updatedAt || "1970-01-01",
-        href: pub.fileUrl || "#",
-        hrefLabel: "Lihat Dokumen",
-        downloadHref: pub.fileUrl || "#",
-        downloadLabel: "Unduh Dokumen",
-        openInNewTab: true,
-        imageSrc: pub.imageUrl || undefined,
-      }));
+    const ckanBooks = await getPublishedBooks();
+    fromCkan = ckanBooks.map(mapCkanBookToItem);
   } catch {
-    // Ignore
+    // Ignore CKAN errors
   }
 
-  return dedupeByTitle([...fromBappeda, ...fromInternal]);
+  return dedupeByTitle([...fromBappeda, ...fromCkan]);
 }
 
 
@@ -178,35 +173,47 @@ export async function getCombinedInfografisPublications(): Promise<PublicationCa
     ),
   }));
 
-  let fromInternal: PublicationCatalogItem[] = [];
+  // Infografis dari CKAN (termasuk yang di-upload lewat form internal)
+  let fromCkan: PublicationCatalogItem[] = [];
   try {
-    const store = await loadInternalPortalStore();
-    fromInternal = (store.publications || [])
-      .filter((pub) => pub.type === "infographic" && pub.status === "Published")
-      .map((pub) => {
-        const rawSummary = pub.description || "Infografis Satu Data Bulungan.";
-        const formattedTitle = formatInfografisTitle(pub.title);
+    const ckanInfographics = await getPublishedInfographics();
+    fromCkan = ckanInfographics.map((dataset) => {
+      const imageUrl = dataset.extras.image_url || "";
+      const fileUrl = dataset.extras.file_url || "";
+      const description = dataset.extras.description || dataset.description || "";
+      const publishedAt = dataset.extras.published_at || dataset.metadataModified;
+      const formattedTitle = formatInfografisTitle(dataset.title);
 
-        return {
-          id: `internal-infografis-${pub.id}`,
-          title: formattedTitle,
-          summary: rawSummary,
-          organization: pub.organizationName,
-          lastUpdated: pub.publishedAt || pub.updatedAt || "1970-01-01",
-          href: pub.fileUrl || pub.imageUrl || "#",
-          hrefLabel: "Buka Sumber",
-          openInNewTab: true,
-          imageSrc: normalizePublicationImageSrc(
-            pub.imageUrl || "",
-            DEFAULT_PUBLICATION_IMAGE_SRC,
-          ),
-        } satisfies PublicationCatalogItem;
-      });
+      // Pick image from resources if no image_url extra
+      let imageSrc = imageUrl;
+      if (!imageSrc) {
+        const imageResource = dataset.resources.find((r) =>
+          IMAGE_RESOURCE_PATTERN.test(r.url) ||
+          ["PNG", "JPG", "JPEG", "WEBP"].includes(r.format.toUpperCase())
+        );
+        imageSrc = imageResource?.url || "";
+      }
+
+      return {
+        id: `ckan-infografis-${dataset.id}`,
+        title: formattedTitle,
+        summary: description || "Infografis Satu Data Bulungan.",
+        organization: dataset.organizationName,
+        lastUpdated: publishedAt.slice(0, 10),
+        href: fileUrl || imageSrc || "#",
+        hrefLabel: "Buka Sumber",
+        openInNewTab: true,
+        imageSrc: normalizePublicationImageSrc(
+          imageSrc,
+          DEFAULT_PUBLICATION_IMAGE_SRC,
+        ),
+      } satisfies PublicationCatalogItem;
+    });
   } catch {
-    // Ignore
+    // Ignore CKAN errors
   }
 
-  return dedupeByTitle([...fromDkipLive, ...fromInternal]).sort((a, b) => {
+  return dedupeByTitle([...fromDkipLive, ...fromCkan]).sort((a, b) => {
     return parseIndonesianDateText(b.lastUpdated) - parseIndonesianDateText(a.lastUpdated);
   });
 }

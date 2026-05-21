@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { InternalRole, InternalSession } from "@/lib/types/internal";
+import type { InternalRole, InternalSession, InternalPublication, ContentType } from "@/lib/types/internal";
 import { hasPermission, normalizeInternalRole, getRolePermissions } from "@/lib/utils/internal-auth";
 import {
   fetchWithTimeout,
@@ -8,7 +8,7 @@ import {
   summarizeUpstreamError,
 } from "@/lib/utils/upstream-error";
 
-export type PortalContentType = "dataset" | "infografis" | "publikasi" | "accounts";
+export type PortalContentType = "dataset" | "infografis" | "publikasi" | "news" | "accounts";
 
 export type PortalOrganization = {
   id: string;
@@ -82,6 +82,7 @@ export type PortalDashboard = {
     dataset: number;
     infografis: number;
     publikasi: number;
+    news: number;
   };
 };
 
@@ -309,6 +310,7 @@ function mapOrganization(raw: CkanOrganizationRaw): PortalOrganization {
 
 function detectContentType(extras: Record<string, string>): PortalContentType {
   const raw = (extras.content_type || extras.tipe_konten || "dataset").toLowerCase();
+  if (raw.includes("news") || raw.includes("berita")) return "news";
   if (raw.includes("infografis")) return "infografis";
   if (raw.includes("publikasi") || raw.includes("buku")) return "publikasi";
   if (raw.includes("account") || raw.includes("akun")) return "accounts";
@@ -568,6 +570,7 @@ export async function getDashboard(session: InternalSession): Promise<PortalDash
       dataset: datasetsOnly.length,
       infografis: allPackages.filter((item) => item.contentType === "infografis").length,
       publikasi: allPackages.filter((item) => item.contentType === "publikasi").length,
+      news: allPackages.filter((item) => item.contentType === "news").length,
     },
   };
 }
@@ -666,3 +669,225 @@ export async function uploadBook(payload: UploadPayload): Promise<{ id: string; 
   return upsertDataset(payload, "publikasi");
 }
 
+// ─── Publication CRUD (Berita, Buku Digital, Infografis) ─────────────────────
+
+export type PublicationPayload = {
+  title: string;
+  description: string;
+  content?: string;
+  ownerOrgId: string;
+  status?: string;
+  publishedAt?: string;
+  imageUrl?: string;
+  fileUrl?: string;
+  year?: string;
+  sourceUrl?: string;
+  tags?: string[];
+};
+
+function buildPublicationSlug(title: string, contentType: PortalContentType): string {
+  const prefix = contentType === "news" ? "berita" : contentType === "publikasi" ? "buku" : "infografis";
+  const base = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 85);
+  return `${prefix}-${base}`;
+}
+
+export async function createCkanPublication(
+  payload: PublicationPayload,
+  contentType: PortalContentType,
+): Promise<{ id: string; name: string; slug: string }> {
+  const apiKey = getServerApiKey();
+  if (!apiKey) {
+    throw new Error("CKAN_API_KEY wajib diisi untuk proses upload.");
+  }
+
+  const slug = buildPublicationSlug(payload.title, contentType);
+  const now = new Date().toISOString();
+
+  const extrasArray = [
+    { key: "content_type", value: contentType },
+    { key: "status", value: payload.status || "Draft" },
+    { key: "description", value: payload.description || "" },
+    { key: "published_at", value: payload.publishedAt || now },
+    { key: "image_url", value: payload.imageUrl || "" },
+    { key: "file_url", value: payload.fileUrl || "" },
+    { key: "source_url", value: payload.sourceUrl || "" },
+    { key: "tahun_data", value: payload.year || new Date().getFullYear().toString() },
+    { key: "created_at", value: now },
+    { key: "updated_at", value: now },
+  ];
+
+  const tags = (payload.tags?.length ? payload.tags : [contentType, "bulungan"])
+    .map((tag) => ({ name: tag.toLowerCase().replace(/[^a-z0-9\- ]/g, "").slice(0, 100) }));
+
+  const isPrivate = (payload.status || "Draft") !== "Published";
+
+  const packageData: Record<string, unknown> = {
+    name: slug,
+    title: payload.title,
+    notes: payload.content || payload.description || "",
+    owner_org: payload.ownerOrgId,
+    private: isPrivate,
+    tags,
+    extras: extrasArray,
+  };
+
+  const result = await ckanAction<CkanPackageRaw>(
+    "package_create",
+    packageData,
+    { requireAuth: true },
+  );
+
+  return {
+    id: result.id,
+    name: result.name,
+    slug: result.name,
+  };
+}
+
+export async function updateCkanPublication(
+  slugOrId: string,
+  payload: Partial<PublicationPayload> & { slug?: string },
+  contentType?: PortalContentType,
+): Promise<{ id: string; name: string; slug: string }> {
+  const apiKey = getServerApiKey();
+  if (!apiKey) {
+    throw new Error("CKAN_API_KEY wajib diisi untuk proses update.");
+  }
+
+  // Fetch current package first
+  const current = await ckanAction<CkanPackageRaw>(
+    "package_show",
+    { id: slugOrId },
+    { requireAuth: true, nextRevalidateSeconds: 0 },
+  );
+
+  const currentExtras = toExtrasMap(current.extras);
+  const now = new Date().toISOString();
+
+  // Merge extras — only update fields that are provided
+  const mergedExtras: Record<string, string> = {
+    ...currentExtras,
+    updated_at: now,
+  };
+
+  if (contentType) mergedExtras.content_type = contentType;
+  if (payload.status !== undefined) mergedExtras.status = payload.status;
+  if (payload.description !== undefined) mergedExtras.description = payload.description;
+  if (payload.publishedAt !== undefined) mergedExtras.published_at = payload.publishedAt;
+  if (payload.imageUrl !== undefined) mergedExtras.image_url = payload.imageUrl;
+  if (payload.fileUrl !== undefined) mergedExtras.file_url = payload.fileUrl;
+  if (payload.sourceUrl !== undefined) mergedExtras.source_url = payload.sourceUrl;
+  if (payload.year !== undefined) mergedExtras.tahun_data = payload.year;
+
+  const extrasArray = Object.entries(mergedExtras).map(([key, value]) => ({ key, value }));
+  const isPrivate = (mergedExtras.status || "Draft") !== "Published";
+
+  const packageData: Record<string, unknown> = {
+    id: current.id,
+    name: current.name,
+    title: payload.title ?? current.title,
+    notes: payload.content ?? current.notes ?? "",
+    owner_org: payload.ownerOrgId ?? current.owner_org,
+    private: isPrivate,
+    extras: extrasArray,
+  };
+
+  if (payload.tags?.length) {
+    packageData.tags = payload.tags.map((tag) => ({
+      name: tag.toLowerCase().replace(/[^a-z0-9\- ]/g, "").slice(0, 100),
+    }));
+  }
+
+  const result = await ckanAction<CkanPackageRaw>(
+    "package_update",
+    packageData,
+    { requireAuth: true },
+  );
+
+  return {
+    id: result.id,
+    name: result.name,
+    slug: result.name,
+  };
+}
+
+export async function getCkanPublicationBySlug(slug: string): Promise<PortalDataset | null> {
+  if (!slug.trim()) return null;
+  try {
+    const raw = await ckanAction<CkanPackageRaw>(
+      "package_show",
+      { id: slug },
+      { method: "POST", nextRevalidateSeconds: 30 },
+    );
+    return mapDataset(raw);
+  } catch {
+    return null;
+  }
+}
+
+export async function getCkanPublications(
+  contentType: PortalContentType,
+  filters?: { organizationId?: string; status?: string },
+): Promise<PortalDataset[]> {
+  const all = await getDatasets({ contentType });
+  return all.filter((item) => {
+    if (filters?.organizationId && item.organizationId !== filters.organizationId) return false;
+    if (filters?.status && item.status.toLowerCase() !== filters.status.toLowerCase()) return false;
+    return true;
+  });
+}
+
+export async function getPublishedNews(): Promise<PortalDataset[]> {
+  return getCkanPublications("news", { status: "Published" });
+}
+
+export async function getPublishedBooks(): Promise<PortalDataset[]> {
+  return getCkanPublications("publikasi", { status: "Published" });
+}
+
+export async function getPublishedInfographics(): Promise<PortalDataset[]> {
+  return getCkanPublications("infografis", { status: "Published" });
+}
+
+export async function uploadNews(payload: PublicationPayload): Promise<{ id: string; name: string; slug: string }> {
+  return createCkanPublication(payload, "news");
+}
+
+export async function getNews(): Promise<PortalDataset[]> {
+  return getDatasets({ contentType: "news" });
+}
+
+export function mapPortalDatasetToPublication(dataset: PortalDataset): InternalPublication {
+  let type: ContentType = "news";
+  if (dataset.contentType === "infografis") {
+    type = "infographic";
+  } else if (dataset.contentType === "publikasi") {
+    type = "digital_publication";
+  }
+  
+  return {
+    id: dataset.id,
+    title: dataset.title,
+    slug: dataset.slug,
+    type,
+    description: dataset.extras.description || dataset.description || "",
+    content: dataset.description,
+    fileUrl: dataset.extras.file_url || dataset.resources[0]?.url,
+    imageUrl: dataset.extras.image_url,
+    organizationId: dataset.organizationId,
+    organizationName: dataset.organizationName,
+    status: dataset.status as any,
+    visibility: "public",
+    publishedAt: dataset.extras.published_at || dataset.metadataModified,
+    year: dataset.extras.tahun_data || String(dataset.year),
+    createdByUserId: dataset.extras.uploaded_by || "system",
+    updatedByUserId: dataset.extras.uploaded_by || "system",
+    createdAt: dataset.extras.created_at || dataset.metadataModified,
+    updatedAt: dataset.extras.updated_at || dataset.metadataModified,
+  };
+}

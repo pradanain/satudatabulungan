@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
-import { updateInternalPublication, loadInternalPortalStore } from "@/lib/services/internal-store";
+import {
+  updateCkanPublication,
+  getCkanPublicationBySlug,
+  type PortalContentType,
+} from "@/lib/services/ckan-portal-api";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
 import { hasPermission } from "@/lib/utils/internal-auth";
 import type { DatasetStatus } from "@/lib/types/dataset";
 
 export const dynamic = "force-dynamic";
+
+function mapInternalTypeToCkan(type: string): PortalContentType {
+  if (type === "news") return "news";
+  if (type === "digital_publication" || type === "regulation" || type === "technical_guide") {
+    return "publikasi";
+  }
+  if (type === "infographic") return "infografis";
+  return "dataset";
+}
 
 export async function PUT(
   request: Request,
@@ -38,7 +51,8 @@ export async function PUT(
       }
     }
 
-    const result = await updateInternalPublication(
+    const ckanType = type ? mapInternalTypeToCkan(type) : undefined;
+    const result = await updateCkanPublication(
       slug,
       {
         title,
@@ -48,9 +62,10 @@ export async function PUT(
         imageUrl: payload.imageUrl,
         status,
         year: payload.year,
-        regulationNumber: payload.regulationNumber,
+        publishedAt: payload.publishedAt || undefined,
+        ownerOrgId: organizationId,
       },
-      session
+      ckanType
     );
 
     return NextResponse.json({
@@ -82,8 +97,7 @@ export async function PATCH(
     const { slug } = await context.params;
     const { action } = await request.json();
 
-    const store = await loadInternalPortalStore();
-    const pub = (store.publications || []).find((p) => p.slug === slug);
+    const pub = await getCkanPublicationBySlug(slug);
     if (!pub) {
       return NextResponse.json({ success: false, error: "Konten tidak ditemukan." }, { status: 404 });
     }
@@ -145,7 +159,7 @@ export async function PATCH(
         return NextResponse.json({ success: false, error: `Aksi "${action}" tidak dikenal.` }, { status: 400 });
     }
 
-    const result = await updateInternalPublication(slug, { status: newStatus }, session);
+    const result = await updateCkanPublication(slug, { status: newStatus });
 
     return NextResponse.json({
       success: true,

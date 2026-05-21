@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
-import { createInternalPublication } from "@/lib/services/internal-store";
+import { createCkanPublication, type PortalContentType } from "@/lib/services/ckan-portal-api";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
 import { hasPermission } from "@/lib/utils/internal-auth";
 import type { ContentType } from "@/lib/types/internal";
 
 export const dynamic = "force-dynamic";
+
+function mapInternalTypeToCkan(type: string): PortalContentType {
+  if (type === "news") return "news";
+  if (type === "digital_publication" || type === "regulation" || type === "technical_guide") {
+    return "publikasi";
+  }
+  if (type === "infographic") return "infografis";
+  return "dataset";
+}
 
 export async function POST(request: Request) {
   try {
@@ -53,21 +62,20 @@ export async function POST(request: Request) {
       }
     }
 
-    const newPub = await createInternalPublication(
+    const ckanType = mapInternalTypeToCkan(type);
+    const newPub = await createCkanPublication(
       {
         title,
-        type,
-        organizationId,
         description,
         content: payload.content || "",
-        fileUrl: payload.fileUrl || "",
-        imageUrl: payload.imageUrl || "",
+        ownerOrgId: organizationId,
         status,
-        visibility: "public",
+        publishedAt: payload.publishedAt || undefined,
+        imageUrl: payload.imageUrl || "",
+        fileUrl: payload.fileUrl || "",
         year: payload.year || "",
-        regulationNumber: payload.regulationNumber || "",
       },
-      session
+      ckanType
     );
 
     return NextResponse.json({
@@ -76,7 +84,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Gagal menyimpan konten." },
+      { success: false, error: error instanceof Error ? error.message : "Gagal menyimpan konten ke CKAN." },
       { status: 500 }
     );
   }

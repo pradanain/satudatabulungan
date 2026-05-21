@@ -2,7 +2,11 @@ import { notFound } from "next/navigation";
 import { InternalShell } from "@/components/internal/internal-shell";
 import { InternalPageHeader } from "@/components/internal/internal-page-header";
 import { InternalPublicationForm } from "@/components/internal/internal-publication-form";
-import { loadInternalPortalStore } from "@/lib/services/internal-store";
+import {
+  getCkanPublicationBySlug,
+  getOrganizations,
+  mapPortalDatasetToPublication,
+} from "@/lib/services/ckan-portal-api";
 import { requireInternalSession } from "@/lib/utils/internal-auth-server";
 import { hasPermission } from "@/lib/utils/internal-auth";
 
@@ -15,14 +19,29 @@ interface PageProps {
 export default async function EditInfografisPage({ params }: PageProps) {
   const { slug } = await params;
   const session = await requireInternalSession("infografis");
-  const store = await loadInternalPortalStore();
 
-  const pub = (store.publications || []).find((p) => p.slug === slug && p.type === "infographic");
-  if (!pub) notFound();
+  const ckanPub = await getCkanPublicationBySlug(slug);
+  if (!ckanPub || ckanPub.contentType !== "infografis") {
+    notFound();
+  }
+
+  const pub = mapPortalDatasetToPublication(ckanPub);
 
   const canEdit = hasPermission(session, "content.manage_all") ||
-    (hasPermission(session, "content.edit_own_draft") && pub.createdByUserId === session.userId);
+    (hasPermission(session, "content.edit_own_draft") && pub.createdByUserId === session.username);
   if (!canEdit) notFound();
+
+  const rawOrgs = await getOrganizations();
+  const organizations = rawOrgs.map((org) => ({
+    id: org.id,
+    slug: org.slug,
+    name: org.name,
+    shortName: org.name,
+    category: "Umum",
+    datasetTarget: 0,
+    status: "Aktif" as const,
+    lastUpdated: new Date().toISOString(),
+  }));
 
   return (
     <InternalShell session={session} activeKey="infografis">
@@ -33,7 +52,7 @@ export default async function EditInfografisPage({ params }: PageProps) {
       <InternalPublicationForm
         mode="edit"
         session={session}
-        organizations={store.organizations}
+        organizations={organizations}
         initialData={pub}
         fixedType="infographic"
       />

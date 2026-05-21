@@ -39,17 +39,19 @@ export default async function InternalDatasetsPage() {
       />
 
       <Card className="flex flex-col shadow-sm border-[var(--color-border)]">
-        {canCreate && (
-          <div className="flex items-center justify-end px-4 pt-3 sm:px-5">
-            <Button asChild size="sm" className="gap-1.5">
-              <Link href="/internal/datasets/new">
-                <Plus className="size-4" />
-                Tambah Dataset
-              </Link>
-            </Button>
-          </div>
-        )}
-        <DatasetTable datasets={datasets} />
+        <DatasetTable 
+          datasets={datasets} 
+          actionButton={
+            canCreate ? (
+              <Button asChild size="sm" className="gap-1.5 bg-[var(--color-primary)] hover:bg-[#8f1717] text-white">
+                <Link href="/internal/datasets/new">
+                  <Plus className="size-4" />
+                  Tambah Dataset
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
       </Card>
     </InternalShell>
   );
