@@ -1055,8 +1055,12 @@ export function InternalPublicationForm({
           onClick={() => requestSubmit("draft")}
           disabled={isSubmitting}
         >
-          <Save className="size-4" />
-          Simpan Draft
+          {isSubmitting ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+          ) : (
+            <Save className="size-4" />
+          )}
+          {isSubmitting ? "Memproses..." : "Simpan Draft"}
         </Button>
 
         {isProdusen && (
@@ -1066,8 +1070,12 @@ export function InternalPublicationForm({
             onClick={() => requestSubmit("submit_review")}
             disabled={isSubmitting}
           >
-            <Send className="size-4" />
-            Ajukan ke Walidata
+            {isSubmitting ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
+            ) : (
+              <Send className="size-4" />
+            )}
+            {isSubmitting ? "Memproses..." : "Ajukan ke Walidata"}
           </Button>
         )}
 
@@ -1078,8 +1086,12 @@ export function InternalPublicationForm({
             onClick={() => requestSubmit("publish")}
             disabled={isSubmitting}
           >
-            <CheckCircle2 className="size-4" />
-            {isSubmitting ? "Menyimpan..." : "Publish Sekarang"}
+            {isSubmitting ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
+            ) : (
+              <CheckCircle2 className="size-4" />
+            )}
+            {isSubmitting ? "Memproses..." : "Publish Sekarang"}
           </Button>
         )}
       </div>
