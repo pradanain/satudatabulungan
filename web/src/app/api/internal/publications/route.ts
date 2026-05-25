@@ -85,8 +85,21 @@ export async function POST(request: Request) {
       result: newPub,
     });
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : "Gagal menyimpan konten ke CKAN.";
+    console.error(`[internal/publications] POST error: ${errorMsg}`, error);
+    
+    // Add more granular error message for timeout or specific CKAN failures
+    let userMsg = "Gagal menyimpan konten ke CKAN. Silakan coba lagi.";
+    if (errorMsg.toLowerCase().includes("timeout") || errorMsg.toLowerCase().includes("abort")) {
+      userMsg = "Waktu koneksi ke server habis (timeout). Silakan periksa koneksi atau coba beberapa saat lagi.";
+    } else if (errorMsg.toLowerCase().includes("unauthorized") || errorMsg.toLowerCase().includes("auth")) {
+      userMsg = "Gagal autentikasi ke server CKAN. Pastikan API key dikonfigurasi dengan benar.";
+    } else if (errorMsg.includes("CKAN")) {
+      userMsg = errorMsg;
+    }
+
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Gagal menyimpan konten ke CKAN." },
+      { success: false, error: userMsg, detail: errorMsg },
       { status: 500 }
     );
   }

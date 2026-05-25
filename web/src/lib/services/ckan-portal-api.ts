@@ -149,7 +149,14 @@ const DEFAULT_BASE_URL = "http://localhost:5000";
 const ACCOUNTS_PACKAGE_NAME = "portal-akun-role-kabupaten-bulungan";
 const DEFAULT_CKAN_UNAVAILABLE_COOLDOWN_MS = 30_000;
 
-let ckanUnavailableUntil = 0;
+function getCkanUnavailableState(): { until: number } {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const globalState = globalThis as any;
+  if (!globalState.__ckanPortalApiUnavailableState) {
+    globalState.__ckanPortalApiUnavailableState = { until: 0 };
+  }
+  return globalState.__ckanPortalApiUnavailableState;
+}
 
 /** Get the CKAN-facing permission list for a role (derived from central permission map) */
 function getCkanPermissions(role: InternalRole): string[] {
@@ -200,15 +207,15 @@ function getCkanUnavailableCooldownMs(): number {
 }
 
 function isInUnavailableWindow(): boolean {
-  return Date.now() < ckanUnavailableUntil;
+  return Date.now() < getCkanUnavailableState().until;
 }
 
 function markCkanUnavailable(): void {
-  ckanUnavailableUntil = Date.now() + getCkanUnavailableCooldownMs();
+  getCkanUnavailableState().until = Date.now() + getCkanUnavailableCooldownMs();
 }
 
 function clearCkanUnavailable(): void {
-  ckanUnavailableUntil = 0;
+  getCkanUnavailableState().until = 0;
 }
 
 function toExtrasMap(extras?: CkanExtra[]): Record<string, string> {

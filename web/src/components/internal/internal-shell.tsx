@@ -84,7 +84,7 @@ const navGroups: NavGroup[] = [
   {
     id: "operasional",
     label: "Operasional",
-    keys: ["dashboard", "datasets", "review", "monitoring", "berita", "bukuDigital", "infografis"],
+    keys: ["dashboard", "datasets", "monitoring", "berita", "bukuDigital", "infografis"],
   },
   {
     id: "masterData",

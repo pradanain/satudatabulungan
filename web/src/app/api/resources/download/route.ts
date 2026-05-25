@@ -32,20 +32,27 @@ function resolveTargetUrl(rawUrl: string): URL | null {
     return null;
   }
 
+  const internalBase = bases[0]; // Selalu gunakan URL internal (CKAN_BASE_URL) untuk fetch
+
   if (/^https?:\/\//i.test(trimmed)) {
     try {
       const absolute = new URL(trimmed);
       const allowedHosts = new Set(bases.map((base) => base.host.toLowerCase()));
-      if (!allowedHosts.has(absolute.host.toLowerCase())) {
-        return null;
+      const host = absolute.host.toLowerCase();
+
+      // Jika host adalah CKAN (publik/internal) atau localhost/127.0.0.1 bawaan CKAN lokal
+      if (allowedHosts.has(host) || host.includes("localhost") || host.includes("127.0.0.1")) {
+        // Tulis ulang (rewrite) agar selalu fetch ke internalBase untuk menghindari masalah NAT/DNS
+        return new URL(absolute.pathname + absolute.search, internalBase);
       }
-      return absolute;
+
+      // Tolak URL eksternal selain CKAN
+      return null;
     } catch {
       return null;
     }
   }
 
-  const internalBase = bases[0];
   const relativePath = trimmed.startsWith("/") ? trimmed : `/${trimmed.replace(/^\.?\/+/, "")}`;
   return new URL(relativePath, internalBase);
 }

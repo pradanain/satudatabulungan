@@ -75,7 +75,14 @@ const defaultFrequency: DatasetFrequency = "Tahunan";
 const defaultStatus: DatasetStatus = "Published";
 const DEFAULT_CKAN_UNAVAILABLE_COOLDOWN_MS = 30_000;
 
-let ckanUnavailableUntil = 0;
+function getCkanUnavailableState(): { until: number } {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const globalState = globalThis as any;
+  if (!globalState.__ckanUnavailableState) {
+    globalState.__ckanUnavailableState = { until: 0 };
+  }
+  return globalState.__ckanUnavailableState;
+}
 
 function getCkanUnavailableCooldownMs(): number {
   const parsed = Number(
@@ -89,15 +96,15 @@ function getCkanUnavailableCooldownMs(): number {
 }
 
 function isInUnavailableWindow(): boolean {
-  return Date.now() < ckanUnavailableUntil;
+  return Date.now() < getCkanUnavailableState().until;
 }
 
 function markCkanUnavailable(): void {
-  ckanUnavailableUntil = Date.now() + getCkanUnavailableCooldownMs();
+  getCkanUnavailableState().until = Date.now() + getCkanUnavailableCooldownMs();
 }
 
 function clearCkanUnavailable(): void {
-  ckanUnavailableUntil = 0;
+  getCkanUnavailableState().until = 0;
 }
 
 function normalizeFormat(value?: string): DatasetFormat {

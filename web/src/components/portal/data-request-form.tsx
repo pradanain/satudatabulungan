@@ -71,6 +71,13 @@ const educationOptions = [
   "Lainnya",
 ];
 
+const RequiredLabel = ({ children }: { children: React.ReactNode }) => (
+  <span className="flex items-center gap-1">
+    {children}
+    <span className="text-red-500 font-bold" aria-hidden="true">*</span>
+  </span>
+);
+
 export function DataRequestForm({ }: DataRequestFormProps) {
   const [form, setForm] = useState<FormState>(initialState);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -146,13 +153,6 @@ export function DataRequestForm({ }: DataRequestFormProps) {
       setIsSubmitting(false);
     }
   }
-
-  const RequiredLabel = ({ children }: { children: React.ReactNode }) => (
-    <span className="flex items-center gap-1">
-      {children}
-      <span className="text-red-500 font-bold" aria-hidden="true">*</span>
-    </span>
-  );
 
   return (
     <>

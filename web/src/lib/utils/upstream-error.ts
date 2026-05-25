@@ -1,4 +1,4 @@
-const DEFAULT_FETCH_TIMEOUT_MS = 10_000;
+const DEFAULT_FETCH_TIMEOUT_MS = process.env.NODE_ENV === "development" ? 4_000 : 10_000;
 const NETWORK_ERROR_CODES = new Set([
   "ECONNREFUSED",
   "ECONNRESET",

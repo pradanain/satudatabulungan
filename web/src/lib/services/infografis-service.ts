@@ -106,8 +106,16 @@ type CkanDatastoreResponse = {
   records?: Record<string, unknown>[];
 };
 
-const cacheStore = new Map<string, CacheEntry>();
-const imageValidationCache = new Map<string, boolean>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const globalState = globalThis as any;
+if (!globalState.__infografisCacheStore) {
+  globalState.__infografisCacheStore = new Map<string, CacheEntry>();
+}
+if (!globalState.__infografisImageCache) {
+  globalState.__infografisImageCache = new Map<string, boolean>();
+}
+const cacheStore: Map<string, CacheEntry> = globalState.__infografisCacheStore;
+const imageValidationCache: Map<string, boolean> = globalState.__infografisImageCache;
 
 function parseIntWithFallback(value: string | undefined, fallback: number, min = 1): number {
   const parsed = Number(value);

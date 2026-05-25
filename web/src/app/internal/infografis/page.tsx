@@ -10,10 +10,27 @@ import { requireInternalSession } from "@/lib/utils/internal-auth-server";
 import { hasPermission } from "@/lib/utils/internal-auth";
 import { formatCompactNumber } from "@/lib/utils/formatters";
 import { PublicationTable } from "@/app/internal/publications/publication-table";
+import {
+  PublicationStatusTabs,
+  type PublicationStatusTab,
+  countByTab,
+  filterByTab,
+} from "@/app/internal/publications/publication-status-tabs";
 
 export const dynamic = "force-dynamic";
 
-export default async function InternalInfografisPage() {
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function InternalInfografisPage({ searchParams }: PageProps) {
+  const rawParams = await searchParams;
+  const tabParam = typeof rawParams.tab === "string" ? rawParams.tab : "semua";
+  const activeTab: PublicationStatusTab =
+    ["semua", "draft", "diajukan", "diperiksa", "published"].includes(tabParam)
+      ? (tabParam as PublicationStatusTab)
+      : "semua";
+
   const session = await requireInternalSession("infografis");
   let rawInfografis = [] as Awaited<ReturnType<typeof getCkanPublications>>;
   let loadError: string | null = null;
@@ -26,10 +43,13 @@ export default async function InternalInfografisPage() {
   }
 
   const allInfografis = rawInfografis.map(mapPortalDatasetToPublication);
-  const publications =
+  const allFiltered =
     hasPermission(session, "content.view_all")
       ? allInfografis
       : allInfografis.filter((pub) => pub.organizationId === session.organizationId || pub.createdByUserId === session.username);
+
+  const tabCounts = countByTab(allFiltered);
+  const publications = filterByTab(allFiltered, activeTab);
 
   const canCreate =
     hasPermission(session, "infographic.create_own_opd") ||
@@ -41,8 +61,8 @@ export default async function InternalInfografisPage() {
         title="Infografis"
         description="Kelola infografis yang dipublikasikan melalui portal publik."
         badges={
-          publications.length > 0 ? (
-            <Badge variant="outline">{formatCompactNumber(publications.length)} Infografis</Badge>
+          allFiltered.length > 0 ? (
+            <Badge variant="outline">{formatCompactNumber(allFiltered.length)} Infografis</Badge>
           ) : null
         }
       />
@@ -53,9 +73,16 @@ export default async function InternalInfografisPage() {
             {loadError}
           </div>
         ) : null}
-        <PublicationTable 
-          publications={publications} 
-          session={session} 
+
+        <PublicationStatusTabs
+          activeTab={activeTab}
+          basePath="/internal/infografis"
+          counts={tabCounts}
+        />
+
+        <PublicationTable
+          publications={publications}
+          session={session}
           actionButton={
             canCreate ? (
               <Button asChild size="sm" className="gap-1.5 bg-[var(--color-primary)] hover:bg-[#8f1717] text-white">

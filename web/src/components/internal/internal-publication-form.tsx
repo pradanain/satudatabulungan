@@ -296,8 +296,8 @@ export function InternalPublicationForm({
       : formatDateForDisplay(new Date().toISOString()),
   });
 
-  const [pdfFileObj, setPdfFileObj] = useState<{ name: string; base64: string } | null>(null);
-  const [imageFileObj, setImageFileObj] = useState<{ name: string; base64: string } | null>(null);
+  const [pdfFileObj, setPdfFileObj] = useState<{ name: string; file: File; previewUrl: string } | null>(null);
+  const [imageFileObj, setImageFileObj] = useState<{ name: string; file: File; previewUrl: string } | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -340,6 +340,11 @@ export function InternalPublicationForm({
         setErrorMessage(`Ukuran file terlalu besar. Maksimum ${label}.`);
         return;
       }
+      // Revoke old preview URL to avoid memory leaks
+      if (pdfFileObj?.previewUrl) URL.revokeObjectURL(pdfFileObj.previewUrl);
+      const previewUrl = URL.createObjectURL(file);
+      setPdfFileObj({ name: file.name, file, previewUrl });
+      if (errors.fileUrl) setErrors((prev) => ({ ...prev, fileUrl: "" }));
     }
 
     if (field === "imageUrl") {
@@ -355,20 +360,13 @@ export function InternalPublicationForm({
         setErrorMessage(`Ukuran gambar terlalu besar. Maksimum ${label}.`);
         return;
       }
+      // Revoke old preview URL to avoid memory leaks
+      if (imageFileObj?.previewUrl) URL.revokeObjectURL(imageFileObj.previewUrl);
+      const previewUrl = URL.createObjectURL(file);
+      setImageFileObj({ name: file.name, file, previewUrl });
+      if (errors.imageUrl) setErrors((prev) => ({ ...prev, imageUrl: "" }));
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      if (field === "fileUrl") {
-        setPdfFileObj({ name: file.name, base64 });
-        if (errors.fileUrl) setErrors((prev) => ({ ...prev, fileUrl: "" }));
-      } else {
-        setImageFileObj({ name: file.name, base64 });
-        if (errors.imageUrl) setErrors((prev) => ({ ...prev, imageUrl: "" }));
-      }
-    };
-    reader.readAsDataURL(file);
     // Reset input so same file can be re-selected
     e.target.value = "";
   };
@@ -389,21 +387,21 @@ export function InternalPublicationForm({
       } else if (!isValidDate(formData.publishDate)) {
         newErrors.publishDate = "Format tanggal tidak valid. Gunakan DD/MM/YYYY.";
       }
-      const finalImageUrl = imageFileObj?.base64 || formData.imageUrl;
+      const finalImageUrl = imageFileObj?.previewUrl || formData.imageUrl;
       if (!finalImageUrl) newErrors.imageUrl = "Dokumentasi Kegiatan/Thumbnail wajib diunggah.";
     }
 
     if (formData.type === "digital_publication") {
       if (!formData.description.trim()) newErrors.description = "Deskripsi Singkat/Ringkasan wajib diisi.";
       if (!formData.year.trim()) newErrors.year = "Tahun Publikasi wajib diisi.";
-      const finalFileUrl = pdfFileObj?.base64 || formData.fileUrl;
+      const finalFileUrl = pdfFileObj?.previewUrl || formData.fileUrl;
       if (!finalFileUrl) newErrors.fileUrl = "Dokumen Buku Digital wajib diunggah.";
     }
 
     if (formData.type === "infographic") {
       if (!formData.description.trim()) newErrors.description = "Deskripsi Singkat/Ringkasan wajib diisi.";
       if (!formData.year.trim()) newErrors.year = "Tahun Publikasi wajib diisi.";
-      const finalImageUrl = imageFileObj?.base64 || formData.imageUrl;
+      const finalImageUrl = imageFileObj?.previewUrl || formData.imageUrl;
       if (!finalImageUrl) newErrors.imageUrl = "Dokumen Infografis wajib diunggah.";
     }
 
@@ -440,17 +438,15 @@ export function InternalPublicationForm({
       if (submitType === "publish") finalStatus = "Published";
       if (submitType === "submit_review") finalStatus = "Submitted";
 
-      // Upload PDF
+      // ── Upload PDF via multipart form (efficient, no base64 overhead) ───────
       let uploadedFileUrl = formData.fileUrl;
       if (pdfFileObj) {
+        const pdfForm = new FormData();
+        pdfForm.set("file", pdfFileObj.file);
+        pdfForm.set("contentType", formData.type);
         const uploadRes = await fetch("/api/internal/uploads/file", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileName: pdfFileObj.name,
-            fileContent: pdfFileObj.base64,
-            contentType: formData.type,
-          }),
+          body: pdfForm,
         });
         const uploadData = await uploadRes.json();
         if (!uploadRes.ok || !uploadData.success) {
@@ -459,17 +455,15 @@ export function InternalPublicationForm({
         uploadedFileUrl = uploadData.url;
       }
 
-      // Upload Image
+      // ── Upload Image via multipart form ──────────────────────────────────
       let uploadedImageUrl = formData.imageUrl;
       if (imageFileObj) {
+        const imgForm = new FormData();
+        imgForm.set("file", imageFileObj.file);
+        imgForm.set("contentType", formData.type);
         const uploadRes = await fetch("/api/internal/uploads/file", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileName: imageFileObj.name,
-            fileContent: imageFileObj.base64,
-            contentType: formData.type,
-          }),
+          body: imgForm,
         });
         const uploadData = await uploadRes.json();
         if (!uploadRes.ok || !uploadData.success) {
@@ -519,7 +513,12 @@ export function InternalPublicationForm({
         mode === "create" ? "Konten berhasil ditambahkan." : "Konten berhasil diperbarui.",
       );
       setTimeout(() => {
-        router.push("/internal/publications");
+        const redirectPath =
+          formData.type === "digital_publication" ? "/internal/buku-digital"
+          : formData.type === "infographic" ? "/internal/infografis"
+          : formData.type === "news" ? "/internal/berita"
+          : "/internal/publications";
+        router.push(redirectPath);
         router.refresh();
       }, 1200);
     } catch (error) {
@@ -548,6 +547,7 @@ export function InternalPublicationForm({
 
   function renderPDFUpload() {
     const hasPDF = pdfFileObj || formData.fileUrl;
+    const pdfSrc = pdfFileObj?.previewUrl || formData.fileUrl;
     return (
       <div className="flex flex-col gap-3">
         {!hasPDF ? (
@@ -584,9 +584,9 @@ export function InternalPublicationForm({
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                {(pdfFileObj?.base64 || formData.fileUrl) && (
+                {pdfSrc && (
                   <a
-                    href={pdfFileObj?.base64 || formData.fileUrl}
+                    href={pdfSrc}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline px-2 py-1 rounded-lg hover:bg-blue-50 transition"
@@ -600,6 +600,7 @@ export function InternalPublicationForm({
                   size="icon"
                   className="h-8 w-8 text-gray-400 hover:text-red-500"
                   onClick={() => {
+                    if (pdfFileObj?.previewUrl) URL.revokeObjectURL(pdfFileObj.previewUrl);
                     setPdfFileObj(null);
                     setFormData((prev) => ({ ...prev, fileUrl: "" }));
                   }}
@@ -610,7 +611,7 @@ export function InternalPublicationForm({
             </div>
             <div className="h-96 w-full bg-gray-100">
               <object
-                data={pdfFileObj?.base64 || formData.fileUrl}
+                data={pdfSrc}
                 type="application/pdf"
                 className="w-full h-full"
               >
@@ -618,7 +619,7 @@ export function InternalPublicationForm({
                   <FileText className="size-8 text-gray-300" />
                   <span>Pratinjau PDF tidak tersedia di browser ini.</span>
                   <a
-                    href={pdfFileObj?.base64 || formData.fileUrl}
+                    href={pdfSrc}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 underline text-xs"
@@ -673,6 +674,7 @@ export function InternalPublicationForm({
                 size="icon"
                 className="h-8 w-8 text-gray-400 hover:text-red-500"
                 onClick={() => {
+                  if (imageFileObj?.previewUrl) URL.revokeObjectURL(imageFileObj.previewUrl);
                   setImageFileObj(null);
                   setFormData((prev) => ({ ...prev, imageUrl: "" }));
                 }}
@@ -683,7 +685,7 @@ export function InternalPublicationForm({
             <div className="flex justify-center bg-gray-100 p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={imageFileObj?.base64 || formData.imageUrl}
+                src={imageFileObj?.previewUrl || formData.imageUrl}
                 alt="Preview"
                 className="max-h-80 object-contain rounded-lg shadow-sm"
               />

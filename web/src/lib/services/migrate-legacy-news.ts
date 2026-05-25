@@ -131,8 +131,14 @@ async function parseLegacyNewsFiles(): Promise<ParsedLegacyNews[]> {
   }
 }
 
-let migrationPromise: Promise<unknown> | null = null;
-let migrationDone = false;
+function getMigrationState() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const globalState = globalThis as any;
+  if (!globalState.__legacyNewsMigration) {
+    globalState.__legacyNewsMigration = { done: false, promise: null };
+  }
+  return globalState.__legacyNewsMigration;
+}
 
 /**
  * Migrasi berita lama dari public/berita/ ke CKAN.
@@ -140,7 +146,8 @@ let migrationDone = false;
  * Idempotent — cek slug di CKAN sebelum create.
  */
 export async function migrateLegacyNewsToCkan(): Promise<{ migrated: number; skipped: number; errors: number }> {
-  if (migrationDone) {
+  const state = getMigrationState();
+  if (state.done) {
     return { migrated: 0, skipped: 0, errors: 0 };
   }
 
@@ -150,7 +157,7 @@ export async function migrateLegacyNewsToCkan(): Promise<{ migrated: number; ski
     const legacyNews = await parseLegacyNewsFiles();
     if (legacyNews.length === 0) {
       console.info("[migrate-legacy-news] Tidak ada berita lama ditemukan.");
-      migrationDone = true;
+      state.done = true;
       return stats;
     }
 
@@ -213,7 +220,7 @@ export async function migrateLegacyNewsToCkan(): Promise<{ migrated: number; ski
       }
     }
 
-    migrationDone = true;
+    state.done = true;
     console.info(
       `[migrate-legacy-news] Selesai. Migrasi: ${stats.migrated}, Skip: ${stats.skipped}, Error: ${stats.errors}`
     );
@@ -229,8 +236,9 @@ export async function migrateLegacyNewsToCkan(): Promise<{ migrated: number; ski
  * Non-blocking — jalan di background.
  */
 export function ensureLegacyNewsMigration(): void {
-  if (migrationDone || migrationPromise) return;
-  migrationPromise = migrateLegacyNewsToCkan()
+  const state = getMigrationState();
+  if (state.done || state.promise) return;
+  state.promise = migrateLegacyNewsToCkan()
     .catch((err) => console.error("[migrate-legacy-news] Background migration failed:", err))
-    .finally(() => { migrationPromise = null; });
+    .finally(() => { state.promise = null; });
 }
