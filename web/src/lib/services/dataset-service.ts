@@ -14,34 +14,21 @@ import type {
   DatasetSort,
   PortalStats,
 } from "@/lib/types/dataset";
-import { summarizeUpstreamError } from "@/lib/utils/upstream-error";
 import { normalizeOrganizationName } from "@/lib/utils/organization";
 
 const config = getRuntimeConfig();
-const mockAdapter = new MockDatasetAdapter();
 
-function getPrimaryAdapter(): DatasetAdapter {
+/**
+ * Mengembalikan adapter dataset sesuai mode.
+ * Mode "ckan" → CkanDatasetAdapter (langsung ke CKAN, tanpa fallback mock).
+ * Mode "mock" → MockDatasetAdapter (untuk development lokal saja).
+ */
+function getAdapter(): DatasetAdapter {
   if (config.dataSourceMode === "ckan") {
     return new CkanDatasetAdapter(config.ckanBaseUrl);
   }
 
-  return mockAdapter;
-}
-
-async function withFallback<T>(fn: (adapter: DatasetAdapter) => Promise<T>): Promise<T> {
-  const primary = getPrimaryAdapter();
-
-  try {
-    return await fn(primary);
-  } catch (error) {
-    if (config.dataSourceMode !== "ckan") {
-      throw error;
-    }
-
-    const reason = summarizeUpstreamError(error);
-    console.warn(`[dataset-service] CKAN unavailable, fallback ke mock dataset. reason=${reason}`);
-    return fn(mockAdapter);
-  }
+  return new MockDatasetAdapter();
 }
 
 function normalizeDatasetOrganization(dataset: Dataset): Dataset {
@@ -163,10 +150,16 @@ export function normalizePositiveInteger(
 }
 
 export async function getDatasets(filters?: DatasetFilters): Promise<Dataset[]> {
-  let datasets = await withFallback((adapter) => adapter.listDatasets(filters));
+  const adapter = getAdapter();
+  let datasets: Dataset[] = [];
+  
+  // Ambil data dari CKAN. Jika gagal, akan throw error agar halaman menampilkan error (tidak diam-diam kosong).
+  datasets = await adapter.listDatasets(filters);
 
+  // Gabungkan dataset dari internal-store (workflow internal) yang belum ada di CKAN
   if (config.dataSourceMode === "ckan") {
     try {
+      const mockAdapter = new MockDatasetAdapter();
       const mockDatasets = await mockAdapter.listDatasets(filters);
       const existingSlugs = new Set(datasets.map((d) => d.slug));
       const newLocal = mockDatasets.filter((d) => !existingSlugs.has(d.slug));
@@ -180,10 +173,19 @@ export async function getDatasets(filters?: DatasetFilters): Promise<Dataset[]> 
 }
 
 export async function getDatasetBySlug(slug: string): Promise<Dataset | null> {
-  let dataset = await withFallback((adapter) => adapter.getDatasetBySlug(slug)).catch(() => null);
+  const adapter = getAdapter();
+  let dataset = await adapter.getDatasetBySlug(slug).catch((err) => {
+    // Jika bukan network error, bisa jadi 404. Untuk network error, lebih baik throw.
+    if (err.message?.includes("gagal") || err.message?.includes("unavailable")) {
+      throw err;
+    }
+    return null;
+  });
 
+  // Jika tidak ditemukan di CKAN, cari di internal-store
   if (!dataset && config.dataSourceMode === "ckan") {
     try {
+      const mockAdapter = new MockDatasetAdapter();
       dataset = await mockAdapter.getDatasetBySlug(slug);
     } catch (err) {
       console.warn(`[dataset-service] Gagal memuat fallback data lokal untuk slug: ${slug}`, err);
@@ -208,7 +210,8 @@ export async function getPublicDatasetBySlug(slug: string): Promise<Dataset | nu
 }
 
 export async function getDatasetFilterOptions(): Promise<DatasetFilterOptions> {
-  const options = await withFallback((adapter) => adapter.getFilterOptions());
+  const adapter = getAdapter();
+  const options = await adapter.getFilterOptions();
   const years =
     options.years.length > 0
       ? options.years
@@ -226,7 +229,8 @@ export async function getPublicDatasetFilterOptions(filters?: DatasetFilters): P
 }
 
 export async function getPortalStats(): Promise<PortalStats> {
-  return withFallback((adapter) => adapter.getPortalStats());
+  const adapter = getAdapter();
+  return adapter.getPortalStats();
 }
 
 export function getActiveConfig() {

@@ -73,7 +73,7 @@ type RawRecord = Record<string, string | number>;
 
 const defaultFrequency: DatasetFrequency = "Tahunan";
 const defaultStatus: DatasetStatus = "Published";
-const DEFAULT_CKAN_UNAVAILABLE_COOLDOWN_MS = 30_000;
+const DEFAULT_CKAN_UNAVAILABLE_COOLDOWN_MS = 5_000;
 
 function getCkanUnavailableState(): { until: number } {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -707,32 +707,44 @@ export class CkanDatasetAdapter implements DatasetAdapter {
     }
 
     const endpoint = `${this.ckanBaseUrl}/api/3/action/${action}${query ? `?${query}` : ""}`;
-    let response: Response;
-    try {
-      response = await fetchWithTimeout(endpoint, {
-        next: { revalidate: 120 },
-        headers: { Accept: "application/json" },
-      });
-      clearCkanUnavailable();
-    } catch (error) {
-      if (isUpstreamNetworkError(error)) {
-        markCkanUnavailable();
+    const maxAttempts = 2;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const response = await fetchWithTimeout(endpoint, {
+          next: { revalidate: 120 },
+          headers: { Accept: "application/json" },
+        });
+        clearCkanUnavailable();
+
+        if (!response.ok) {
+          throw new Error(`CKAN request gagal: ${response.status}`);
+        }
+
+        const data = (await response.json()) as CkanActionResponse<T>;
+        if (!data.success) {
+          throw new Error("CKAN mengembalikan status gagal.");
+        }
+
+        return data.result;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error("CKAN request gagal.");
+
+        if (attempt < maxAttempts - 1) {
+          // Retry setelah jeda singkat
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          continue;
+        }
+
+        if (isUpstreamNetworkError(error)) {
+          markCkanUnavailable();
+        }
       }
-
-      const reason = summarizeUpstreamError(error);
-      throw new Error(`CKAN request gagal: ${reason}`);
     }
 
-    if (!response.ok) {
-      throw new Error(`CKAN request gagal: ${response.status}`);
-    }
-
-    const data = (await response.json()) as CkanActionResponse<T>;
-    if (!data.success) {
-      throw new Error("CKAN mengembalikan status gagal.");
-    }
-
-    return data.result;
+    const reason = lastError ? summarizeUpstreamError(lastError) : "unknown";
+    throw new Error(`CKAN request gagal setelah retry: ${reason}`);
   }
 
   async listDatasets(filters: DatasetFilters = {}): Promise<Dataset[]> {

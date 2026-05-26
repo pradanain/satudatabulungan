@@ -413,29 +413,60 @@ async function getAccountsPackage(): Promise<CkanPackageRaw | null> {
 }
 
 export async function getOrganizations(): Promise<PortalOrganization[]> {
-  const names = await ckanAction<string[]>(
-    "organization_list",
-    { all_fields: false },
-    { method: "POST", bypassUnavailableWindow: true },
-  );
-  const organizations = await Promise.all(
-    names.map((name) =>
-      ckanAction<CkanOrganizationRaw>(
-        "organization_show",
-        {
-          id: name,
-          include_datasets: false,
-          include_dataset_count: true,
-          include_extras: true,
-          include_users: false,
-          include_groups: false,
-        },
-        { method: "POST", bypassUnavailableWindow: true },
-      ),
-    ),
-  );
+  try {
+    const names = await ckanAction<string[]>(
+      "organization_list",
+      { all_fields: false },
+      { method: "POST", bypassUnavailableWindow: true },
+    );
 
-  return organizations.map(mapOrganization).sort((left, right) => left.name.localeCompare(right.name, "id-ID"));
+    if (!names || names.length === 0) {
+      throw new Error("Daftar organisasi di CKAN kosong");
+    }
+
+    const organizations = await Promise.all(
+      names.map((name) =>
+        ckanAction<CkanOrganizationRaw>(
+          "organization_show",
+          {
+            id: name,
+            include_datasets: false,
+            include_dataset_count: true,
+            include_extras: true,
+            include_users: false,
+            include_groups: false,
+          },
+          { method: "POST", bypassUnavailableWindow: true },
+        ),
+      ),
+    );
+
+    return organizations.map(mapOrganization).sort((left, right) => left.name.localeCompare(right.name, "id-ID"));
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Unknown error";
+    console.warn(`[ckan-portal-api] Gagal/kosong memuat organisasi dari CKAN, fallback ke internal-store: ${reason}`);
+    
+    const { loadInternalPortalStore } = await import("./internal-store");
+    const store = await loadInternalPortalStore();
+    return store.organizations.map((org) => ({
+      id: org.id,
+      slug: org.slug,
+      name: org.name,
+      description: "",
+      packageCount: 0,
+      website: "",
+      address: "",
+      phone: "",
+      email: "",
+      whatsapp: "",
+      facebook: "",
+      instagram: "",
+      youtube: "",
+      tiktok: "",
+      twitter: "",
+      sourceUrl: "",
+    }));
+  }
 }
 
 export async function getOrganizationById(id: string): Promise<PortalOrganization | null> {
