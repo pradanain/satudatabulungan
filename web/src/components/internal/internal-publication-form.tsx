@@ -34,6 +34,8 @@ import {
 } from "lucide-react";
 import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
 import { ToastNotification } from "@/components/ui/toast-popup";
+import { uploadFileWithProgress } from "@/lib/utils/upload-with-progress";
+import { UploadProgressModal, type FileProgress } from "@/components/internal/upload-progress-modal";
 
 // ─── Searchable OPD Select ────────────────────────────────────────────────────
 
@@ -299,6 +301,12 @@ export function InternalPublicationForm({
   const [pdfFileObj, setPdfFileObj] = useState<{ name: string; file: File; previewUrl: string } | null>(null);
   const [imageFileObj, setImageFileObj] = useState<{ name: string; file: File; previewUrl: string } | null>(null);
 
+  // Upload progress states
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [uploadProgressFiles, setUploadProgressFiles] = useState<FileProgress[]>([]);
+  const [currentUploadStep, setCurrentUploadStep] = useState("");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Confirmation dialogs
@@ -432,45 +440,102 @@ export function InternalPublicationForm({
     setIsSubmitting(true);
     setErrorMessage(null);
     setSuccessMessage(null);
+    setUploadError(null);
+
+    // ── Prepare Progress Files List ──────────────────────────────────────────
+    const filesToUpload: FileProgress[] = [];
+    if (pdfFileObj) {
+      filesToUpload.push({
+        name: pdfFileObj.name,
+        type: "document",
+        progress: 0,
+        loaded: 0,
+        total: pdfFileObj.file.size,
+        status: "waiting",
+      });
+    }
+    if (imageFileObj) {
+      filesToUpload.push({
+        name: imageFileObj.name,
+        type: "image",
+        progress: 0,
+        loaded: 0,
+        total: imageFileObj.file.size,
+        status: "waiting",
+      });
+    }
+
+    const hasFiles = filesToUpload.length > 0;
+    if (hasFiles) {
+      setUploadProgressFiles(filesToUpload);
+      setShowProgressModal(true);
+      setCurrentUploadStep("Menyiapkan unggahan berkas...");
+    }
 
     try {
       let finalStatus = "Draft";
       if (submitType === "publish") finalStatus = "Published";
       if (submitType === "submit_review") finalStatus = "Submitted";
 
-      // ── Upload PDF via multipart form (efficient, no base64 overhead) ───────
+      // Helper function to update a single file's progress in state
+      const updateProgress = (fileName: string, progress: number, loaded: number, total: number, status: FileProgress["status"]) => {
+        setUploadProgressFiles((prev) =>
+          prev.map((f) =>
+            f.name === fileName ? { ...f, progress, loaded, total, status } : f
+          )
+        );
+      };
+
+      // ── Upload PDF via XHR progress ───────
       let uploadedFileUrl = formData.fileUrl;
       if (pdfFileObj) {
-        const pdfForm = new FormData();
-        pdfForm.set("file", pdfFileObj.file);
-        pdfForm.set("contentType", formData.type);
-        const uploadRes = await fetch("/api/internal/uploads/file", {
-          method: "POST",
-          body: pdfForm,
-        });
-        const uploadData = await uploadRes.json();
-        if (!uploadRes.ok || !uploadData.success) {
-          throw new Error(uploadData.error || "Gagal mengunggah berkas PDF.");
-        }
-        uploadedFileUrl = uploadData.url;
+        setCurrentUploadStep("Mengunggah dokumen PDF...");
+        updateProgress(pdfFileObj.name, 0, 0, pdfFileObj.file.size, "uploading");
+
+        const uploadRes = await uploadFileWithProgress(
+          pdfFileObj.file,
+          formData.type,
+          (progressEvent) => {
+            updateProgress(
+              pdfFileObj.name,
+              progressEvent.percentage,
+              progressEvent.loaded,
+              progressEvent.total,
+              "uploading"
+            );
+          }
+        );
+
+        updateProgress(pdfFileObj.name, 100, pdfFileObj.file.size, pdfFileObj.file.size, "completed");
+        uploadedFileUrl = uploadRes.url;
       }
 
-      // ── Upload Image via multipart form ──────────────────────────────────
+      // ── Upload Image via XHR progress ───────
       let uploadedImageUrl = formData.imageUrl;
       if (imageFileObj) {
-        const imgForm = new FormData();
-        imgForm.set("file", imageFileObj.file);
-        imgForm.set("contentType", formData.type);
-        const uploadRes = await fetch("/api/internal/uploads/file", {
-          method: "POST",
-          body: imgForm,
-        });
-        const uploadData = await uploadRes.json();
-        if (!uploadRes.ok || !uploadData.success) {
-          throw new Error(uploadData.error || "Gagal mengunggah berkas Gambar.");
-        }
-        uploadedImageUrl = uploadData.url;
+        setCurrentUploadStep("Mengunggah gambar thumbnail...");
+        updateProgress(imageFileObj.name, 0, 0, imageFileObj.file.size, "uploading");
+
+        const uploadRes = await uploadFileWithProgress(
+          imageFileObj.file,
+          formData.type,
+          (progressEvent) => {
+            updateProgress(
+              imageFileObj.name,
+              progressEvent.percentage,
+              progressEvent.loaded,
+              progressEvent.total,
+              "uploading"
+            );
+          }
+        );
+
+        updateProgress(imageFileObj.name, 100, imageFileObj.file.size, imageFileObj.file.size, "completed");
+        uploadedImageUrl = uploadRes.url;
       }
+
+      // ── Save Metadata ───────────────────────────────────────────────────────
+      setCurrentUploadStep("Menyimpan data publikasi ke server...");
 
       // Build publishedAt from DD/MM/YYYY
       let publishedAt: string | undefined;
@@ -509,10 +574,13 @@ export function InternalPublicationForm({
         throw new Error(data.error || "Gagal menyimpan konten.");
       }
 
+      setCurrentUploadStep("Penyimpanan berhasil! Mengalihkan...");
       setSuccessMessage(
         mode === "create" ? "Konten berhasil ditambahkan." : "Konten berhasil diperbarui.",
       );
+      
       setTimeout(() => {
+        setShowProgressModal(false);
         const redirectPath =
           formData.type === "digital_publication" ? "/internal/buku-digital"
           : formData.type === "infographic" ? "/internal/infografis"
@@ -522,8 +590,16 @@ export function InternalPublicationForm({
         router.refresh();
       }, 1200);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Terjadi kesalahan.");
-    } finally {
+      const msg = error instanceof Error ? error.message : "Terjadi kesalahan.";
+      if (hasFiles) {
+        setUploadError(msg);
+        // Set uploading files to failed state
+        setUploadProgressFiles((prev) =>
+          prev.map((f) => (f.status === "uploading" || f.status === "waiting" ? { ...f, status: "failed" } : f))
+        );
+      } else {
+        setErrorMessage(msg);
+      }
       setIsSubmitting(false);
     }
   };
@@ -1137,6 +1213,18 @@ export function InternalPublicationForm({
         confirmLabel="Ya, Publish Sekarang"
         cancelLabel="Batal"
         onConfirm={() => handleConfirmSubmit("publish")}
+      />
+
+      {/* ── Upload Progress Modal ────────────────────────────────── */}
+      <UploadProgressModal
+        isOpen={showProgressModal}
+        currentStep={currentUploadStep}
+        files={uploadProgressFiles}
+        error={uploadError}
+        onClose={() => {
+          setShowProgressModal(false);
+          setUploadError(null);
+        }}
       />
     </div>
   );

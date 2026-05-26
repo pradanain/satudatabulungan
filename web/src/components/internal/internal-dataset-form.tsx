@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRouter } from "next/navigation";
 import { startTransition, useState, useEffect, useRef } from "react";
@@ -42,8 +42,10 @@ import { hasPermission } from "@/lib/utils/internal-auth";
 import { homepageTopics } from "@/lib/data/homepage-topics";
 import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
 import { ToastNotification } from "@/components/ui/toast-popup";
+import { uploadFileWithProgress } from "@/lib/utils/upload-with-progress";
+import { UploadProgressModal, type FileProgress } from "@/components/internal/upload-progress-modal";
 
-// â”€â”€â”€ Searchable Dropdown / Select Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ——— Searchable Dropdown / Select Component ————————————————————
 interface SearchableSelectProps {
   value: string;
   onValueChange: (value: string) => void;
@@ -596,6 +598,12 @@ export function InternalDatasetForm({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showConfirmSave, setShowConfirmSave] = useState(false);
 
+  // Upload progress states
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [uploadProgressFiles, setUploadProgressFiles] = useState<FileProgress[]>([]);
+  const [currentUploadStep, setCurrentUploadStep] = useState("");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const [showConfirmRemoveFile, setShowConfirmRemoveFile] = useState(false);
   const [fileToRemoveIndex, setFileToRemoveIndex] = useState<number | null>(
     null,
@@ -706,14 +714,10 @@ export function InternalDatasetForm({
             const worksheet = workbook.Sheets[sheetName];
             const rawRows = XLSX.utils.sheet_to_json(worksheet, {
               header: 1,
-              raw: true,        // keep native number types, avoid locale formatting
+            raw: true,        // keep native number types, avoid locale formatting
               defval: "",       // use empty string for blank cells
             }) as any[][];
 
-            if (rawRows && rawRows.length > 0) {
-              const previewData = convertRawRowsToDatasetPreview(rawRows);
-              setParsedPreview(previewData);
-            }
           } catch (err) {
             console.error("Gagal parse berkas untuk pratinjau tabel:", err);
           }
@@ -784,62 +788,93 @@ export function InternalDatasetForm({
     setIsPending(true);
     setErrorMessage(null);
     setSuccessMessage(null);
+    setUploadError(null);
+
+    // ── Find and configure newly selected files to upload ───────────────────
+    const filesToUpload = formFiles.filter((f) => !f.isExisting && f.file);
+    const hasFiles = filesToUpload.length > 0;
+
+    if (hasFiles) {
+      const uploadProgressItems = filesToUpload.map((f) => ({
+        name: f.file!.name,
+        type: "dataset" as const,
+        progress: 0,
+        loaded: 0,
+        total: f.file!.size,
+        status: "waiting" as const,
+      }));
+      setUploadProgressFiles(uploadProgressItems);
+      setShowProgressModal(true);
+      setCurrentUploadStep("Menyiapkan berkas dataset...");
+    }
 
     try {
       const slug = isCreate ? form.slug || slugify(form.title) : dataset?.slug;
 
-      const uploadedResources = await Promise.all(
-        formFiles.map(async (f, idx) => {
-          if (f.isExisting) {
-            const absoluteUrl = f.url!.startsWith("http")
-              ? f.url!
-              : `${window.location.origin}${f.url!}`;
+      const updateProgress = (fileName: string, progress: number, loaded: number, total: number, status: FileProgress["status"]) => {
+        setUploadProgressFiles((prev) =>
+          prev.map((item) =>
+            item.name === fileName ? { ...item, progress, loaded, total, status } : item
+          )
+        );
+      };
 
-            return {
-              id: `${slug}-resource-${idx}`,
-              name: f.name,
-              description: "Resource dataset terverifikasi",
-              format: f.format,
-              url: absoluteUrl,
-              sizeLabel: f.sizeLabel,
-              lastUpdated: new Date().toISOString(),
-            };
-          }
+      // ── Upload new files or reuse existing ones ─────────────────────────────
+      const uploadedResources = [];
 
-          const uploadRes = await fetch("/api/internal/uploads/file", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              fileName: `${f.name}.${f.format.toLowerCase()}`,
-              fileContent: f.base64,
-            }),
+      for (let idx = 0; idx < formFiles.length; idx++) {
+        const f = formFiles[idx];
+        if (f.isExisting) {
+          const absoluteUrl = f.url!.startsWith("http")
+            ? f.url!
+            : `${window.location.origin}${f.url!}`;
+
+          uploadedResources.push({
+            id: `${slug}-resource-${idx}`,
+            name: f.name,
+            description: "Resource dataset terverifikasi",
+            format: f.format,
+            url: absoluteUrl,
+            sizeLabel: f.sizeLabel,
+            lastUpdated: new Date().toISOString(),
           });
+        } else {
+          // Uploading a new binary file with real-time XHR progress feedback!
+          setCurrentUploadStep(`Mengunggah berkas ${f.file!.name}...`);
+          updateProgress(f.file!.name, 0, 0, f.file!.size, "uploading");
 
-          const uploadData = (await uploadRes.json()) as {
-            success: boolean;
-            url?: string;
-            error?: string;
-          };
-          if (!uploadRes.ok || !uploadData.success || !uploadData.url) {
-            throw new Error(
-              uploadData.error ??
-                `Gagal mengunggah berkas ${f.name} ke server.`,
-            );
-          }
+          const uploadRes = await uploadFileWithProgress(
+            f.file!,
+            undefined, // no publication content-type needed
+            (progressEvent) => {
+              updateProgress(
+                f.file!.name,
+                progressEvent.percentage,
+                progressEvent.loaded,
+                progressEvent.total,
+                "uploading"
+              );
+            }
+          );
 
-          return {
+          updateProgress(f.file!.name, 100, f.file!.size, f.file!.size, "completed");
+
+          uploadedResources.push({
             id: `${slug}-resource-${idx}-${Date.now()}`,
             name: f.name,
             description: "Resource terunggah",
             format: f.format,
-            url: `${window.location.origin}${uploadData.url}`,
+            url: `${window.location.origin}${uploadRes.url}`,
             sizeLabel: f.sizeLabel,
             lastUpdated: new Date().toISOString(),
-          };
-        }),
-      );
+          });
+        }
+      }
+
+      // ── Save Metadata ───────────────────────────────────────────────────────
+      if (hasFiles) {
+        setCurrentUploadStep("Menyimpan metadata ke server...");
+      }
 
       const firstResource = uploadedResources[0];
 
@@ -899,25 +934,38 @@ export function InternalDatasetForm({
         throw new Error(data.error ?? "Gagal menyimpan dataset.");
       }
 
+      if (hasFiles) {
+        setCurrentUploadStep("Penyimpanan berhasil! Mengalihkan...");
+      }
+
       const nextSlug = data.result?.slug ?? payload.slug;
       const msg = isCreate
         ? "Draft dataset berhasil dibuat."
         : "Dataset berhasil diperbarui.";
+      
       setSuccessMessage(msg);
 
       if (onSuccess) {
         onSuccess(msg);
       }
 
-      startTransition(() => {
-        router.push(`/internal/datasets/${nextSlug}`);
-        router.refresh();
-      });
+      setTimeout(() => {
+        setShowProgressModal(false);
+        startTransition(() => {
+          router.push(`/internal/datasets/${nextSlug}`);
+          router.refresh();
+        });
+      }, 1200);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Gagal menyimpan dataset.",
-      );
-    } finally {
+      const msg = error instanceof Error ? error.message : "Gagal menyimpan dataset.";
+      if (hasFiles) {
+        setUploadError(msg);
+        setUploadProgressFiles((prev) =>
+          prev.map((f) => (f.status === "uploading" || f.status === "waiting" ? { ...f, status: "failed" } : f))
+        );
+      } else {
+        setErrorMessage(msg);
+      }
       setIsPending(false);
     }
   }
@@ -1466,7 +1514,17 @@ export function InternalDatasetForm({
           executeSave();
         }}
       />
+
+      <UploadProgressModal
+        isOpen={showProgressModal}
+        currentStep={currentUploadStep}
+        files={uploadProgressFiles}
+        error={uploadError}
+        onClose={() => {
+          setShowProgressModal(false);
+          setUploadError(null);
+        }}
+      />
     </form>
   );
 }
-

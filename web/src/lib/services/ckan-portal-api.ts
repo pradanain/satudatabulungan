@@ -752,7 +752,34 @@ export async function createCkanPublication(
     throw new Error("CKAN_API_KEY wajib diisi untuk proses upload.");
   }
 
-  const slug = buildPublicationSlug(payload.title, contentType);
+  const originalSlug = buildPublicationSlug(payload.title, contentType);
+  let slug = originalSlug;
+  let slugTaken = true;
+  let attempts = 0;
+
+  while (slugTaken && attempts < 10) {
+    try {
+      await ckanAction<CkanPackageRaw>(
+        "package_show",
+        { id: slug },
+        { requireAuth: true, bypassUnavailableWindow: true }
+      );
+      // If package_show succeeds, the slug is already taken! Append a random suffix.
+      attempts++;
+      const randomSuffix = Math.random().toString(36).substring(2, 7);
+      slug = `${originalSlug}-${randomSuffix}`;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("(404)")) {
+        // Safe: 404 indicates slug is available
+        slugTaken = false;
+      } else {
+        // Connection/other errors: throw immediately
+        throw err;
+      }
+    }
+  }
+
   const now = new Date().toISOString();
 
   const extrasArray = [
