@@ -63,8 +63,13 @@ export async function POST(request: Request) {
       }
     }
 
+    console.log("[PUB_PROCESS: 1] Menemukan ID OPD di CKAN...");
     const resolvedOwnerOrgId = await resolveCkanOwnerOrgId(organizationId);
+    console.log(`[PUB_PROCESS: 2] ID OPD CKAN berhasil ditemukan: "${resolvedOwnerOrgId}"`);
+    
     const ckanType = mapInternalTypeToCkan(type);
+    console.log(`[PUB_PROCESS: 3] Memulai penyimpanan ke CKAN. Judul: "${title}", Tipe internal: "${type}", Tipe CKAN: "${ckanType}"`);
+    
     const newPub = await createCkanPublication(
       {
         title,
@@ -80,13 +85,15 @@ export async function POST(request: Request) {
       ckanType
     );
 
+    console.log(`[PUB_PROCESS: SUCCESS] Publikasi berhasil dibuat di CKAN. ID: "${newPub.id}", Slug: "${newPub.slug}"`);
+
     return NextResponse.json({
       success: true,
       result: newPub,
     });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : "Gagal menyimpan konten ke CKAN.";
-    console.error(`[internal/publications] POST error: ${errorMsg}`, error);
+    console.error(`[PUB_PROCESS: CRITICAL ERROR] Gagal menyimpan konten ke CKAN:`, error);
     
     // Add more granular error message for timeout or specific CKAN failures
     let userMsg = "Gagal menyimpan konten ke CKAN. Silakan coba lagi.";

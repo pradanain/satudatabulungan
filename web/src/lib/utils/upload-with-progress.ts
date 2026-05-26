@@ -71,6 +71,11 @@ export function uploadFileWithProgress(
       reject(new Error("Unggahan dibatalkan oleh pengguna."));
     });
 
+    xhr.timeout = 120000; // 120 seconds timeout
+    xhr.addEventListener("timeout", () => {
+      reject(new Error("Batas waktu unggahan habis (Timeout). Silakan periksa koneksi internet Anda."));
+    });
+
     xhr.open("POST", "/api/internal/uploads/file");
     xhr.send(formData);
   });
