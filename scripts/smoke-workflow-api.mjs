@@ -7,11 +7,10 @@ import { fileURLToPath } from "node:url";
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const webDir = resolve(rootDir, "web");
 const ckanBaseUrl = process.env.CKAN_BASE_URL ?? "http://localhost:5000";
-const internalAuthUser = process.env.INTERNAL_BASIC_AUTH_USER ?? "admin";
-const internalAuthPassword = process.env.INTERNAL_BASIC_AUTH_PASSWORD ?? "bulungan123";
+const internalAuthUser = process.env.SMOKE_INTERNAL_USERNAME ?? "walidata.dkip";
+const internalAuthPassword = process.env.INTERNAL_BOOTSTRAP_PASSWORD ?? "bulunganbisa";
 const testPort = Number(process.env.SMOKE_WORKFLOW_API_PORT ?? 3325);
 const testSlug = process.env.SMOKE_WORKFLOW_API_SLUG ?? "jumlah-penduduk-bulungan-2023-2025";
-const basicAuthHeader = ""; // Removed basic auth
 
 const transitions = {
   Draft: "Submitted",
@@ -114,8 +113,7 @@ async function run() {
     ...process.env,
     DATA_SOURCE_MODE: "ckan",
     CKAN_BASE_URL: ckanBaseUrl,
-    INTERNAL_BASIC_AUTH_USER: internalAuthUser,
-    INTERNAL_BASIC_AUTH_PASSWORD: internalAuthPassword,
+    INTERNAL_BOOTSTRAP_PASSWORD: internalAuthPassword,
   };
 
   const child = spawnNpm(

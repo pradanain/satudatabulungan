@@ -14,8 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      INTERNAL_BASIC_AUTH_USER: admin
-      INTERNAL_BASIC_AUTH_PASSWORD: bulungan123
+      INTERNAL_SESSION_SECRET: quality-gate-session-secret-not-for-production
+      INTERNAL_BOOTSTRAP_PASSWORD: quality-gate-bootstrap-password
+      SMOKE_INTERNAL_USERNAME: walidata.dkip
       CKAN_BASE_URL: http://localhost:5000
       CKAN_CONTAINER_NAME: portal_ckan
 
