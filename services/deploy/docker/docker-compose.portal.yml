@@ -1,0 +1,29 @@
+name: portal
+
+services:
+  frontend:
+    container_name: portal_frontend
+    image: ${WEB_IMAGE:-ghcr.io/pradanain/satudatabulungan-web:deploy-latest}
+    restart: unless-stopped
+    env_file:
+      - ../env/web.production.env
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    ports:
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_HOST_PORT:-3003}:3000"
+    volumes:
+      - portal_local_store:/app/.local
+      - portal_local_store:/app/app/.local
+      - portal_web_uploads:/app/public/uploads
+      - portal_web_uploads:/app/app/public/uploads
+    networks:
+      - portal
+
+networks:
+  portal:
+    driver: bridge
+
+volumes:
+  portal_local_store:
+  portal_web_uploads:

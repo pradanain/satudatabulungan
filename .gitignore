@@ -1,0 +1,42 @@
+# --- Dependencies ---
+node_modules/
+web/node_modules/
+web/.next/
+web/out/
+web/build/
+web/.env.local
+web/.env.development.local
+web/.env.test.local
+web/.env.production.local
+
+# --- Docker & Services ---
+services/ckan/postgresql/data/
+services/ckan/solr/data/
+services/ckan/storage/
+.local/
+
+# --- Environment Secrets ---
+.env
+.env.*
+!.env.example
+services/deploy/env/*.env
+services/deploy/env/*.env.local
+!services/deploy/env/*.env.example
+
+# --- Documentation & Prompts ---
+docs/prompts/
+# Jika Anda ingin menyimpan audit di Git, hapus tanda # di bawah
+# docs/audit/AUDIT_*.md
+# docs/audit/SECURITY_*.md
+
+# --- Editor / OS ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Logs ---
+*.log
+web/.next-dev-*.log

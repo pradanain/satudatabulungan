@@ -1,0 +1,45 @@
+# =====================================================================
+# Template cloudflared config.yml untuk dipakai di server
+# Semua hostname cukup arahkan ke http://localhost:80 (Traefik)
+# Traefik yang akan routing berdasarkan hostname ke container yang tepat
+# =====================================================================
+
+tunnel: databenuanta-public
+credentials-file: C:\Users\BPS\.cloudflared\7483f1ad-a9d9-4d50-aaab-5cec1cf14fef.json
+
+ingress:
+  # Semua subdomain cukup arahkan ke Traefik di port 80
+  # Traefik yang handle routing berdasarkan Host header
+
+  - hostname: portal.databenuanta.id
+    service: http://localhost:80
+
+  - hostname: drive.databenuanta.id
+    service: http://localhost:80
+
+  - hostname: bukutamu.databenuanta.id
+    service: http://localhost:80
+
+  - hostname: metabase.databenuanta.id
+    service: http://localhost:80
+
+  - hostname: pasti.databenuanta.id
+    service: http://localhost:80
+
+  - hostname: semakin.databenuanta.id
+    service: http://localhost:80
+
+  - hostname: sigap.databenuanta.id
+    service: http://localhost:80
+
+  - hostname: simpelantik.databenuanta.id
+    service: http://localhost:80
+
+  - hostname: sipentink.databenuanta.id
+    service: http://localhost:80
+
+  - hostname: fantastik.databenuanta.id
+    service: http://localhost:80
+
+  # Fallback
+  - service: http_status:404

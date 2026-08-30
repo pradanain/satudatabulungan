@@ -1,0 +1,286 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { InternalDatasetForm } from "@/components/internal/internal-dataset-form";
+import { InternalPageHeader } from "@/components/internal/internal-page-header";
+import { InternalShell } from "@/components/internal/internal-shell";
+import { InternalStatusBadge } from "@/components/internal/internal-status-badge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { getInternalDatasetBySlug, loadInternalPortalStore } from "@/lib/services/internal-store";
+import { requireInternalSession } from "@/lib/utils/internal-auth-server";
+import { hasPermission } from "@/lib/utils/internal-auth";
+import { formatIndonesianDate } from "@/lib/utils/formatters";
+import { InternalQualityScoreCard } from "@/components/internal/internal-quality-score-card";
+import { validateDatasetQuality } from "@/lib/utils/data-validator";
+import type { PortalDataset } from "@/lib/services/ckan-portal-api";
+import ChoroplethMap from "@/components/shared/choropleth-map";
+import { DatasetNotesSection } from "@/components/internal/dataset-notes-section";
+import { InternalDatasetDetailTabs } from "@/components/internal/internal-dataset-detail-tabs";
+import { InternalWorkflowActions } from "@/components/internal/internal-workflow-actions";
+import { InternalActivityTimeline } from "@/components/internal/internal-activity-timeline";
+import { cn } from "@/lib/utils/cn";
+
+export const dynamic = "force-dynamic";
+
+function hasGeospatialData(dataset: { preview?: { rows?: { area?: string }[] } }): boolean {
+  if (!dataset.preview?.rows?.length) return false;
+  const areas = dataset.preview.rows.map((r) => r.area?.toLowerCase() || "");
+  const kecamatanKeywords = ["tanjung selor", "tanjung palas", "peso", "bunyu", "sekatak", "tanjung redeb"];
+  return areas.some((a) => kecamatanKeywords.some((k) => a.includes(k)));
+}
+
+export default async function InternalDatasetDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const session = await requireInternalSession("datasets");
+  const { slug } = await params;
+  const store = await loadInternalPortalStore();
+  const dataset = await getInternalDatasetBySlug(slug, session);
+
+  if (!dataset) {
+    notFound();
+  }
+
+  const canEdit = hasPermission(session, "dataset.edit_metadata") || hasPermission(session, "dataset.edit_draft_own_opd");
+  const showGeo = hasGeospatialData(dataset);
+
+  // Read-only view of the dataset
+  const readOnlyContent = (
+    <Card className="internal-surface border-transparent p-5 shadow-none sm:p-6 space-y-5">
+      <div>
+        <h2 className="m-0 text-lg sm:text-xl font-bold leading-snug">{dataset.title}</h2>
+        <p className="mb-0 mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{dataset.description}</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">Topik</span>
+          <span className="text-sm font-semibold">{dataset.topic}</span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">Periode</span>
+          <span className="text-sm font-semibold">{dataset.metadata.period}</span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">Frekuensi</span>
+          <span className="text-sm font-semibold">{dataset.frequency}</span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)]">Walidata</span>
+          <span className="text-sm font-semibold">{dataset.metadata.walidata}</span>
+        </div>
+      </div>
+
+      {dataset.metadata.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {dataset.metadata.tags.map((tag) => (
+            <Badge key={tag} variant="secondary">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {dataset.resources.length > 0 && (
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-2">Resource ({dataset.resources.length})</h3>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {dataset.resources.map((r, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3">
+                <span className={`inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white ${
+                  r.format === "XLSX" ? "bg-green-600" :
+                  r.format === "CSV" ? "bg-emerald-500" :
+                  r.format === "PDF" ? "bg-red-500" : "bg-blue-500"
+                }`}>{r.format}</span>
+                <span className="text-xs font-medium text-slate-700 truncate">{r.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {dataset.preview?.rows && dataset.preview.rows.length > 0 && (
+        <div className="mt-6 border-t border-slate-100 pt-6">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] mb-3">Pratinjau Data</h3>
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-sm text-left text-slate-600">
+              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                <tr>
+                  {dataset.preview.columns ? (
+                    dataset.preview.columns.map(c => (
+                       <th key={c.key} className={`px-4 py-3 font-semibold ${c.isNumeric ? 'text-right' : ''}`}>{c.label}</th>
+                    ))
+                  ) : (
+                    <>
+                      <th className="px-4 py-3 font-semibold">Wilayah</th>
+                      <th className="px-4 py-3 font-semibold text-right">Total</th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {dataset.preview.rows.map((r, i) => (
+                  <tr key={i} className="hover:bg-slate-50">
+                    {dataset.preview.columns ? (
+                      dataset.preview.columns.map(c => (
+                         <td key={c.key} className={`px-4 py-3 ${c.isNumeric ? 'text-right font-medium' : ''}`}>
+                            {c.key === 'area' ? r.area : c.key === 'total' ? r.total?.toLocaleString("id-ID") : r.values?.[c.key]}
+                         </td>
+                      ))
+                    ) : (
+                      <>
+                        <td className="px-4 py-3">{r.area}</td>
+                        <td className="px-4 py-3 text-right font-medium">{r.total?.toLocaleString("id-ID")}</td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+
+  const metaSummaryContent = (
+    <Card className="internal-surface border-transparent p-5 shadow-none">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="flex justify-between sm:flex-col text-sm">
+          <span className="text-[var(--color-muted)]">Topik</span>
+          <span className="font-semibold">{dataset.topic}</span>
+        </div>
+        <div className="flex justify-between sm:flex-col text-sm">
+          <span className="text-[var(--color-muted)]">Periode</span>
+          <span className="font-semibold">{dataset.metadata.period}</span>
+        </div>
+        <div className="flex justify-between sm:flex-col text-sm">
+          <span className="text-[var(--color-muted)]">Walidata</span>
+          <span className="font-semibold">{dataset.metadata.walidata}</span>
+        </div>
+      </div>
+    </Card>
+  );
+
+  const qualityContent = (
+    <InternalQualityScoreCard dataset={dataset as unknown as PortalDataset} />
+  );
+
+  const regionValues = new Map<string, { value: number; regionName: string }>();
+  if (showGeo && dataset.preview?.rows) {
+    dataset.preview.rows.forEach(r => {
+      if (r.area && r.total !== undefined) {
+        regionValues.set(r.area, { value: r.total, regionName: r.area });
+      }
+    });
+  }
+
+  const geospatialContent = showGeo ? (
+    <Card className="internal-surface border-transparent p-5 shadow-none">
+      <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--color-muted)]">Pratinjau Geospasial</h3>
+      <div className="mt-4 h-[400px] overflow-hidden rounded-xl border border-white/60 bg-slate-50">
+        <ChoroplethMap 
+          valuesByRegion={regionValues} 
+          metricLabel={dataset.preview?.chartTitle || "Total"}
+          unitLabel={dataset.preview?.chartUnit || ""}
+          className="h-full w-full" 
+        />
+      </div>
+      <p className="mt-3 text-[10px] leading-tight text-[var(--color-muted)]">
+        Visualisasi otomatis berdasarkan kolom wilayah yang terdeteksi dalam dataset.
+      </p>
+    </Card>
+  ) : null;
+
+  const notesContent = (
+    <div className={cn("grid gap-6 items-start", session.role !== "produsen" ? "md:grid-cols-3" : "grid-cols-1")}>
+      <div className={session.role !== "produsen" ? "md:col-span-2" : "col-span-1"}>
+        <DatasetNotesSection
+          slug={dataset.slug}
+          notes={dataset.notes || []}
+          session={session}
+          organizationId={dataset.organizationId}
+          readOnly={session.role === "produsen"}
+        />
+      </div>
+      {session.role !== "produsen" && (
+        <div className="md:col-span-1">
+          <InternalWorkflowActions 
+            dataset={dataset} 
+            session={session} 
+          />
+        </div>
+      )}
+    </div>
+  );
+
+  const activityContent = (
+    <div className="max-w-3xl">
+      <InternalActivityTimeline events={dataset.workflowHistory || []} />
+    </div>
+  );
+
+  return (
+    <InternalShell session={session} activeKey="datasets">
+      <InternalPageHeader
+        title={dataset.title}
+        description={dataset.reviewSummary}
+        badges={
+          <>
+            <InternalStatusBadge status={dataset.status} />
+            <Badge variant="outline">Quality {validateDatasetQuality(dataset as unknown as PortalDataset).score}%</Badge>
+          </>
+        }
+        actions={
+          <>
+            {session.role === "produsen" && (
+              <InternalWorkflowActions dataset={dataset} session={session} variant="inline" />
+            )}
+            {dataset.status === "Published" ? (
+              <Button asChild variant="secondary" className="rounded-full px-5">
+                <Link href={`/dataset/${dataset.slug}`}>Buka Halaman Publik</Link>
+              </Button>
+            ) : null}
+          </>
+        }
+      />
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card className="internal-surface border-transparent p-5 shadow-none">
+          <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Organisasi</p>
+          <p className="mb-0 mt-3 text-xl font-semibold">{dataset.organization}</p>
+        </Card>
+        <Card className="internal-surface border-transparent p-5 shadow-none">
+          <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Frekuensi</p>
+          <p className="mb-0 mt-3 text-xl font-semibold">{dataset.frequency}</p>
+        </Card>
+        <Card className="internal-surface border-transparent p-5 shadow-none">
+          <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Update Terakhir</p>
+          <p className="mb-0 mt-3 text-xl font-semibold">{formatIndonesianDate(dataset.lastUpdated)}</p>
+        </Card>
+        <Card className="internal-surface border-transparent p-5 shadow-none">
+          <p className="m-0 text-sm font-semibold text-[var(--color-muted)]">Jumlah Resource</p>
+          <p className="mb-0 mt-3 text-xl font-semibold">{dataset.resources.length}</p>
+        </Card>
+      </section>
+
+      <InternalDatasetDetailTabs
+        readOnlyContent={readOnlyContent}
+        qualityContent={qualityContent}
+        geospatialContent={geospatialContent}
+        notesContent={notesContent}
+        activityContent={activityContent}
+        metaSummaryContent={metaSummaryContent}
+        role={session.role}
+        canEdit={canEdit}
+        session={session}
+        dataset={dataset}
+        organizations={store.organizations}
+        topics={store.topics}
+      />
+    </InternalShell>
+  );
+}
