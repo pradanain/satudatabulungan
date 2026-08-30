@@ -1,37 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff } from "lucide-react";
 
-const demoAccounts = [
-  {
-    label: "Sekretariat",
-    username: "sekretariat.bappeda",
-    password: "bulunganbisa",
-    note: "Koordinasi, monitoring, dan evaluasi data lintas OPD.",
-  },
-  {
-    label: "Walidata",
-    username: "walidata.dkip",
-    password: "bulunganbisa",
-    note: "Validasi, approval, publikasi, kelola users, settings, dan integrasi.",
-  },
-  {
-    label: "Produsen",
-    username: "operator.dinkes",
-    password: "bulunganbisa",
-    note: "Input data OPD, draft dataset, submit review, dan kelola resource.",
-  },
-];
-
 export function InternalLoginForm() {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
   const [form, setForm] = useState({
     username: "",
     password: "",
@@ -42,26 +19,34 @@ export function InternalLoginForm() {
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
+    setIsPending(true);
 
-    const response = await fetch("/api/internal/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
+    try {
+      const response = await fetch("/api/internal/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
 
-    const data = (await response.json()) as {
-      success?: boolean;
-      error?: string;
-    };
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+      };
 
-    if (!response.ok || !data.success) {
-      setErrorMessage(data.error ?? "Login internal gagal.");
-      return;
+      if (!response.ok || !data.success) {
+        setErrorMessage(data.error ?? "Login internal gagal.");
+        return;
+      }
+
+      router.push("/internal/dashboard");
+      router.refresh();
+    } catch {
+      setErrorMessage("Layanan login tidak dapat dihubungi.");
+    } finally {
+      setIsPending(false);
     }
-
-    window.location.href = "/internal/dashboard";
   }
 
   return (
@@ -191,29 +176,6 @@ export function InternalLoginForm() {
             {isPending ? "Memproses..." : "Masuk"}
           </Button>
 
-          <div className="mt-6">
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[var(--color-border)]" />
-              </div>
-              <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-                <span className="bg-white px-3 text-[var(--color-muted)] font-bold">Opsi Demo</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              {demoAccounts.map((account) => (
-                <button
-                  key={account.label}
-                  type="button"
-                  onClick={() => setForm({ username: account.username, password: account.password })}
-                  className="rounded-lg border border-[var(--color-border)] py-2 text-[9px] font-bold uppercase tracking-tight text-[var(--color-muted)] transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
-                >
-                  {account.label.split(' ')[0]}
-                </button>
-              ))}
-            </div>
-          </div>
         </form>
       </div>
     </div>

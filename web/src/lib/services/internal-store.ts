@@ -38,8 +38,21 @@ import { resolveLocalStorePath } from "@/lib/utils/local-store-path";
 
 const STORE_VERSION = 5;
 const defaultSort: DatasetSort = "terbaru";
-const DEFAULT_INTERNAL_PASSWORD = "bulunganbisa";
+const DEFAULT_DEV_INTERNAL_PASSWORD = "bulunganbisa";
 const PASSWORD_HASH_PREFIX = "scrypt";
+
+function getBootstrapPassword(): string {
+  const configured = process.env.INTERNAL_BOOTSTRAP_PASSWORD?.trim();
+  if (configured) {
+    return configured;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("INTERNAL_BOOTSTRAP_PASSWORD wajib dikonfigurasi di production.");
+  }
+
+  return DEFAULT_DEV_INTERNAL_PASSWORD;
+}
 
 type WorkflowOverrideEntry = {
   status: Dataset["status"];
@@ -278,11 +291,12 @@ function buildOrganizations(): InternalOrganization[] {
 }
 
 function buildUsers(): InternalUser[] {
+  const bootstrapPassword = getBootstrapPassword();
   const baseUsers: InternalUser[] = [
     {
       id: "user-sekretariat",
       username: "sekretariat.bappeda",
-      password: hashInternalPassword(DEFAULT_INTERNAL_PASSWORD),
+      password: hashInternalPassword(bootstrapPassword),
       name: "Koordinator Sekretariat",
       email: "sekretariat@bulungankab.go.id",
       phone: "0811-5400-001",
@@ -296,7 +310,7 @@ function buildUsers(): InternalUser[] {
     {
       id: "user-walidata",
       username: "walidata.dkip",
-      password: hashInternalPassword(DEFAULT_INTERNAL_PASSWORD),
+      password: hashInternalPassword(bootstrapPassword),
       name: "Walidata DKIP",
       email: "walidata@bulungankab.go.id",
       phone: "0811-5400-002",
@@ -310,7 +324,7 @@ function buildUsers(): InternalUser[] {
     {
       id: "user-pembina",
       username: "pembina.bps",
-      password: hashInternalPassword(DEFAULT_INTERNAL_PASSWORD),
+      password: hashInternalPassword(bootstrapPassword),
       name: "Pembina Data BPS",
       email: "pembina@bps.go.id",
       phone: "0811-5400-003",
@@ -329,7 +343,7 @@ function buildUsers(): InternalUser[] {
     return {
       id: `user-operator-${slug}`,
       username: `operator.${slug}`,
-      password: hashInternalPassword(DEFAULT_INTERNAL_PASSWORD),
+      password: hashInternalPassword(bootstrapPassword),
       name: `Operator ${org.shortName}`,
       email: `operator.${slug}@bulungankab.go.id`,
       phone: `0811-5400-${200 + index}`,
