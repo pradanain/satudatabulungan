@@ -20,7 +20,7 @@ const config = getRuntimeConfig();
 
 /**
  * Mengembalikan adapter dataset sesuai mode.
- * Mode "ckan" → CkanDatasetAdapter (langsung ke CKAN, tanpa fallback mock).
+ * Mode "ckan" → CkanDatasetAdapter, dengan fallback internal-store saat upstream gagal.
  * Mode "mock" → MockDatasetAdapter (untuk development lokal saja).
  */
 function getAdapter(): DatasetAdapter {
@@ -29,6 +29,15 @@ function getAdapter(): DatasetAdapter {
   }
 
   return new MockDatasetAdapter();
+}
+
+function canUseLocalDatasetFallback(): boolean {
+  return config.dataSourceMode === "ckan";
+}
+
+function logLocalDatasetFallback(source: string, error: unknown) {
+  const reason = error instanceof Error ? error.message : "Unknown error";
+  console.warn(`[dataset-service] ${source} CKAN gagal, fallback ke internal-store: ${reason}`);
 }
 
 function normalizeDatasetOrganization(dataset: Dataset): Dataset {
@@ -55,7 +64,7 @@ function toPublishedOnly(datasets: Dataset[]): Dataset[] {
   return datasets.filter((dataset) => dataset.status === "Published");
 }
 
-function buildPublicFilterOptionsFromDatasets(datasets: Dataset[]): DatasetFilterOptions {
+export function buildPublicFilterOptionsFromDatasets(datasets: Dataset[]): DatasetFilterOptions {
   const countOccurrences = (values: string[]) => {
     const map = new Map<string, number>();
     values.forEach((v) => {
@@ -152,9 +161,18 @@ export function normalizePositiveInteger(
 export async function getDatasets(filters?: DatasetFilters): Promise<Dataset[]> {
   const adapter = getAdapter();
   let datasets: Dataset[] = [];
-  
-  // Ambil data dari CKAN. Jika gagal, akan throw error agar halaman menampilkan error (tidak diam-diam kosong).
-  datasets = await adapter.listDatasets(filters);
+
+  try {
+    datasets = await adapter.listDatasets(filters);
+  } catch (error) {
+    if (!canUseLocalDatasetFallback()) {
+      throw error;
+    }
+
+    logLocalDatasetFallback("Listing dataset", error);
+    const mockAdapter = new MockDatasetAdapter();
+    datasets = await mockAdapter.listDatasets(filters);
+  }
 
   // Gabungkan dataset dari internal-store (workflow internal) yang belum ada di CKAN
   if (config.dataSourceMode === "ckan") {
@@ -175,7 +193,11 @@ export async function getDatasets(filters?: DatasetFilters): Promise<Dataset[]> 
 export async function getDatasetBySlug(slug: string): Promise<Dataset | null> {
   const adapter = getAdapter();
   let dataset = await adapter.getDatasetBySlug(slug).catch((err) => {
-    // Jika bukan network error, bisa jadi 404. Untuk network error, lebih baik throw.
+    if (canUseLocalDatasetFallback()) {
+      logLocalDatasetFallback(`Detail dataset "${slug}"`, err);
+      return null;
+    }
+
     if (err.message?.includes("gagal") || err.message?.includes("unavailable")) {
       throw err;
     }
@@ -211,7 +233,18 @@ export async function getPublicDatasetBySlug(slug: string): Promise<Dataset | nu
 
 export async function getDatasetFilterOptions(): Promise<DatasetFilterOptions> {
   const adapter = getAdapter();
-  const options = await adapter.getFilterOptions();
+  let options: DatasetFilterOptions;
+  try {
+    options = await adapter.getFilterOptions();
+  } catch (error) {
+    if (!canUseLocalDatasetFallback()) {
+      throw error;
+    }
+
+    logLocalDatasetFallback("Opsi filter dataset", error);
+    const mockAdapter = new MockDatasetAdapter();
+    options = await mockAdapter.getFilterOptions();
+  }
   const years =
     options.years.length > 0
       ? options.years
@@ -230,7 +263,17 @@ export async function getPublicDatasetFilterOptions(filters?: DatasetFilters): P
 
 export async function getPortalStats(): Promise<PortalStats> {
   const adapter = getAdapter();
-  return adapter.getPortalStats();
+  try {
+    return await adapter.getPortalStats();
+  } catch (error) {
+    if (!canUseLocalDatasetFallback()) {
+      throw error;
+    }
+
+    logLocalDatasetFallback("Statistik portal", error);
+    const mockAdapter = new MockDatasetAdapter();
+    return mockAdapter.getPortalStats();
+  }
 }
 
 export function getActiveConfig() {

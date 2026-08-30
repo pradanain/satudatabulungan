@@ -56,7 +56,7 @@ export function DatasetDisplayControls({
           defaultValue={filters.sort ?? "terbaru"}
           onValueChange={handleSelectChange}
         >
-          <SelectTrigger id="sort-control" className="h-10">
+          <SelectTrigger id="sort-control" aria-label="Urutkan dataset" className="h-10">
             <SelectValue placeholder="Pilih urutan" />
           </SelectTrigger>
           <SelectContent>
@@ -74,7 +74,7 @@ export function DatasetDisplayControls({
           defaultValue={`${pageSize}`}
           onValueChange={handleSelectChange}
         >
-          <SelectTrigger id="page-size-control" className="h-10">
+          <SelectTrigger id="page-size-control" aria-label="Jumlah dataset per halaman" className="h-10">
             <SelectValue placeholder="Jumlah" />
           </SelectTrigger>
           <SelectContent>

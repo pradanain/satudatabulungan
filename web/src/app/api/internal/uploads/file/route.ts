@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join, parse } from "node:path";
+import type { ContentType, InternalSession } from "@/lib/types/internal";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
+import {
+  canUploadContentFile,
+  canUploadDatasetFile,
+  isInternalContentType,
+} from "@/lib/utils/internal-content-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +25,119 @@ function getCkanBaseUrl(): string {
 
 function getCkanApiKey(): string {
   return process.env.CKAN_API_KEY?.trim() || "";
+}
+
+type UploadCategory = "dataset" | ContentType;
+
+const uploadRules: Record<UploadCategory, { extensions: string[]; maxSize: number; maxSizeLabel: string }> = {
+  dataset: {
+    extensions: ["csv", "xlsx", "json", "pdf"],
+    maxSize: 50 * 1024 * 1024,
+    maxSizeLabel: "50 MB",
+  },
+  news: {
+    extensions: ["jpg", "jpeg", "png", "webp", "gif"],
+    maxSize: 10 * 1024 * 1024,
+    maxSizeLabel: "10 MB",
+  },
+  infographic: {
+    extensions: ["jpg", "jpeg", "png", "webp", "gif"],
+    maxSize: 15 * 1024 * 1024,
+    maxSizeLabel: "15 MB",
+  },
+  digital_publication: {
+    extensions: ["pdf"],
+    maxSize: 50 * 1024 * 1024,
+    maxSizeLabel: "50 MB",
+  },
+  regulation: {
+    extensions: ["pdf"],
+    maxSize: 25 * 1024 * 1024,
+    maxSizeLabel: "25 MB",
+  },
+  technical_guide: {
+    extensions: ["pdf"],
+    maxSize: 25 * 1024 * 1024,
+    maxSizeLabel: "25 MB",
+  },
+};
+
+function normalizeUploadCategory(value: string | undefined): UploadCategory | null {
+  if (!value) {
+    return "dataset";
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "dataset") {
+    return "dataset";
+  }
+
+  return isInternalContentType(normalized) ? normalized : null;
+}
+
+function canUploadFile(session: InternalSession, category: UploadCategory): boolean {
+  if (category === "dataset") {
+    return canUploadDatasetFile(session);
+  }
+
+  return canUploadContentFile(session, category);
+}
+
+function sanitizeUploadFileName(fileName: string, ext: string): string {
+  const parsed = parse(basename(fileName));
+  const base =
+    parsed.name
+      .normalize("NFKD")
+      .replace(/[^\w.-]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 80) || "upload";
+
+  return `${base}-${randomUUID().slice(0, 8)}.${ext}`;
+}
+
+function isLikelyAllowedFile(buffer: Buffer, ext: string): boolean {
+  if (ext === "pdf") {
+    return buffer.subarray(0, 5).toString("utf8") === "%PDF-";
+  }
+
+  if (ext === "png") {
+    return (
+      buffer.length >= 8 &&
+      buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+    );
+  }
+
+  if (ext === "jpg" || ext === "jpeg") {
+    return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  }
+
+  if (ext === "gif") {
+    const signature = buffer.subarray(0, 6).toString("ascii");
+    return signature === "GIF87a" || signature === "GIF89a";
+  }
+
+  if (ext === "webp") {
+    return (
+      buffer.length >= 12 &&
+      buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+      buffer.subarray(8, 12).toString("ascii") === "WEBP"
+    );
+  }
+
+  if (ext === "xlsx") {
+    return buffer.length >= 4 && buffer[0] === 0x50 && buffer[1] === 0x4b;
+  }
+
+  if (ext === "json") {
+    try {
+      JSON.parse(buffer.toString("utf8"));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return ext === "csv";
 }
 
 export async function POST(request: Request) {
@@ -85,48 +205,52 @@ export async function POST(request: Request) {
     const ext = fileName.split(".").pop()?.toLowerCase();
     const sizeInBytes = fileBuffer.length;
 
-    if (contentType) {
-      console.log(`[UPLOAD_PROCESS: 6a] Kategori konten: "${contentType}"`);
-      if (["digital_publication", "regulation", "technical_guide"].includes(contentType)) {
-        if (ext !== "pdf") {
-          console.error(`[UPLOAD_PROCESS: ERROR] Ekstensi ".${ext}" tidak valid untuk Buku Digital. Wajib PDF.`);
-          return NextResponse.json(
-            { success: false, error: "Format file tidak didukung. Gunakan PDF." },
-            { status: 400 }
-          );
-        }
-        const maxSize = contentType === "digital_publication" ? 50 * 1024 * 1024 : 25 * 1024 * 1024;
-        const maxSizeLabel = contentType === "digital_publication" ? "50 MB" : "25 MB";
-        if (sizeInBytes > maxSize) {
-          console.error(`[UPLOAD_PROCESS: ERROR] Berkas berukuran ${sizeInBytes} Bytes melebihi batas ${maxSizeLabel}.`);
-          return NextResponse.json(
-            { success: false, error: `Ukuran file terlalu besar. Maksimum ${maxSizeLabel}.` },
-            { status: 400 }
-          );
-        }
-      } else if (["news", "infographic"].includes(contentType)) {
-        if (!["jpg", "jpeg", "png", "webp", "gif"].includes(ext || "")) {
-          console.error(`[UPLOAD_PROCESS: ERROR] Format gambar ".${ext}" tidak didukung.`);
-          return NextResponse.json(
-            { success: false, error: "Format gambar tidak didukung. Gunakan JPG, PNG, WebP, atau GIF." },
-            { status: 400 }
-          );
-        }
-        const maxSize = contentType === "infographic" ? 15 * 1024 * 1024 : 10 * 1024 * 1024;
-        const maxSizeLabel = contentType === "infographic" ? "15 MB" : "10 MB";
-        if (sizeInBytes > maxSize) {
-          console.error(`[UPLOAD_PROCESS: ERROR] Gambar berukuran ${sizeInBytes} Bytes melebihi batas ${maxSizeLabel}.`);
-          return NextResponse.json(
-            { success: false, error: `Ukuran file terlalu besar. Maksimum ${maxSizeLabel}.` },
-            { status: 400 }
-          );
-        }
-      }
+    const uploadCategory = normalizeUploadCategory(contentType);
+    if (!uploadCategory) {
+      return NextResponse.json(
+        { success: false, error: "Kategori unggahan tidak valid." },
+        { status: 400 },
+      );
+    }
+
+    if (!canUploadFile(session, uploadCategory)) {
+      return NextResponse.json(
+        { success: false, error: "Anda tidak memiliki izin mengunggah berkas untuk konten ini." },
+        { status: 403 },
+      );
+    }
+
+    const rules = uploadRules[uploadCategory];
+    console.log(`[UPLOAD_PROCESS: 6a] Kategori konten: "${uploadCategory}"`);
+
+    if (!ext || !rules.extensions.includes(ext)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Format file tidak didukung. Gunakan ${rules.extensions
+            .map((item) => item.toUpperCase())
+            .join(", ")}.`,
+        },
+        { status: 400 },
+      );
+    }
+
+    if (sizeInBytes > rules.maxSize) {
+      return NextResponse.json(
+        { success: false, error: `Ukuran file terlalu besar. Maksimum ${rules.maxSizeLabel}.` },
+        { status: 400 },
+      );
+    }
+
+    if (!isLikelyAllowedFile(fileBuffer, ext)) {
+      return NextResponse.json(
+        { success: false, error: "Isi file tidak sesuai dengan format yang diunggah." },
+        { status: 400 },
+      );
     }
     console.log("[UPLOAD_PROCESS: 6b] Validasi lolos dengan sukses.");
 
-    // Sanitize fileName to prevent directory traversal
-    const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const safeFileName = sanitizeUploadFileName(fileName, ext);
 
     // ── Strategy 1: Try uploading directly to CKAN resource store ────────────
     console.log("[UPLOAD_PROCESS: 7] Menyiapkan unggahan ke CKAN Resource Store...");
@@ -143,7 +267,7 @@ export async function POST(request: Request) {
           : "image/jpeg";
 
         const ckanForm = new FormData();
-        ckanForm.set("upload", new Blob([fileBuffer as any], { type: mimeType }), safeFileName);
+        ckanForm.set("upload", new Blob([new Uint8Array(fileBuffer)], { type: mimeType }), safeFileName);
 
         const controller = new AbortController();
         const timeout = setTimeout(() => {

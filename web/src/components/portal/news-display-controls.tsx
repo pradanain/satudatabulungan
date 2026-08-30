@@ -38,7 +38,7 @@ export function NewsDisplayControls({ basePath, sort, query }: NewsDisplayContro
       <div className="grid min-w-0 gap-1">
         <span className="text-xs font-semibold text-[#47413f] sm:text-sm">Urutkan</span>
         <Select name="sort" defaultValue={sort} onValueChange={handleSelectChange}>
-          <SelectTrigger id="news-sort-control" className="h-10">
+          <SelectTrigger id="news-sort-control" aria-label="Urutkan publikasi" className="h-10">
             <SelectValue placeholder="Pilih urutan" />
           </SelectTrigger>
           <SelectContent>

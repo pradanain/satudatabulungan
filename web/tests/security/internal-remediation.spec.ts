@@ -6,6 +6,11 @@ import { getProjectRoot } from "@/lib/utils/local-store-path";
 
 const SESSION_COOKIE = "satudata_internal_session";
 const ROOT_STORE_PATH = resolve(process.cwd(), "..", ".local", "internal-portal-store.json");
+const TEST_CREDENTIALS = {
+  walidata: { username: "walidata.dkip", password: "bulunganbisa" },
+  disdukcapil: { username: "operator.disdukcapil", password: "bulunganbisa" },
+  dinkes: { username: "operator.dinkes", password: "bulunganbisa" },
+};
 
 function extractCookie(headerValue: string, cookieName: string): string | null {
   const [firstPart] = headerValue.split(";");
@@ -56,27 +61,29 @@ function buildDraftPayload(slug: string) {
     period: "2026",
     walidata: "Walidata Bulungan",
     coverage: "Kabupaten Bulungan",
+    unit: "record",
     resourceName: `Resource ${slug}`,
     resourceFormat: "CSV",
     resourceUrl: "https://example.com/data.csv",
+    tags: ["audit", "keamanan"],
   };
 }
 
 test.describe("Security and Remediation Regression", () => {
   test("login fallback local tetap jalan saat CKAN tidak tersedia", async ({ request }) => {
-    const valid = await loginAndGetCookie(request, "admin", "bulungan123");
+    const valid = await loginAndGetCookie(request, TEST_CREDENTIALS.walidata.username, TEST_CREDENTIALS.walidata.password);
     expect(valid.response.status()).toBe(200);
     expect(valid.body.success).toBeTruthy();
     expect(valid.sessionCookie).toBeTruthy();
 
-    const invalid = await loginAndGetCookie(request, "admin", "salah-total");
+    const invalid = await loginAndGetCookie(request, TEST_CREDENTIALS.walidata.username, "salah-total");
     expect(invalid.response.status()).toBe(401);
     expect(invalid.body.success).toBeFalsy();
     expect(`${invalid.body.error ?? ""}`.toLowerCase()).not.toContain("fetch failed");
   });
 
   test("session signed: valid diterima, token tamper/forged ditolak, logout clear cookie", async ({ request }) => {
-    const login = await loginAndGetCookie(request, "admin", "bulungan123");
+    const login = await loginAndGetCookie(request, TEST_CREDENTIALS.walidata.username, TEST_CREDENTIALS.walidata.password);
     expect(login.response.status()).toBe(200);
     expect(login.sessionCookie).toBeTruthy();
 
@@ -142,7 +149,7 @@ test.describe("Security and Remediation Regression", () => {
     expect(noSession.status()).toBe(401);
     expect(noSession.headers()["content-type"]).toContain("application/json");
 
-    const operatorLogin = await loginAndGetCookie(request, "operator.disdukcapil", "operator123");
+    const operatorLogin = await loginAndGetCookie(request, TEST_CREDENTIALS.disdukcapil.username, TEST_CREDENTIALS.disdukcapil.password);
     expect(operatorLogin.response.status()).toBe(200);
 
     const forbidden = await request.patch("/api/internal/settings", {
@@ -155,7 +162,7 @@ test.describe("Security and Remediation Regression", () => {
   });
 
   test("operator tidak bisa draft lintas OPD, URL non-http ditolak, dan payload XSS tidak tersimpan mentah", async ({ request }) => {
-    const operatorLogin = await loginAndGetCookie(request, "operator.disdukcapil", "operator123");
+    const operatorLogin = await loginAndGetCookie(request, TEST_CREDENTIALS.disdukcapil.username, TEST_CREDENTIALS.disdukcapil.password);
     expect(operatorLogin.response.status()).toBe(200);
 
     const crossOrgPayload = {
@@ -206,7 +213,7 @@ test.describe("Security and Remediation Regression", () => {
   });
 
   test("operator hanya bisa transisi dataset organisasinya sendiri", async ({ request }) => {
-    const dinkesLogin = await loginAndGetCookie(request, "operator.dinkes", "operator123");
+    const dinkesLogin = await loginAndGetCookie(request, TEST_CREDENTIALS.dinkes.username, TEST_CREDENTIALS.dinkes.password);
     expect(dinkesLogin.response.status()).toBe(200);
 
     const slug = `transition-${Date.now()}`;
@@ -220,7 +227,6 @@ test.describe("Security and Remediation Regression", () => {
         ownerOrgSlug: "dinas-kesehatan",
       },
     });
-    console.log("[DEBUG PLAYWRIGHT DRAFT CREATE BODY]:", await draftCreate.text());
     expect(draftCreate.status()).toBe(200);
 
     const toSubmitted = await request.post("/api/internal/workflow/transition", {
@@ -235,8 +241,20 @@ test.describe("Security and Remediation Regression", () => {
     });
     expect(toSubmitted.status()).toBe(200);
 
-    const walidataLogin = await loginAndGetCookie(request, "walidata", "walidata123");
+    const walidataLogin = await loginAndGetCookie(request, TEST_CREDENTIALS.walidata.username, TEST_CREDENTIALS.walidata.password);
     expect(walidataLogin.response.status()).toBe(200);
+
+    const toUnderReview = await request.post("/api/internal/workflow/transition", {
+      headers: {
+        cookie: `${SESSION_COOKIE}=${walidataLogin.sessionCookie}`,
+      },
+      data: {
+        slug,
+        fromStatus: "Submitted",
+        toStatus: "Under Review",
+      },
+    });
+    expect(toUnderReview.status()).toBe(200);
 
     const toNeedRevision = await request.post("/api/internal/workflow/transition", {
       headers: {
@@ -244,14 +262,14 @@ test.describe("Security and Remediation Regression", () => {
       },
       data: {
         slug,
-        fromStatus: "Submitted",
+        fromStatus: "Under Review",
         toStatus: "Need Revision",
         reviewNote: "<script>alert(1)</script> revisi metadata",
       },
     });
     expect(toNeedRevision.status()).toBe(200);
 
-    const disdukcapilLogin = await loginAndGetCookie(request, "operator.disdukcapil", "operator123");
+    const disdukcapilLogin = await loginAndGetCookie(request, TEST_CREDENTIALS.disdukcapil.username, TEST_CREDENTIALS.disdukcapil.password);
     expect(disdukcapilLogin.response.status()).toBe(200);
 
     const crossOrgTransition = await request.post("/api/internal/workflow/transition", {
@@ -285,14 +303,14 @@ test.describe("Security and Remediation Regression", () => {
       data: {
         slug,
         fromStatus: "Submitted",
-        toStatus: "Approved",
+        toStatus: "Under Review",
       },
     });
     expect(operatorApprove.status()).toBe(403);
   });
 
   test("katalog publik hanya menampilkan status Published", async ({ request }) => {
-    const operatorLogin = await loginAndGetCookie(request, "operator.disdukcapil", "operator123");
+    const operatorLogin = await loginAndGetCookie(request, TEST_CREDENTIALS.disdukcapil.username, TEST_CREDENTIALS.disdukcapil.password);
     expect(operatorLogin.response.status()).toBe(200);
 
     const slug = `public-filter-${Date.now()}`;

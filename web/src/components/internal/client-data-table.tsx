@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils/cn";
 
-export interface ColumnDef<T> {
+export interface ColumnDef<T extends object> {
   key: string;
   header: string;
   render?: (row: T) => ReactNode;
@@ -16,7 +16,7 @@ export interface ColumnDef<T> {
   className?: string;
 }
 
-interface ClientDataTableProps<T> {
+interface ClientDataTableProps<T extends object> {
   data: T[];
   columns: ColumnDef<T>[];
   defaultPageSize?: number;
@@ -27,7 +27,20 @@ interface ClientDataTableProps<T> {
   actionButton?: ReactNode;
 }
 
-export function ClientDataTable<T>({
+function getCellValue<T extends object>(row: T, key: string): ReactNode {
+  const value = (row as Record<string, unknown>)[key];
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  return JSON.stringify(value);
+}
+
+export function ClientDataTable<T extends object>({
   data,
   columns,
   defaultPageSize = 10,
@@ -184,7 +197,7 @@ export function ClientDataTable<T>({
                 <tr key={i} className="group hover:bg-[var(--color-surface-soft)]/30 transition-colors">
                   {columns.map((col) => (
                     <td key={col.key} className={cn("px-5 py-4", col.className)}>
-                      {col.render ? col.render(row) : (row as any)[col.key]}
+                      {col.render ? col.render(row) : getCellValue(row, col.key)}
                     </td>
                   ))}
                 </tr>

@@ -8,7 +8,7 @@ import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
 import { ToastNotification } from "@/components/ui/toast-popup";
 import { getNextStatuses, getStatusLabel, type WorkflowItem } from "@/lib/types/workflow";
 import type { DatasetStatus } from "@/lib/types/dataset";
-import type { InternalRole, InternalSession, InternalDataset } from "@/lib/types/internal";
+import type { InternalPermission, InternalRole, InternalSession, InternalDataset } from "@/lib/types/internal";
 import { hasPermission } from "@/lib/utils/internal-auth";
 import { cn } from "@/lib/utils/cn";
 import { Trash2 } from "lucide-react";
@@ -29,7 +29,7 @@ const statusActionLabel: Record<DatasetStatus, string> = {
   Archived: "Arsipkan",
 };
 
-function getTransitionPermission(to: DatasetStatus): string | null {
+function getTransitionPermission(to: DatasetStatus): InternalPermission | null {
   switch (to) {
     case "Submitted": return "dataset.submit";
     case "Under Review": return "dataset.review";
@@ -44,7 +44,7 @@ function getTransitionPermission(to: DatasetStatus): string | null {
 function isTransitionVisible(role: InternalRole, from: DatasetStatus, to: DatasetStatus): boolean {
   const perm = getTransitionPermission(to);
   if (!perm) return false;
-  return hasPermission(role, perm as any);
+  return hasPermission(role, perm);
 }
 
 function getActionLabel(from: DatasetStatus, to: DatasetStatus): string {
@@ -246,4 +246,3 @@ export function InternalWorkflowActions({ dataset, session, variant = "card" }: 
     </Card>
   );
 }
-

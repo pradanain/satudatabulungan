@@ -22,8 +22,6 @@ type SubmissionState = {
   targetEmail?: string;
 };
 
-type DataRequestFormProps = {};
-
 type FormState = {
   requesterName: string;
   requesterEmail: string;
@@ -78,7 +76,7 @@ const RequiredLabel = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
-export function DataRequestForm({ }: DataRequestFormProps) {
+export function DataRequestForm() {
   const [form, setForm] = useState<FormState>(initialState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionState, setSubmissionState] = useState<SubmissionState | null>(null);
@@ -488,5 +486,4 @@ export function DataRequestForm({ }: DataRequestFormProps) {
     </>
   );
 }
-
 

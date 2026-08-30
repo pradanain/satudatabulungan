@@ -50,7 +50,7 @@ export function StatusPage({
           <h1 className="text-3xl sm:text-4xl font-bold font-heading text-[var(--color-text)] mb-4">{title}</h1>
           <p className="text-lg text-[var(--color-muted)] mb-6 max-w-2xl">{description}</p>
           
-          {note ? <p className="m-0 mb-8 text-sm text-[#738297] bg-[#f8fbff] p-4 rounded-xl border border-[#e1e7f0]">{note}</p> : null}
+          {note ? <p className="m-0 mb-8 text-sm text-[#516175] bg-[#f8fbff] p-4 rounded-xl border border-[#e1e7f0]">{note}</p> : null}
           
           <div className="flex flex-wrap items-center justify-center gap-4">
             <Button asChild size="lg" className="rounded-xl font-semibold">

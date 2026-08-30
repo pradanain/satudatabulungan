@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { DatasetFormat, DatasetFrequency } from "@/lib/types/dataset";
+import type { DatasetFormat, DatasetFrequency, DatasetPreview, DatasetResource } from "@/lib/types/dataset";
 import { updateInternalDataset, getInternalDatasetBySlug, deleteInternalDataset } from "@/lib/services/internal-store";
 import { inferInternalApiErrorStatus } from "@/lib/utils/internal-api-response";
 import { sanitizeStoredText } from "@/lib/utils/input-sanitizer";
@@ -22,8 +22,8 @@ type DatasetUpdatePayload = {
   resourceUrl?: string;
   tags?: string[];
   reviewSummary?: string;
-  preview?: any;
-  resources?: any;
+  preview?: DatasetPreview;
+  resources?: DatasetResource[];
   unit?: string;
 };
 
@@ -189,4 +189,3 @@ export async function DELETE(
     return NextResponse.json({ success: false, error: message }, { status });
   }
 }
-

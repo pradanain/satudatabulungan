@@ -39,7 +39,16 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 export const dynamic = "force-dynamic";
-const HOMEPAGE_INFOGRAFIS_TIMEOUT_MS = 4_000;
+const HOMEPAGE_SOURCE_TIMEOUT_MS = 4_000;
+
+function logHomepageSourceFallback(source: string, error: unknown) {
+  if (error instanceof AsyncTimeoutError) {
+    console.warn(`[homepage] ${source} source timed out, rendering empty fallback.`);
+    return;
+  }
+
+  console.warn(`[homepage] ${source} source unavailable, rendering empty fallback.`, error);
+}
 
 function countDatasetsForHomepageTopic(
   datasets: Dataset[],
@@ -58,16 +67,28 @@ function buildHomepageTopicHref(definition: (typeof homepageTopics)[number]) {
 
 export default async function Home() {
   const [datasets, allKabarDataItems, infografisPayload] = await Promise.all([
-    getPublicDatasets({ sort: "terbaru" }),
-    loadKabarDataItems(),
+    withTimeout(
+      getPublicDatasets({ sort: "terbaru" }),
+      HOMEPAGE_SOURCE_TIMEOUT_MS,
+      "Timeout mengambil dataset homepage.",
+    ).catch((error) => {
+      logHomepageSourceFallback("Dataset", error);
+      return [];
+    }),
+    withTimeout(
+      loadKabarDataItems(),
+      HOMEPAGE_SOURCE_TIMEOUT_MS,
+      "Timeout mengambil berita homepage.",
+    ).catch((error) => {
+      logHomepageSourceFallback("Berita", error);
+      return [];
+    }),
     withTimeout(
       getCombinedInfografisPublications(),
-      HOMEPAGE_INFOGRAFIS_TIMEOUT_MS,
+      HOMEPAGE_SOURCE_TIMEOUT_MS,
       "Timeout mengambil infografis homepage.",
     ).catch((error) => {
-      if (error instanceof AsyncTimeoutError) {
-        console.warn("[homepage] Infografis source timed out, rendering empty fallback.");
-      }
+      logHomepageSourceFallback("Infografis", error);
       return [];
     }),
   ]);

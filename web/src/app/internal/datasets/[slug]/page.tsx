@@ -45,7 +45,7 @@ export default async function InternalDatasetDetailPage({
   }
 
   const canEdit = hasPermission(session, "dataset.edit_metadata") || hasPermission(session, "dataset.edit_draft_own_opd");
-  const showGeo = hasGeospatialData(dataset as any);
+  const showGeo = hasGeospatialData(dataset);
 
   // Read-only view of the dataset
   const readOnlyContent = (

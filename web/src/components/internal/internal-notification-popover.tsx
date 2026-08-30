@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bell, BellOff, Check, Circle, Loader2 } from "lucide-react";
@@ -26,7 +26,7 @@ export function InternalNotificationPopover({ session }: InternalNotificationPop
   const [open, setOpen] = useState(false);
 
   // Fetch notifications from our API
-  async function fetchNotifications() {
+  const fetchNotifications = useCallback(async () => {
     try {
       const response = await fetch("/api/internal/notifications");
       if (response.ok) {
@@ -40,14 +40,21 @@ export function InternalNotificationPopover({ session }: InternalNotificationPop
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    fetchNotifications();
+    const initialFetch = window.setTimeout(() => {
+      void fetchNotifications();
+    }, 0);
     // Poll notifications every 30 seconds for real-time feel
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    const interval = window.setInterval(() => {
+      void fetchNotifications();
+    }, 30000);
+    return () => {
+      window.clearTimeout(initialFetch);
+      window.clearInterval(interval);
+    };
+  }, [fetchNotifications]);
 
   const unreadNotifications = notifications.filter(
     (n) => !n.readByUserIds.includes(session.userId)
@@ -77,7 +84,7 @@ export function InternalNotificationPopover({ session }: InternalNotificationPop
       router.refresh();
     } catch (error) {
       console.error("Gagal menandai semua dibaca:", error);
-      fetchNotifications(); // Rollback if error
+      void fetchNotifications(); // Rollback if error
     }
   }
 
@@ -103,7 +110,7 @@ export function InternalNotificationPopover({ session }: InternalNotificationPop
       router.refresh();
     } catch (error) {
       console.error("Gagal menandai dibaca:", error);
-      fetchNotifications(); // Rollback if error
+      void fetchNotifications(); // Rollback if error
     }
   }
 

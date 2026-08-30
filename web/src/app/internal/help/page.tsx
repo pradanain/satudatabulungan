@@ -107,7 +107,7 @@ export default async function InternalHelpPage() {
               <AccordionItem value="item-2">
                 <AccordionTrigger className="text-left font-semibold">Apa yang harus dilakukan jika mendapatkan status Need Revision?</AccordionTrigger>
                 <AccordionContent className="text-[var(--color-muted)] leading-relaxed">
-                  Buka detail dataset dan lihat catatan revisi yang diberikan oleh Walidata di bagian bawah atau di panel notifikasi Anda. Lakukan perbaikan pada form, lalu klik tombol "Ajukan Ulang" agar dataset kembali masuk ke antrean review.
+                  Buka detail dataset dan lihat catatan revisi yang diberikan oleh Walidata di bagian bawah atau di panel notifikasi Anda. Lakukan perbaikan pada form, lalu klik tombol &quot;Ajukan Ulang&quot; agar dataset kembali masuk ke antrean review.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3">

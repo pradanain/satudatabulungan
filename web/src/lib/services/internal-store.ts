@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { getRolePermissions, hasPermission, normalizeInternalRole } from "@/lib/utils/internal-auth";
 import { dirname } from "node:path";
@@ -37,6 +38,8 @@ import { resolveLocalStorePath } from "@/lib/utils/local-store-path";
 
 const STORE_VERSION = 5;
 const defaultSort: DatasetSort = "terbaru";
+const DEFAULT_INTERNAL_PASSWORD = "bulunganbisa";
+const PASSWORD_HASH_PREFIX = "scrypt";
 
 type WorkflowOverrideEntry = {
   status: Dataset["status"];
@@ -107,6 +110,31 @@ function formatSizeLabel(format: Dataset["formats"][number]): string {
   return "1.2 MB";
 }
 
+function hashInternalPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 32).toString("hex");
+  return `${PASSWORD_HASH_PREFIX}$${salt}$${hash}`;
+}
+
+function isHashedInternalPassword(value: string): boolean {
+  return value.startsWith(`${PASSWORD_HASH_PREFIX}$`);
+}
+
+function verifyInternalPassword(storedPassword: string, candidatePassword: string): boolean {
+  if (!isHashedInternalPassword(storedPassword)) {
+    return storedPassword === candidatePassword;
+  }
+
+  const [, salt, expectedHash] = storedPassword.split("$");
+  if (!salt || !expectedHash) {
+    return false;
+  }
+
+  const expected = Buffer.from(expectedHash, "hex");
+  const actual = scryptSync(candidatePassword, salt, expected.length);
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
 function toInternalWorkflowEvent(
   slug: string,
   actor: string,
@@ -133,10 +161,21 @@ function toInternalWorkflowEvent(
 
 
 function buildOrganizations(): InternalOrganization[] {
-  const entries = opdDirectory as any[];
+  type OpdDirectoryEntry = {
+    name?: string;
+    email?: string;
+    phone?: string;
+    whatsapp?: string;
+  };
+
+  function hasOpdName(entry: OpdDirectoryEntry): entry is OpdDirectoryEntry & { name: string } {
+    return typeof entry.name === "string" && entry.name.trim().length > 0;
+  }
+
+  const entries = opdDirectory as OpdDirectoryEntry[];
   
   const mapped = entries
-    .filter((entry) => entry.name && entry.name.trim())
+    .filter(hasOpdName)
     .map((entry, index) => {
       const name = entry.name.trim();
       let slug = slugify(name);
@@ -243,7 +282,7 @@ function buildUsers(): InternalUser[] {
     {
       id: "user-sekretariat",
       username: "sekretariat.bappeda",
-      password: "bulunganbisa",
+      password: hashInternalPassword(DEFAULT_INTERNAL_PASSWORD),
       name: "Koordinator Sekretariat",
       email: "sekretariat@bulungankab.go.id",
       phone: "0811-5400-001",
@@ -257,7 +296,7 @@ function buildUsers(): InternalUser[] {
     {
       id: "user-walidata",
       username: "walidata.dkip",
-      password: "bulunganbisa",
+      password: hashInternalPassword(DEFAULT_INTERNAL_PASSWORD),
       name: "Walidata DKIP",
       email: "walidata@bulungankab.go.id",
       phone: "0811-5400-002",
@@ -271,7 +310,7 @@ function buildUsers(): InternalUser[] {
     {
       id: "user-pembina",
       username: "pembina.bps",
-      password: "bulunganbisa",
+      password: hashInternalPassword(DEFAULT_INTERNAL_PASSWORD),
       name: "Pembina Data BPS",
       email: "pembina@bps.go.id",
       phone: "0811-5400-003",
@@ -290,7 +329,7 @@ function buildUsers(): InternalUser[] {
     return {
       id: `user-operator-${slug}`,
       username: `operator.${slug}`,
-      password: "bulunganbisa",
+      password: hashInternalPassword(DEFAULT_INTERNAL_PASSWORD),
       name: `Operator ${org.shortName}`,
       email: `operator.${slug}@bulungankab.go.id`,
       phone: `0811-5400-${200 + index}`,
@@ -803,7 +842,10 @@ export async function authenticateInternalUser(
 ): Promise<InternalSession | null> {
   const store = await loadInternalPortalStore();
   const user = store.users.find(
-    (item) => item.username.toLowerCase() === username.toLowerCase() && item.password === password && item.status === "Aktif",
+    (item) =>
+      item.username.toLowerCase() === username.toLowerCase() &&
+      verifyInternalPassword(item.password, password) &&
+      item.status === "Aktif",
   );
 
   if (!user) {
@@ -811,6 +853,9 @@ export async function authenticateInternalUser(
   }
 
   user.lastLoginAt = new Date().toISOString();
+  if (!isHashedInternalPassword(user.password)) {
+    user.password = hashInternalPassword(password);
+  }
   await saveInternalPortalStore(store);
   return buildSession(user, store.organizations);
 }
@@ -1670,11 +1715,11 @@ export async function updateInternalPassword(
       throw new Error("User internal tidak ditemukan.");
     }
 
-    if (user.password !== currentPassword) {
+    if (!verifyInternalPassword(user.password, currentPassword)) {
       throw new Error("Password saat ini tidak sesuai.");
     }
 
-    user.password = nextPassword;
+    user.password = hashInternalPassword(nextPassword);
 
     return {
       store,

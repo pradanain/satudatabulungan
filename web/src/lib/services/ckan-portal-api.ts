@@ -1,7 +1,9 @@
 import "server-only";
 
-import type { InternalRole, InternalSession, InternalPublication, ContentType } from "@/lib/types/internal";
+import type { DatasetStatus } from "@/lib/types/dataset";
+import type { InternalPermission, InternalRole, InternalSession, InternalPublication, ContentType } from "@/lib/types/internal";
 import { hasPermission, normalizeInternalRole, getRolePermissions } from "@/lib/utils/internal-auth";
+import { normalizeDatasetStatus } from "@/lib/types/workflow";
 import {
   fetchWithTimeout,
   isUpstreamNetworkError,
@@ -589,8 +591,8 @@ export async function getCurrentUser(session: InternalSession): Promise<PortalAc
   return accounts.find((item) => item.id === session.userId) ?? null;
 }
 
-export function checkPermission(role: InternalRole, permission: string): boolean {
-  return hasPermission(role, permission as any);
+export function checkPermission(role: InternalRole, permission: InternalPermission): boolean {
+  return hasPermission(role, permission);
 }
 
 export async function getDashboard(session: InternalSession): Promise<PortalDashboard> {
@@ -962,7 +964,7 @@ export function mapPortalDatasetToPublication(dataset: PortalDataset): InternalP
     imageUrl: dataset.extras.image_url,
     organizationId: dataset.organizationId,
     organizationName: dataset.organizationName,
-    status: dataset.status as any,
+    status: normalizeDatasetStatus(dataset.status) as DatasetStatus,
     visibility: "public",
     publishedAt: dataset.extras.published_at || dataset.metadataModified,
     year: dataset.extras.tahun_data || String(dataset.year),

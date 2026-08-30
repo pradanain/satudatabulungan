@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { createCkanPublication, type PortalContentType } from "@/lib/services/ckan-portal-api";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
-import { hasPermission } from "@/lib/utils/internal-auth";
-import type { ContentType } from "@/lib/types/internal";
 import { resolveCkanOwnerOrgId } from "@/lib/utils/resolve-ckan-owner-org";
+import { canWriteContentForOrganization, isInternalContentType } from "@/lib/utils/internal-content-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -26,16 +25,15 @@ export async function POST(request: Request) {
     const payload = await request.json();
 
     const title = payload.title?.trim();
-    const type = payload.type as ContentType;
+    const type = payload.type;
     const organizationId = payload.organizationId;
     const description = payload.description?.trim() || "";
     const status = payload.status || "Draft";
 
     if (!title) return NextResponse.json({ success: false, error: "Judul wajib diisi." }, { status: 400 });
-    if (!type) return NextResponse.json({ success: false, error: "Jenis konten wajib dipilih." }, { status: 400 });
+    if (!isInternalContentType(type)) return NextResponse.json({ success: false, error: "Jenis konten wajib dipilih." }, { status: 400 });
     if (!organizationId) return NextResponse.json({ success: false, error: "OPD/Sumber wajib dipilih." }, { status: 400 });
 
-    // Role specific bounds
     const isProdusen = session.role === "produsen";
     if (isProdusen) {
       if (organizationId !== session.organizationId) {
@@ -47,20 +45,10 @@ export async function POST(request: Request) {
       if (status === "Published") {
         return NextResponse.json({ success: false, error: "Produsen tidak memiliki izin untuk menerbitkan langsung." }, { status: 403 });
       }
-    } else {
-      // Walidata or other roles
-      const canManageAll = hasPermission(session, "content.manage_all");
-      if (!canManageAll) {
-        if (type === "news" && !hasPermission(session, "news.manage")) {
-          return NextResponse.json({ success: false, error: "Anda tidak memiliki izin mengelola berita." }, { status: 403 });
-        }
-        if (type === "regulation" && !hasPermission(session, "regulation.manage")) {
-          return NextResponse.json({ success: false, error: "Anda tidak memiliki izin mengelola regulasi." }, { status: 403 });
-        }
-        if (type === "technical_guide" && !hasPermission(session, "technical_guide.manage")) {
-          return NextResponse.json({ success: false, error: "Anda tidak memiliki izin mengelola petunjuk teknis." }, { status: 403 });
-        }
-      }
+    }
+
+    if (!canWriteContentForOrganization(session, type, organizationId)) {
+      return NextResponse.json({ success: false, error: "Anda tidak memiliki izin mengelola konten ini." }, { status: 403 });
     }
 
     console.log("[PUB_PROCESS: 1] Menemukan ID OPD di CKAN...");

@@ -13,6 +13,7 @@ import {
   isUpstreamNetworkError,
   summarizeUpstreamError,
 } from "@/lib/utils/upstream-error";
+import { normalizeSpreadsheetRows, spreadsheetCellToRecordValue } from "@/lib/utils/spreadsheet";
 import type { DatasetAdapter } from "./dataset-adapter";
 
 interface CkanOrganization {
@@ -494,35 +495,28 @@ async function loadPreviewFromResources(
         records = parseCsvRecords(raw);
       } else if (resource.format === "XLSX") {
         const arrayBuffer = await response.arrayBuffer();
-        const XLSX = await import("xlsx");
-        const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const rawRows = XLSX.utils.sheet_to_json<any[]>(worksheet, {
-          header: 1,
-          raw: true,
-          defval: "",
-        });
+        const { readSheet } = await import("read-excel-file/node");
+        const rawRows = await readSheet(Buffer.from(arrayBuffer));
+        const textRows = normalizeSpreadsheetRows(rawRows);
 
-        if (rawRows.length > 0) {
+        if (textRows.length > 0) {
           let headerIdx = 0;
-          for (let i = 0; i < Math.min(rawRows.length, 6); i++) {
-            const row = rawRows[i];
-            if (Array.isArray(row) && row.filter((c) => c !== "").length >= 2) {
+          for (let i = 0; i < Math.min(textRows.length, 6); i++) {
+            const row = textRows[i];
+            if (row.filter((cell) => cell !== "").length >= 2) {
               headerIdx = i;
               break;
             }
           }
 
-          const headers = (rawRows[headerIdx] || []).map((h) => String(h ?? "").trim());
+          const headers = textRows[headerIdx] || [];
           const dataRows = rawRows.slice(headerIdx + 1);
 
           records = dataRows.map((row) => {
             const rec: RawRecord = {};
             headers.forEach((h, idx) => {
               if (h) {
-                const val = Array.isArray(row) ? row[idx] : undefined;
-                rec[h] = val !== undefined && val !== null ? val : "";
+                rec[h] = spreadsheetCellToRecordValue(row[idx]);
               }
             });
             return rec;

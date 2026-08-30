@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { CheckCircle2, AlertTriangle, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -17,20 +17,13 @@ export function ToastNotification({
   onClose,
   duration = 5000,
 }: ToastNotificationProps) {
-  const [isVisible, setIsVisible] = useState(false);
-
   useEffect(() => {
-    if (message) {
-      setIsVisible(true);
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        // Wait for slide-out animation to complete
-        setTimeout(onClose, 200);
-      }, duration);
-      return () => clearTimeout(timer);
-    } else {
-      setIsVisible(false);
+    if (!message) {
+      return;
     }
+
+    const timer = window.setTimeout(onClose, duration);
+    return () => window.clearTimeout(timer);
   }, [message, duration, onClose]);
 
   if (!message) return null;
@@ -57,9 +50,7 @@ export function ToastNotification({
     <div
       className={cn(
         "fixed top-6 right-6 z-55 max-w-sm w-full transition-all duration-300 ease-out transform",
-        isVisible 
-          ? "translate-x-0 opacity-100 pointer-events-auto" 
-          : "translate-x-12 opacity-0 pointer-events-none"
+        "translate-x-0 opacity-100 pointer-events-auto",
       )}
     >
       <div
@@ -79,8 +70,7 @@ export function ToastNotification({
         </div>
         <button
           onClick={() => {
-            setIsVisible(false);
-            setTimeout(onClose, 200);
+            onClose();
           }}
           className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-black/5 shrink-0"
           aria-label="Tutup"

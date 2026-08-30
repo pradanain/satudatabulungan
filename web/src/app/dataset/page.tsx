@@ -13,12 +13,14 @@ import { ArrowRight, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  buildPublicFilterOptionsFromDatasets,
   getPublicDatasetFilterOptions,
   getPublicDatasets,
   normalizeDatasetFilters,
   normalizePositiveInteger,
 } from "@/lib/services/dataset-service";
 import type { DatasetFilters } from "@/lib/types/dataset";
+import { AsyncTimeoutError, withTimeout } from "@/lib/utils/async-timeout";
 import { buildPageMetadata } from "@/lib/utils/metadata";
 
 type DatasetPageProps = {
@@ -34,6 +36,16 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 export const dynamic = "force-dynamic";
+const DATASET_CATALOG_SOURCE_TIMEOUT_MS = 4_000;
+
+function logDatasetCatalogFallback(source: string, error: unknown) {
+  if (error instanceof AsyncTimeoutError) {
+    console.warn(`[dataset] ${source} source timed out, rendering fallback.`);
+    return;
+  }
+
+  console.warn(`[dataset] ${source} source unavailable, rendering fallback.`, error);
+}
 
 export default async function DatasetPage({ searchParams }: DatasetPageProps) {
   const rawParams = await searchParams;
@@ -48,10 +60,27 @@ export default async function DatasetPage({ searchParams }: DatasetPageProps) {
   const pageSize = normalizePositiveInteger(rawParams.pageSize, 10, [5, 10, 25]);
   const requestedPage = normalizePositiveInteger(rawParams.page, 1);
 
-  const [datasets, options] = await Promise.all([
+  const datasetsPromise = withTimeout(
     getPublicDatasets(filters),
+    DATASET_CATALOG_SOURCE_TIMEOUT_MS,
+    "Timeout mengambil dataset katalog.",
+  ).catch((error) => {
+    logDatasetCatalogFallback("Dataset", error);
+    return [];
+  });
+  const optionsPromise = withTimeout(
     getPublicDatasetFilterOptions({ q: filters.q }),
+    DATASET_CATALOG_SOURCE_TIMEOUT_MS,
+    "Timeout mengambil opsi filter katalog.",
+  ).catch((error) => {
+    logDatasetCatalogFallback("Filter", error);
+    return null;
+  });
+  const [datasets, optionsResult] = await Promise.all([
+    datasetsPromise,
+    optionsPromise,
   ]);
+  const options = optionsResult ?? buildPublicFilterOptionsFromDatasets(datasets);
 
   const totalItems = datasets.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -150,7 +179,7 @@ export default async function DatasetPage({ searchParams }: DatasetPageProps) {
                 <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-[#5f5957] sm:text-base">
                   {filters.q ? (
                     <>
-                      Pencarian untuk <span className="font-bold text-[#2d2826]">"{filters.q}"</span> tidak membuahkan hasil.
+                      Pencarian untuk <span className="font-bold text-[#2d2826]">&quot;{filters.q}&quot;</span> tidak membuahkan hasil.
                     </>
                   ) : (
                     "Kami tidak dapat menemukan dataset yang sesuai dengan kombinasi filter Anda saat ini."

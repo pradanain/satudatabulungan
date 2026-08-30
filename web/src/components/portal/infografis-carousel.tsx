@@ -127,17 +127,20 @@ export function InfografisCarousel({ items }: InfografisCarouselProps) {
             variant="secondary"
             size="icon"
             onClick={goToPreviousPage}
+            aria-label="Lihat halaman infografis sebelumnya"
             className="rounded-full"
           >
             <ChevronLeft className="size-5" />
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" aria-label="Navigasi halaman infografis">
             {pages.map((_, index) => (
               <button
                 key={`dot-${index}`}
                 type="button"
                 onClick={() => goToPage(index)}
+                aria-label={`Tampilkan halaman infografis ${index + 1}`}
+                aria-pressed={currentPage === index}
                 className={`h-2.5 rounded-full transition-all ${
                   currentPage === index ? "w-10 bg-(--color-primary)" : "w-2.5 bg-[#c6cfdb]"
                 }`}
@@ -150,6 +153,7 @@ export function InfografisCarousel({ items }: InfografisCarouselProps) {
             variant="secondary"
             size="icon"
             onClick={goToNextPage}
+            aria-label="Lihat halaman infografis berikutnya"
             className="rounded-full"
           >
             <ChevronRight className="size-5" />

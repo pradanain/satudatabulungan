@@ -443,14 +443,15 @@ export async function decodeInternalSession(value: string | null | undefined): P
       return null;
     }
 
-    const parsed = JSON.parse(bytesToString(fromBase64UrlToBytes(payload))) as any;
+    const parsed = JSON.parse(bytesToString(fromBase64UrlToBytes(payload))) as unknown;
     if (!isValidInternalSessionCandidate(parsed)) {
       return null;
     }
 
-    parsed.role = normalizeInternalRole(parsed.role as string);
-
-    return parsed;
+    return {
+      ...parsed,
+      role: normalizeInternalRole(String(parsed.role)),
+    };
   } catch {
     return null;
   }

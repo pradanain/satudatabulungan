@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createWorkflowDraft } from "@/lib/services/workflow-persistence";
-import type { DatasetFormat, DatasetFrequency } from "@/lib/types/dataset";
+import type { DatasetFormat, DatasetFrequency, DatasetPreview, DatasetResource } from "@/lib/types/dataset";
 import { inferInternalApiErrorStatus } from "@/lib/utils/internal-api-response";
 import { sanitizeStoredText } from "@/lib/utils/input-sanitizer";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
@@ -21,8 +21,8 @@ type DraftPayload = {
   resourceName?: string;
   resourceFormat?: string;
   resourceUrl?: string;
-  preview?: any;
-  resources?: any;
+  preview?: DatasetPreview;
+  resources?: DatasetResource[];
   tags?: string[];
   unit?: string;
 };

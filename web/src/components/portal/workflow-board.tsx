@@ -19,6 +19,7 @@ import type { DatasetFormat, DatasetFrequency, DatasetStatus } from "@/lib/types
 import {
   canTransition,
   getNextStatuses,
+  isDatasetStatus,
   workflowLaneOrder,
   getStatusLabel,
   type WorkflowItem,
@@ -442,6 +443,9 @@ export function WorkflowBoard({ initialItems }: WorkflowBoardProps) {
                 lane.items.map((item) => {
                   const actions = getNextStatuses(item.status);
                   const latestAudit = item.auditTrail?.[item.auditTrail.length - 1];
+                  const fromStatusLabel = latestAudit && isDatasetStatus(latestAudit.fromStatus)
+                    ? getStatusLabel(latestAudit.fromStatus)
+                    : latestAudit?.fromStatus;
 
                   return (
                     <article key={item.id} className="grid gap-2 rounded-xl border border-[var(--color-border)] bg-white p-3">
@@ -452,7 +456,7 @@ export function WorkflowBoard({ initialItems }: WorkflowBoardProps) {
                       </small>
                       {latestAudit ? (
                         <p className="m-0 rounded-lg border border-[#d4e4ff] bg-[#f5f9ff] px-2.5 py-2 text-xs text-[#29508a]">
-                          Audit terakhir: {getStatusLabel(latestAudit.fromStatus as any)} {"->"} {getStatusLabel(latestAudit.toStatus)} oleh{" "}
+                          Audit terakhir: {fromStatusLabel} {"->"} {getStatusLabel(latestAudit.toStatus)} oleh{" "}
                           {latestAudit.actor} ({formatIndonesianDate(latestAudit.at)})
                         </p>
                       ) : null}

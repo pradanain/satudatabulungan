@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useState, useEffect } from "react";
+import { type ReactNode, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -98,6 +98,9 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "internal-sidebar-collapsed";
+const SIDEBAR_STORAGE_EVENT = "internal-sidebar-storage";
+
 function getHref(key: InternalNavKey): string {
   switch (key) {
     case "dashboard": return "/internal/dashboard";
@@ -121,40 +124,44 @@ function getHref(key: InternalNavKey): string {
   }
 }
 
-export function InternalShell({ session, activeKey, children }: InternalShellProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+function subscribeSidebarStorage(listener: () => void): () => void {
+  window.addEventListener("storage", listener);
+  window.addEventListener(SIDEBAR_STORAGE_EVENT, listener);
 
-  useEffect(() => {
-    setMounted(true);
-    const savedState = localStorage.getItem("internal-sidebar-collapsed");
-    if (savedState !== null) {
-      setIsCollapsed(savedState === "true");
-    }
-  }, []);
-
-  const toggleSidebar = () => {
-    const newState = !isCollapsed;
-    setIsCollapsed(newState);
-    localStorage.setItem("internal-sidebar-collapsed", String(newState));
+  return () => {
+    window.removeEventListener("storage", listener);
+    window.removeEventListener(SIDEBAR_STORAGE_EVENT, listener);
   };
+}
 
-  const navKeys = getVisibleNavKeys(session.role);
-  const visibleNavSet = new Set(navKeys);
-  const groupedNav = navGroups
-    .map((group) => ({
-      ...group,
-      keys: group.keys.filter((key) => visibleNavSet.has(key)),
-    }))
-    .filter((group) => group.keys.length > 0);
+function getSidebarSnapshot(): string {
+  return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) ?? "false";
+}
 
-  // Prevent hydration mismatch on initial render for layout styles
-  if (!mounted) {
-    return null;
-  }
+function getSidebarServerSnapshot(): string {
+  return "false";
+}
 
-  const SidebarContent = () => (
+function emitSidebarStorageChange(): void {
+  window.dispatchEvent(new Event(SIDEBAR_STORAGE_EVENT));
+}
+
+type SidebarContentProps = {
+  activeKey: InternalNavKey;
+  groupedNav: NavGroup[];
+  isCollapsed: boolean;
+  session: InternalSession;
+  onNavigate: () => void;
+};
+
+function SidebarContent({
+  activeKey,
+  groupedNav,
+  isCollapsed,
+  session,
+  onNavigate,
+}: SidebarContentProps) {
+  return (
     <div className="flex h-full flex-col bg-white">
       {/* Sidebar Header */}
       <div className={cn("internal-ornament-band flex h-16 shrink-0 items-center border-b border-[var(--color-border)] px-4", isCollapsed ? "justify-center" : "justify-between")}>
@@ -203,7 +210,7 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
                   const navItem = (
                     <Link
                       href={getHref(key)}
-                      onClick={() => setIsMobileOpen(false)}
+                      onClick={onNavigate}
                       className={cn(
                         "group flex items-center rounded-lg border border-transparent transition-all duration-200 hover:bg-[var(--color-surface-soft)] hover:text-[var(--color-primary)]",
                         isCollapsed ? "justify-center py-2.5" : "gap-3 px-3 py-2",
@@ -263,6 +270,31 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
       </div>
     </div>
   );
+}
+
+export function InternalShell({ session, activeKey, children }: InternalShellProps) {
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const collapsedSnapshot = useSyncExternalStore(
+    subscribeSidebarStorage,
+    getSidebarSnapshot,
+    getSidebarServerSnapshot,
+  );
+  const isCollapsed = collapsedSnapshot === "true";
+
+  const toggleSidebar = () => {
+    const newState = !isCollapsed;
+    localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(newState));
+    emitSidebarStorageChange();
+  };
+
+  const navKeys = getVisibleNavKeys(session.role);
+  const visibleNavSet = new Set(navKeys);
+  const groupedNav = navGroups
+    .map((group) => ({
+      ...group,
+      keys: group.keys.filter((key) => visibleNavSet.has(key)),
+    }))
+    .filter((group) => group.keys.length > 0);
 
   return (
     <div className="internal-page-bg flex min-h-screen">
@@ -273,7 +305,13 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
           isCollapsed ? "w-[72px]" : "w-[280px]"
         )}
       >
-        <SidebarContent />
+        <SidebarContent
+          activeKey={activeKey}
+          groupedNav={groupedNav}
+          isCollapsed={isCollapsed}
+          session={session}
+          onNavigate={() => setIsMobileOpen(false)}
+        />
       </aside>
 
       {/* Mobile Drawer Overlay */}
@@ -289,7 +327,13 @@ export function InternalShell({ session, activeKey, children }: InternalShellPro
           isMobileOpen && "translate-x-0"
         )}
       >
-        <SidebarContent />
+        <SidebarContent
+          activeKey={activeKey}
+          groupedNav={groupedNav}
+          isCollapsed={isCollapsed}
+          session={session}
+          onNavigate={() => setIsMobileOpen(false)}
+        />
       </aside>
 
       {/* Main Content Area */}

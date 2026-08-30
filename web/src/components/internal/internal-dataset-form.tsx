@@ -44,6 +44,7 @@ import { ConfirmationDialog } from "@/components/portal/confirmation-dialog";
 import { ToastNotification } from "@/components/ui/toast-popup";
 import { uploadFileWithProgress } from "@/lib/utils/upload-with-progress";
 import { UploadProgressModal, type FileProgress } from "@/components/internal/upload-progress-modal";
+import { normalizeSpreadsheetRows } from "@/lib/utils/spreadsheet";
 
 // ——— Searchable Dropdown / Select Component ————————————————————
 interface SearchableSelectProps {
@@ -243,18 +244,80 @@ function isTitleRow(row: string[]): boolean {
   return false;
 }
 
-function convertRawRowsToDatasetPreview(rawRows: any[][]): DatasetPreview {
+function parseCsvLine(line: string, delimiter: string): string[] {
+  const cells: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const nextChar = line[index + 1];
+
+    if (char === "\"" && inQuotes && nextChar === "\"") {
+      current += "\"";
+      index += 1;
+      continue;
+    }
+
+    if (char === "\"") {
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (char === delimiter && !inQuotes) {
+      cells.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  cells.push(current.trim());
+  return cells;
+}
+
+function detectCsvDelimiter(raw: string): string {
+  const firstDataLine = raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find(Boolean) ?? "";
+  const commaCount = (firstDataLine.match(/,/g) ?? []).length;
+  const semicolonCount = (firstDataLine.match(/;/g) ?? []).length;
+
+  return semicolonCount > commaCount ? ";" : ",";
+}
+
+function parseCsvRows(raw: string): string[][] {
+  const delimiter = detectCsvDelimiter(raw);
+  return raw
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0)
+    .map((line) => parseCsvLine(line, delimiter));
+}
+
+async function readRowsForPreview(file: File, format: DatasetFormat): Promise<string[][]> {
+  if (format === "CSV") {
+    return parseCsvRows(await file.text());
+  }
+
+  if (format === "XLSX") {
+    const { readSheet } = await import("read-excel-file/browser");
+    const rows = await readSheet(file);
+    return normalizeSpreadsheetRows(rows);
+  }
+
+  return [];
+}
+
+function convertRawRowsToDatasetPreview(rawRows: ReadonlyArray<ReadonlyArray<unknown>>): DatasetPreview {
   if (!rawRows || rawRows.length === 0) {
     return { points: [], rows: [], insights: [] };
   }
 
   // Convert raw cells to clean trimmed strings, keeping only non-empty rows
-  const cleanRows = rawRows
-    .map((r) =>
-      Array.isArray(r)
-        ? r.map((c) => (c === undefined || c === null ? "" : String(c).trim()))
-        : [],
-    )
+  const cleanRows = normalizeSpreadsheetRows(rawRows)
     .filter((r) => r.length > 0 && r.some((c) => c !== ""));
 
   if (cleanRows.length === 0) {
@@ -685,9 +748,17 @@ export function InternalDatasetForm({
 
     Array.from(selectedFiles).forEach((selectedFile) => {
       const ext = selectedFile.name.split(".").pop()?.toUpperCase() || "CSV";
-      const cleanExt = ["CSV", "XLSX", "PDF", "API", "JSON"].includes(ext)
-        ? ext
-        : "CSV";
+      if (ext === "XLS") {
+        setErrorMessage("Format Excel lama .xls tidak didukung. Simpan ulang sebagai .xlsx terlebih dahulu.");
+        return;
+      }
+
+      if (!["CSV", "XLSX", "PDF", "JSON"].includes(ext)) {
+        setErrorMessage(`Format .${ext.toLowerCase()} tidak didukung. Gunakan CSV, XLSX, JSON, atau PDF.`);
+        return;
+      }
+
+      const cleanExt = ext as DatasetFormat;
 
       const newFileObj: FormFile = {
         name: selectedFile.name.replace(/\.[^/.]+$/, ""),
@@ -704,25 +775,11 @@ export function InternalDatasetForm({
       base64Reader.readAsDataURL(selectedFile);
 
       if ((cleanExt === "CSV" || cleanExt === "XLSX") && !parsedPreview) {
-        const arrayReader = new FileReader();
-        arrayReader.onload = async (e) => {
-          try {
-            const XLSX = await import("xlsx");
-            const data = new Uint8Array(e.target?.result as ArrayBuffer);
-            const workbook = XLSX.read(data, { type: "array" });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const rawRows = XLSX.utils.sheet_to_json(worksheet, {
-              header: 1,
-            raw: true,        // keep native number types, avoid locale formatting
-              defval: "",       // use empty string for blank cells
-            }) as any[][];
-
-          } catch (err) {
+        void readRowsForPreview(selectedFile, cleanExt)
+          .then((rows) => setParsedPreview(convertRawRowsToDatasetPreview(rows)))
+          .catch((err) => {
             console.error("Gagal parse berkas untuk pratinjau tabel:", err);
-          }
-        };
-        arrayReader.readAsArrayBuffer(selectedFile);
+          });
       }
 
       setFormFiles((prev) => [...prev, newFileObj]);
@@ -1110,7 +1167,7 @@ export function InternalDatasetForm({
               <div>
                 <input
                   type="file"
-                  accept=".xlsx,.xls,.csv,.json,.pdf"
+                  accept=".xlsx,.csv,.json,.pdf"
                   onChange={handleFileChange}
                   multiple
                   className="block max-w-max mx-auto text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#4b7fe0] hover:file:bg-blue-100 cursor-pointer"
@@ -1484,7 +1541,7 @@ export function InternalDatasetForm({
             <span className="block text-sm">
               Apakah Anda yakin ingin menghapus berkas{" "}
               <strong className="break-all text-gray-800">
-                "{formFiles[fileToRemoveIndex].name}"
+                &quot;{formFiles[fileToRemoveIndex].name}&quot;
               </strong>{" "}
               dari daftar unggahan?
             </span>

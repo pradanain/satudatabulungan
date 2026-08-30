@@ -7,8 +7,14 @@ import {
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
 import { hasPermission } from "@/lib/utils/internal-auth";
 import type { DatasetStatus } from "@/lib/types/dataset";
+import type { ContentType } from "@/lib/types/internal";
 import { resolveCkanOwnerOrgId } from "@/lib/utils/resolve-ckan-owner-org";
 import { loadInternalPortalStore } from "@/lib/services/internal-store";
+import {
+  canManageContentType,
+  canWriteContentForOrganization,
+  isInternalContentType,
+} from "@/lib/utils/internal-content-permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +64,12 @@ function mapInternalTypeToCkan(type: string): PortalContentType {
   return "dataset";
 }
 
+function mapCkanTypeToInternal(type: PortalContentType): ContentType {
+  if (type === "news") return "news";
+  if (type === "infografis") return "infographic";
+  return "digital_publication";
+}
+
 export async function PUT(
   request: Request,
   context: { params: Promise<{ slug: string }> }
@@ -70,19 +82,35 @@ export async function PUT(
 
     const { slug } = await context.params;
     const payload = await request.json();
+    const existing = await getCkanPublicationBySlug(slug, { fresh: true });
+    if (!existing) {
+      return NextResponse.json({ success: false, error: "Konten tidak ditemukan." }, { status: 404 });
+    }
 
     const title = payload.title?.trim();
     const description = payload.description?.trim();
     const status = payload.status;
     const type = payload.type;
     const organizationId = payload.organizationId;
+    const effectiveType = isInternalContentType(type)
+      ? type
+      : mapCkanTypeToInternal(existing.contentType);
+    let effectiveOrganizationId = typeof organizationId === "string" && organizationId
+      ? organizationId
+      : existing.organizationId;
 
     const isProdusen = session.role === "produsen";
     if (isProdusen) {
-      if (organizationId && organizationId !== session.organizationId) {
+      const isOwnedBySessionOrg = await isPublicationOwnedBySessionOrg(
+        existing.organizationId,
+        existing.organizationName,
+        session.organizationId,
+      );
+      if (!isOwnedBySessionOrg || (organizationId && organizationId !== session.organizationId)) {
         return NextResponse.json({ success: false, error: "Anda tidak memiliki izin mengunggah untuk OPD lain." }, { status: 403 });
       }
-      if (type && !["news", "digital_publication", "infographic"].includes(type)) {
+      effectiveOrganizationId = session.organizationId;
+      if (!["news", "digital_publication", "infographic"].includes(effectiveType)) {
         return NextResponse.json({ success: false, error: "Produsen hanya diizinkan mengunggah Berita, Publikasi Digital, atau Infografis." }, { status: 403 });
       }
       if (status === "Published") {
@@ -90,10 +118,14 @@ export async function PUT(
       }
     }
 
+    if (!canWriteContentForOrganization(session, effectiveType, effectiveOrganizationId)) {
+      return NextResponse.json({ success: false, error: "Anda tidak memiliki izin mengelola konten ini." }, { status: 403 });
+    }
+
     const resolvedOwnerOrgId = organizationId
       ? await resolveCkanOwnerOrgId(organizationId)
       : undefined;
-    const ckanType = type ? mapInternalTypeToCkan(type) : undefined;
+    const ckanType = isInternalContentType(type) ? mapInternalTypeToCkan(type) : undefined;
     const result = await updateCkanPublication(
       slug,
       {
@@ -168,7 +200,7 @@ export async function PATCH(
         break;
 
       case "approve":
-        if (!canManageAll) {
+        if (!canManageAll && !canManageContentType(session, mapCkanTypeToInternal(pub.contentType))) {
           return NextResponse.json({ success: false, error: "Anda tidak memiliki izin untuk menyetujui konten." }, { status: 403 });
         }
         if (pub.status !== "Submitted") {
@@ -178,7 +210,7 @@ export async function PATCH(
         break;
 
       case "revise":
-        if (!canManageAll) {
+        if (!canManageAll && !canManageContentType(session, mapCkanTypeToInternal(pub.contentType))) {
           return NextResponse.json({ success: false, error: "Anda tidak memiliki izin untuk meminta revisi." }, { status: 403 });
         }
         if (pub.status !== "Submitted") {
@@ -188,7 +220,7 @@ export async function PATCH(
         break;
 
       case "publish":
-        if (!canManageAll) {
+        if (!canManageAll && !canManageContentType(session, mapCkanTypeToInternal(pub.contentType))) {
           return NextResponse.json({ success: false, error: "Anda tidak memiliki izin untuk menerbitkan konten." }, { status: 403 });
         }
         if (!["Submitted", "Approved"].includes(pub.status)) {
@@ -198,7 +230,7 @@ export async function PATCH(
         break;
 
       case "unpublish":
-        if (!canManageAll) {
+        if (!canManageAll && !canManageContentType(session, mapCkanTypeToInternal(pub.contentType))) {
           return NextResponse.json({ success: false, error: "Anda tidak memiliki izin untuk membatalkan penerbitan." }, { status: 403 });
         }
         newStatus = "Draft";

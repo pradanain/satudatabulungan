@@ -4,6 +4,8 @@ import { inferInternalApiErrorStatus } from "@/lib/utils/internal-api-response";
 import { sanitizeStoredText } from "@/lib/utils/input-sanitizer";
 import { getInternalSessionFromCookieHeader } from "@/lib/utils/internal-auth-server";
 import { hasPermission } from "@/lib/utils/internal-auth";
+import type { InternalSession } from "@/lib/types/internal";
+import { canUploadContentFile, canUploadDatasetFile } from "@/lib/utils/internal-content-permissions";
 
 type UploadType = "dataset" | "infografis" | "publikasi";
 
@@ -37,9 +39,13 @@ function ensure(value: unknown, key: string): string {
   return cleaned;
 }
 
-function checkUploadPermission(uploadType: UploadType, role: string): boolean {
-  if (hasPermission(role as any, "dataset.upload_file")) return true;
-  return false;
+function checkUploadPermission(uploadType: UploadType, session: InternalSession, ownerOrgId: string): boolean {
+  if (uploadType === "dataset") {
+    return canUploadDatasetFile(session, ownerOrgId);
+  }
+
+  const contentType = uploadType === "infografis" ? "infographic" : "digital_publication";
+  return canUploadContentFile(session, contentType, ownerOrgId);
 }
 
 export const dynamic = "force-dynamic";
@@ -63,17 +69,21 @@ export async function POST(
       );
     }
 
-    if (!checkUploadPermission(normalizedType, session.role)) {
+    const payload = (await request.json()) as UploadPayload;
+    const ownerOrgId = ensure(payload.ownerOrgId, "ownerOrgId");
+
+    if (!checkUploadPermission(normalizedType, session, ownerOrgId)) {
       return NextResponse.json(
         { success: false, error: "Anda tidak memiliki izin upload untuk konten ini." },
         { status: 403 },
       );
     }
 
-    const payload = (await request.json()) as UploadPayload;
-
-    const ownerOrgId = ensure(payload.ownerOrgId, "ownerOrgId");
-    if (!hasPermission(session, "dataset.view_all") && session.organizationId !== ownerOrgId) {
+    if (
+      normalizedType === "dataset" &&
+      !hasPermission(session, "dataset.view_all") &&
+      session.organizationId !== ownerOrgId
+    ) {
       return NextResponse.json(
         { success: false, error: "Anda hanya boleh upload untuk organisasi sendiri." },
         { status: 403 },

@@ -824,7 +824,7 @@ export function InternalPublicationForm({
                   value={formData.publishDate}
                   onChange={(e) => {
                     // Allow only digits and slashes, auto-insert slashes
-                    let raw = e.target.value.replace(/[^\d/]/g, "");
+                    const raw = e.target.value.replace(/[^\d/]/g, "");
                     // Auto-format: add slash after DD and MM
                     const digits = raw.replace(/\//g, "");
                     let formatted = digits;

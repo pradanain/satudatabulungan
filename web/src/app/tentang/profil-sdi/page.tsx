@@ -115,7 +115,7 @@ export default function ProfilSdiPage() {
               </h2>
               <div className="mt-2.5 h-1 w-10 bg-[var(--color-primary)] mx-auto rounded-full" />
               <p className="mt-4 text-sm sm:text-base leading-relaxed text-[var(--color-muted)] font-medium italic opacity-85">
-                "Mewujudkan tata kelola data Kabupaten Bulungan yang transparan, berkualitas, dan terintegrasi untuk mendukung perencanaan pembangunan daerah yang lebih baik dan berbasis data."
+                &quot;Mewujudkan tata kelola data Kabupaten Bulungan yang transparan, berkualitas, dan terintegrasi untuk mendukung perencanaan pembangunan daerah yang lebih baik dan berbasis data.&quot;
               </p>
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-[url('/assets/brand/motifs/motif-3-suku-band.webp')] bg-[length:auto_100%] bg-repeat-x opacity-[0.1]" />

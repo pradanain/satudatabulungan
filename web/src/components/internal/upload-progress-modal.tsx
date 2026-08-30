@@ -1,5 +1,5 @@
 import React from "react";
-import { Loader2, CheckCircle2, AlertCircle, UploadCloud, FileText, Image } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, UploadCloud, FileText, ImageIcon } from "lucide-react";
 
 export interface FileProgress {
   name: string;
@@ -38,7 +38,7 @@ export function UploadProgressModal({
       case "document":
         return <FileText className="h-5 w-5 text-blue-500 shrink-0" />;
       case "image":
-        return <Image className="h-5 w-5 text-emerald-500 shrink-0" />;
+        return <ImageIcon className="h-5 w-5 text-emerald-500 shrink-0" />;
       default:
         return <UploadCloud className="h-5 w-5 text-indigo-500 shrink-0" />;
     }

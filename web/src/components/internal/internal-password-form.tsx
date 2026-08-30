@@ -8,6 +8,21 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils/cn";
 import { ToastNotification } from "@/components/ui/toast-popup";
 
+function RequirementItem({ fulfilled, label }: { fulfilled: boolean; label: string }) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      {fulfilled ? (
+        <Check className="size-3.5 text-emerald-500" />
+      ) : (
+        <X className="size-3.5 text-gray-300" />
+      )}
+      <span className={fulfilled ? "text-emerald-700" : "text-[var(--color-muted)]"}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
 export function InternalPasswordForm() {
   const [isPending, setIsPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -64,19 +79,6 @@ export function InternalPasswordForm() {
       setIsPending(false);
     }
   }
-
-  const RequirementItem = ({ fulfilled, label }: { fulfilled: boolean, label: string }) => (
-    <div className="flex items-center gap-2 text-xs">
-      {fulfilled ? (
-        <Check className="size-3.5 text-emerald-500" />
-      ) : (
-        <X className="size-3.5 text-gray-300" />
-      )}
-      <span className={fulfilled ? "text-emerald-700" : "text-[var(--color-muted)]"}>
-        {label}
-      </span>
-    </div>
-  );
 
   return (
     <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
